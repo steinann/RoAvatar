@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "Avatar+",
+    "description": "A remake of the Roblox avatar editor with new and improved features",
+    "version": "1.0.0",
+    "permissions": [
+        "cookies",
+        "storage"
+    ],
+    "content_scripts": [
+        {
+            "js": ["inject.js"],
+            "matches": ["https://*.roblox.com/my/avatar-plus*"],
+            "run_at": "document_end"
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "matches": ["https://*.roblox.com/*"],
+            "resources": ["/*"]
+        }
+    ],
+    "host_permissions": ["https://*.roblox.com/*","https://*.rbxcdn.com/*"]
+}
