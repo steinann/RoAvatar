@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
+    "lz4": "^0.6.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "three": "^0.180.0",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/chrome": "^0.1.24",
+    "@types/lz4": "^0.6.4",
     "@types/node": "^24.9.1",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",

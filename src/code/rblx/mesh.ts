@@ -1,13 +1,14 @@
 //https://devforum.roblox.com/t/roblox-filemesh-format-specification/326114
 
-import { SimpleView } from "../lib/simple-view"
+import SimpleView from "../lib/simple-view"
 import { hashVec2, hashVec3 } from "./mesh-deform"
 
-type Vec4 = [number,number,number,number]
-type Vec3 = [number,number,number]
-type Vec2 = [number,number]
+export type Vec4 = [number,number,number,number]
+export type Vec3 = [number,number,number]
+export type Vec2 = [number,number]
 
-type Mat3x3 = [number,number,number,number,number,number,number,number,number]
+export type Mat3x3 = [number,number,number,number,number,number,number,number,number]
+export type Mat4x4 = [number,number,number,number,number,number,number,number,number,number,number,number,number,number,number,number]
 
 type LodType = "None" | "Unknown" | "RbxSimplifier" | "ZeuxMeshOptimizer"
 const LodType: {[K in LodType]: number} = {
