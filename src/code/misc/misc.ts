@@ -11,6 +11,20 @@ function download(filename: string, text: string) {
     document.body.removeChild(element);
 }
 
+var saveByteArray = (function () {
+    var a = document.createElement("a");
+    document.body.appendChild(a);
+    a.setAttribute("style","display: none;")
+    return function (data: BlobPart[] | undefined, name: string) {
+        var blob = new Blob(data, {type: "octet/stream"}),
+            url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = name;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+}());
+
 function generateUUIDv4(): string {
     // Generate a random UUID (version 4)
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -20,5 +34,16 @@ function generateUUIDv4(): string {
     });
 }
 
+function rad(degrees: number) {
+    return degrees / 180 * Math.PI
+}
 
-export { download, generateUUIDv4 }
+function deg(radians: number) {
+    return radians * 180 / Math.PI
+}
+
+function lerp(a: number,b: number,t: number) {
+	return a + (b - a) * t
+}
+
+export { download, saveByteArray, generateUUIDv4, rad, deg, lerp }
