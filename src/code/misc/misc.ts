@@ -1,4 +1,5 @@
 import type { Vec3 } from "../rblx/mesh";
+import { Vector3 } from "../rblx/rbx";
 
 function download(filename: string, text: string) {
     const element = document.createElement('a');
@@ -48,8 +49,20 @@ function lerp(a: number,b: number,t: number) {
 	return a + (b - a) * t
 }
 
+function lerpVec3(a: Vector3, b: Vector3, t: number) {
+	return a.add((b.minus(a)).multiply(new Vector3(t,t,t)))
+}
+
 function specialClamp(value: number, min: number, max: number ) {
     return Math.max( min, Math.min( max, value ) );
+}
+
+function clonePrimitiveArray<T>(arr: T[]) {
+    const result = []
+    for (const a of arr) {
+        result.push(a)
+    }
+    return result
 }
 
 function rotationMatrixToEulerAngles(te: number[], order = "YXZ"): Vec3 { //from THREE.js
@@ -184,4 +197,4 @@ function rotationMatrixToEulerAngles(te: number[], order = "YXZ"): Vec3 { //from
     return [deg(x),deg(y),deg(z)];
 }
 
-export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, specialClamp, rotationMatrixToEulerAngles }
+export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, clonePrimitiveArray, rotationMatrixToEulerAngles }

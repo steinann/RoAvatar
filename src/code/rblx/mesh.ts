@@ -1,6 +1,7 @@
 //https://devforum.roblox.com/t/roblox-filemesh-format-specification/326114
 
 import SimpleView from "../lib/simple-view"
+import { clonePrimitiveArray } from "../misc/misc"
 import { hashVec2, hashVec3 } from "./mesh-deform"
 
 export type Vec4 = [number,number,number,number]
@@ -34,6 +35,17 @@ class FileMeshVertex {
         this.tangent = tangent
         this.color = color
     }
+
+    clone() {
+        const copy = new FileMeshVertex()
+        copy.position = clonePrimitiveArray(this.position) as Vec3
+        copy.normal = clonePrimitiveArray(this.normal) as Vec3
+        copy.uv = clonePrimitiveArray(this.uv) as Vec2
+        copy.tangent = clonePrimitiveArray(this.tangent) as Vec4
+        copy.color = clonePrimitiveArray(this.color) as Vec4
+
+        return copy
+    }
 }
 
 class FileMeshFace {
@@ -41,10 +53,14 @@ class FileMeshFace {
     b: number //uint
     c: number //uint
 
-    constructor(a: number,b: number,c: number) {
+    constructor(a: number, b: number, c: number) {
         this.a = a
         this.b = b
         this.c = c
+    }
+
+    clone() {
+        return new FileMeshFace(this.a, this.b, this.c)
     }
 }
 
@@ -54,6 +70,23 @@ class COREMESH {
 
     numfaces: number = 0 //uint
     faces: FileMeshFace[] = [] //FileMeshFace[]
+
+    clone() {
+        const copy = new COREMESH()
+        copy.numverts = this.numverts
+
+        for (const vert of this.verts) {
+            copy.verts.push(vert.clone())
+        }
+
+        copy.numfaces = this.numfaces
+
+        for (const face of this.faces) {
+            copy.faces.push(face.clone())
+        }
+
+        return copy
+    }
 
     removeDuplicateVertices(distance = 0.0001): number {
         const toRemove = []
@@ -104,6 +137,16 @@ class LODS {
 
     numLodOffsets: number = 0 //uint
     lodOffsets: number[] = [] //uint
+
+    clone() {
+        const copy = new LODS()
+        copy.lodType = this.lodType
+        copy.numHighQualityLODs = this.numHighQualityLODs
+        copy.numLodOffsets = this.numLodOffsets
+        copy.lodOffsets = clonePrimitiveArray(this.lodOffsets)
+
+        return copy
+    }
 }
 
 class FileMeshBone {
@@ -117,6 +160,18 @@ class FileMeshBone {
     rotationMatrix: Mat3x3 = [1,0,0, 0,1,0, 0,0,1] //3x3, world space, y up, -z forward
 
     position: Vec3 = [0,0,0]
+
+    clone() {
+        const copy = new FileMeshBone()
+        copy.boneNameIndex = this.boneNameIndex
+        copy.parentIndex = this.parentIndex
+        copy.lodParentIndex = this.lodParentIndex
+        copy.culling = this.culling
+        copy.rotationMatrix = clonePrimitiveArray(this.rotationMatrix) as Mat3x3
+        copy.position = clonePrimitiveArray(this.position) as Vec3
+
+        return copy
+    }
 }
 
 class FileMeshSubset {
@@ -128,11 +183,31 @@ class FileMeshSubset {
 
     numBoneIndices: number = 0 //uint
     boneIndices: number[] = [] //ushort[26]
+
+    clone() {
+        const copy = new FileMeshSubset()
+        copy.facesBegin = this.facesBegin
+        copy.facesLength = this.facesLength
+        copy.vertsBegin = this.vertsBegin
+        copy.vertsLength = this.vertsLength
+        copy.numBoneIndices = this.numBoneIndices
+        copy.boneIndices = clonePrimitiveArray(this.boneIndices)
+
+        return copy
+    }
 }
 
 class FileMeshSkinning {
     subsetIndices: Vec4 = [0,0,0,0] //byte[4]
     boneWeights: Vec4 = [0,0,0,0] //byte[4]
+
+    clone() {
+        const copy = new FileMeshSkinning()
+        copy.subsetIndices = clonePrimitiveArray(this.subsetIndices) as Vec4
+        copy.boneWeights = clonePrimitiveArray(this.boneWeights) as Vec4
+
+        return copy
+    }
 }
 
 class SKINNING {
@@ -147,6 +222,33 @@ class SKINNING {
 
     numSubsets: number = 0 //uint
     subsets: FileMeshSubset[] = [] //FileMeshSubset[]
+
+    clone() {
+        const copy = new SKINNING()
+
+        copy.numSkinnings = this.numSkinnings
+
+        for (const skinning of this.skinnings) {
+            copy.skinnings.push(skinning.clone())
+        }
+        
+        copy.numBones = this.numBones
+
+        for (const bone of this.bones) {
+            copy.bones.push(bone.clone())
+        }
+
+        copy.nameTableSize = this.nameTableSize
+        copy.nameTable = clonePrimitiveArray(this.nameTable)
+
+        copy.numSubsets = this.numSubsets
+        
+        for (const subset of this.subsets) {
+            copy.subsets.push(subset.clone())
+        }
+
+        return copy
+    }
 }
 
 function readSubset(view: SimpleView) {
@@ -259,6 +361,20 @@ export class FileMesh {
 
     constructor() {
         this.reset()
+    }
+
+    clone() {
+        const copy = new FileMesh()
+        copy.version = this.version
+        copy.coreMesh = this.coreMesh.clone()
+        copy.lods = this.lods.clone()
+        copy.skinning = this.skinning.clone()
+
+        if (this._size) {
+            copy._size = clonePrimitiveArray(this._size) as Vec3
+        }
+
+        return copy
     }
 
     reset() {

@@ -54,7 +54,7 @@ function untransformInt64(num: bigint) {
 }
 
 function readReferents(length: number, chunkView: RBXSimpleView) {
-    const referents = chunkView.readInterleaved32(length, false)
+    const referents = chunkView.readInterleaved32(length, false) as number[]
     let lastReferent = 0
     //untransform
     for (let i = 0; i < referents.length; i++) {

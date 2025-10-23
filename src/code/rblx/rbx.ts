@@ -9,23 +9,55 @@ import { Buffer } from 'buffer';
 import RBXSimpleView from './rbx-simple-view';
 import LZ4 from 'lz4';
 import { rad, rotationMatrixToEulerAngles } from '../misc/misc';
-import { untransformInt32 } from './rbx-read-helper';
+import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from './mesh';
+import { DataType, magic, xmlMagic } from './constant';
 
 //datatype structs
 export class UDim {
     Scale: number = 0 //Float32
     Offset: number = 0 //Int32
+
+    constructor(Scale: number = 0, Offset: number = 0) {
+        this.Scale = Scale
+        this.Offset = Offset
+    }
+
+    clone() {
+        const copy = new UDim()
+        copy.Scale = this.Scale
+        copy.Offset = this.Offset
+        return copy
+    }
 }
 
 export class UDim2 {
     X: UDim = new UDim()
     Y: UDim = new UDim()
+
+    clone() {
+        const copy = new UDim2()
+        copy.X = this.X.clone()
+        copy.Y = this.Y.clone()
+        return copy
+    }
 }
 
 export class Ray {
     Origin: Vec3 = [0,0,0]
     Direction: Vec3 = [0,0,0]
+
+    clone() {
+        const copy = new Ray()
+        copy.Origin[0] = this.Origin[0]
+        copy.Origin[1] = this.Origin[1]
+        copy.Origin[2] = this.Origin[2]
+
+        copy.Direction[0] = this.Direction[0]
+        copy.Direction[1] = this.Direction[1]
+        copy.Direction[2] = this.Direction[2]
+        return copy
+    }
 }
 
 export class Vector3 {
@@ -33,7 +65,7 @@ export class Vector3 {
     Y: number = 0
     Z: number = 0
 
-    constructor(X: number,Y: number,Z: number) {
+    constructor(X: number = 0,Y: number = 0,Z: number = 0) {
         this.X = X
         this.Y = Y
         this.Z = Z
@@ -72,12 +104,32 @@ export class Color3 {
     R: number = 0
     G: number = 0
     B: number = 0
+
+    constructor(R: number = 0, G: number = 0, B: number = 0) {
+        this.R = R
+        this.G = G
+        this.B = B
+    }
+
+    clone() {
+        return new Color3(this.R, this.G, this.B)
+    }
 }
 
 export class Color3uint8 {
     R: number = 0
     G: number = 0
     B: number = 0
+
+    constructor(R: number = 0, G: number = 0, B: number = 0) {
+        this.R = R
+        this.G = G
+        this.B = B
+    }
+
+    clone() {
+        return new Color3uint8(this.R, this.G, this.B)
+    }
 }
 
 export class CFrame {
@@ -138,7 +190,7 @@ export class CFrame {
 class Connection {
     Connected = true
     _callback
-    _event
+    _event: Event | undefined
 
     constructor(callback: (...args: unknown[]) => unknown, event: Event) {
         this._callback = callback
@@ -147,7 +199,10 @@ class Connection {
 
     Disconnect() {
         this.Connected = false
-        this._event.Disconnect(this._callback)
+        if (this._event) {
+            this._event.Disconnect(this._callback)
+        }
+        this._event = undefined
     }
 }
 
@@ -173,16 +228,19 @@ class Event {
     }
 
     Clear() {
+        for (const callback of this._callbacks) {
+            this.Disconnect(callback)
+        }
         this._callbacks = []
     }
 }
 
 export class Property {
-    name: string | null
-    typeID: number | null
+    name?: string
+    typeID?: number
     _value?: unknown //only to be changed by setProperty() method of Instance
 
-    constructor(name = null, typeID = null) {
+    constructor(name: string | undefined = undefined, typeID: number | undefined = undefined) {
         this.name = name
         this.typeID = typeID
     }
@@ -192,61 +250,24 @@ export class Property {
     }
 }
 
-function replaceBodyPart(rig, child) {
-    let childName = child.Prop("Name")
-    let oldBodyPart = rig.FindFirstChild(childName)
-    if (oldBodyPart) {
-        let motor6ds = rig.GetDescendants()
-        for (let motor of motor6ds) {
-            if (motor.className === "Motor6D" || motor.className === "Weld") {
-                let part0 = motor.Prop("Part0")
-                let part1 = motor.Prop("Part1")
-                if (part0 && oldBodyPart === part0) {
-                    motor.setProperty("Part0", child)
-                }
-                if (part1 && oldBodyPart === part1) {
-                    motor.setProperty("Part1", child)
-                }
-            }
-        }
-
-        let oldMotor6ds = oldBodyPart.GetChildren()
-        for (let motor of oldMotor6ds) {
-            if (motor.className === "Motor6D") {
-                let motorName = motor.Prop("Name")
-
-                let selfMotor = child.FindFirstChild(motorName)
-                if (selfMotor) {
-                    //if (!selfMotor.Prop("Part0")) {
-                    //    selfMotor.setProperty("Part0", motor.Prop("Part0"))
-                    //}
-                }
-            }
-        }
-        
-        oldBodyPart.Destroy()
-    }
-    child.setParent(rig)
-}
-
 export class Instance {
-    name //USED TO MAKE VIEWING EASIER
-    className
-    _properties = new Map()
-    _referencedBy = []
-    _connectionReferences = []
-    children = []
-    parent = null
-    destroyed = false
+    name?: string //USED TO MAKE VIEWING EASIER
+    className: string
+    _properties = new Map<string,Property>()
+    _referencedBy: Instance[] = []
+    _connectionReferences: Connection[] = []
+    children: Instance[] = []
+    parent?: Instance = undefined
+    destroyed: boolean = false
 
-    classID //dont use this to identify instance class, it is only used during file loading
-    objectFormat //same as above
+    classID?: number //dont use this to identify instance class, it is only used during file loading
+    objectFormat?: number //same as above
 
     ChildAdded = new Event()
     Destroying = new Event()
     Changed = new Event()
 
-    constructor(className) {
+    constructor(className: string) {
         if (!className) {
             throw new Error("Instance was not provided a className")
         }
@@ -258,16 +279,16 @@ export class Instance {
             case "Motor6D":
             case "Weld":
                 {
-                    let part0ChangedConnection = null
-                    let part1ChangedConnection = null
+                    let part0ChangedConnection: Connection | undefined = undefined
+                    const part1ChangedConnection: Connection | undefined = undefined
 
-                    function update(self, affectedPart = 1) { //TODO: part1 is not always the part that should be affected, but its difficult to fix without creating an infinite loop
+                    function update(self: Instance, affectedPart = 1) { //TODO: part1 is not always the part that should be affected, but its difficult to fix without creating an infinite loop
                         //variables/properties
                         if (!self.HasProperty("Part0") || !self.HasProperty("Part1")) return
 
-                        let part0 = null
+                        let part0: Instance | undefined = undefined
                         if (self.HasProperty("Part0")) {
-                            part0 = self.Property("Part0")
+                            part0 = self.Property("Part0") as Instance
                             if (part0) {
                                 if (part0ChangedConnection) {
                                     part0ChangedConnection.Disconnect()
@@ -276,9 +297,9 @@ export class Instance {
                             }
                         }
 
-                        let part1 = null
+                        let part1: Instance | undefined = undefined
                         if (self.HasProperty("Part1")) {
-                            part1 = self.Property("Part1")
+                            part1 = self.Property("Part1") as Instance
                             if (part1) {
                                 if (part1ChangedConnection) {
                                     part1ChangedConnection.Disconnect()
@@ -291,36 +312,36 @@ export class Instance {
                             return
                         }
 
-                        let C0 = self.Property("C0")
-                        let C1 = self.Property("C1")
+                        const C0 = self.Property("C0") as CFrame
+                        const C1 = self.Property("C1") as CFrame
                         if (!C0 || !C1) {
                             return
                         }
 
                         let transform = new CFrame()
                         if (self.HasProperty("Transform")) {
-                            transform = self.Property("Transform")
+                            transform = self.Property("Transform") as CFrame
                         }
 
                         //actual calculation
                         if (self.HasProperty("Enabled") && self.Prop("Enabled")) {
                             if (self.parent) {
                                     if (affectedPart === 1) {
-                                        if (part0 && part0.HasProperty("CFrame")) {
-                                            let part0Cf = part0.Property("CFrame")
+                                        if (part0 && part1 && part0.HasProperty("CFrame")) {
+                                            const part0Cf = part0.Property("CFrame") as CFrame
 
-                                            let offset1 = C1.multiply(transform).inverse()
-                                            let finalCF = part0Cf.multiply(C0).multiply(offset1)
+                                            const offset1 = C1.multiply(transform).inverse()
+                                            const finalCF = part0Cf.multiply(C0).multiply(offset1)
 
                                             //update part1 position
                                             part1.setProperty("CFrame", finalCF)
                                         } 
                                     } else {
-                                        if (part1 && part1.HasProperty("CFrame")) {
-                                            let part1Cf = part1.Property("CFrame")
+                                        if (part1 && part0 && part1.HasProperty("CFrame")) {
+                                            const part1Cf = part1.Property("CFrame") as CFrame
 
-                                            let offset0 = C0.multiply(transform).inverse()
-                                            let finalCF = part1Cf.multiply(C1).multiply(offset0)
+                                            const offset0 = C0.multiply(transform).inverse()
+                                            const finalCF = part1Cf.multiply(C1).multiply(offset0)
 
                                             //update part0 position
                                             part0.setProperty("CFrame", finalCF)
@@ -351,11 +372,11 @@ export class Instance {
                         }*/
                     }
 
-                    function setup() {
+                    function setup(this: Instance) {
                         //console.log(this)
                         if (this.className === "Motor6D") {
                             //create transform property
-                            let transformProperty = new Property()
+                            const transformProperty = new Property()
                             transformProperty.name = "Transform"
                             transformProperty.typeID = DataType.CFrame
                             
@@ -364,10 +385,8 @@ export class Instance {
                         }
 
                         //add connections
-                        let self = this
-
-                        let changedConnection = this.Changed.Connect(() => {
-                            update(self)
+                        const changedConnection = this.Changed.Connect(() => {
+                            update(this)
                         })
                         this.addConnectionReference(changedConnection)
                     }
@@ -379,31 +398,31 @@ export class Instance {
         }
     }
 
-    addConnectionReference(connection) {
+    addConnectionReference(connection: Connection) {
         if (!this._connectionReferences.includes(connection)) {
             this._connectionReferences.push(connection)
         }
     }
 
-    removeConnectionReference(connection) {
-        let index = this._connectionReferences.indexOf(connection)
+    removeConnectionReference(connection: Connection) {
+        const index = this._connectionReferences.indexOf(connection)
         if (index !== -1) {
             this._connectionReferences.splice(index,1)
         }
     }
 
-    addReferencedBy(instance) {
+    addReferencedBy(instance: Instance) {
         if (!this._referencedBy.includes(instance)) {
             this._referencedBy.push(instance)
         }
     }
 
-    removeReferencedBy(instance) {
-        let index = this._referencedBy.indexOf(instance)
+    removeReferencedBy(instance: Instance) {
+        const index = this._referencedBy.indexOf(instance)
         if (index !== -1) {
             let isReferenced = false
-            let properties = instance.getPropertyNames()
-            for (let prop of properties) {
+            const properties = instance.getPropertyNames()
+            for (const prop of properties) {
                 if (instance.Prop(prop) === this) {
                     isReferenced = true
                 }
@@ -414,7 +433,12 @@ export class Instance {
         }
     }
 
-    addProperty(property, value) {
+    addProperty(property: Property, value?: unknown) {
+        if (!property.name) {
+            console.log(property)
+            throw new Error("Property is missing a name")
+        }
+
         if (!this._properties.get(property.name)) {
             this._properties.set(property.name, property)
         }
@@ -424,7 +448,7 @@ export class Instance {
         }
     }
 
-    fixPropertyName(name) {
+    fixPropertyName(name: string) {
         switch (name) {
             case "Size": {
                 name = "size"
@@ -447,33 +471,37 @@ export class Instance {
         return name
     }
 
-    setProperty(name, value) {
+    setProperty(name: string, value: unknown) {
         name = this.fixPropertyName(name)
 
-        let property = this._properties.get(name)
+        const property = this._properties.get(name)
         if (property) {
             //special stuff
             if (property.typeID === DataType.Referent && property.value) {
-                property.value.removeReferencedBy(this)
+                const valueOld = property.value as Instance
+                valueOld.removeReferencedBy(this)
             } else if (property.typeID === DataType.CFrame && property.value && value) {
-                if (isNaN(value.Position[0]) || isNaN(value.Position[1]) || isNaN(value.Position[2])) {
+                const valueCF = value as CFrame
+                if (isNaN(valueCF.Position[0]) || isNaN(valueCF.Position[1]) || isNaN(valueCF.Position[2])) {
                     console.log(value)
                     throw new Error("CFrame position can't contain NaN value")
                 }
-                if (isNaN(value.Orientation[0]) || isNaN(value.Orientation[1]) || isNaN(value.Orientation[2])) {
+                if (isNaN(valueCF.Orientation[0]) || isNaN(valueCF.Orientation[1]) || isNaN(valueCF.Orientation[2])) {
                     console.log(value)
                     throw new Error("CFrame orientation can't contain NaN value")
                 }
             }
             if (property.name === "Name") {
-                this.name = value
+                const valueSTR = value as string
+                this.name = valueSTR
             }
 
             property._value = value
 
             //special stuff
             if (property.typeID === DataType.Referent && property.value) {
-                property.value.addReferencedBy(this)
+                const valueInstance = property.value as Instance
+                valueInstance.addReferencedBy(this)
             }
             this.Changed.Fire(name)
         } else {
@@ -481,18 +509,18 @@ export class Instance {
         }
     }
 
-    HasProperty(name) {
+    HasProperty(name: string) {
         name = this.fixPropertyName(name)
 
         return !!(this._properties.get(name))
     }
 
-    Property(name) {
+    Property(name: string): unknown {
         name = this.fixPropertyName(name)
 
         if (name == "Position") {
-            let cf = this.Prop("CFrame")
-            let pos = cf.Position
+            const cf = this.Prop("CFrame") as CFrame
+            const pos = cf.Position
             return new Vector3(pos[0], pos[1], pos[2])
         }
 
@@ -504,7 +532,7 @@ export class Instance {
         return this._properties.get(name)?.value
     }
 
-    Prop(name) {
+    Prop(name: string): unknown {
         return this.Property(name)
     }
 
@@ -512,9 +540,13 @@ export class Instance {
         return Array.from(this._properties.keys())
     }
 
-    setParent(instance) {
+    setParent(instance: Instance | undefined | null) {
+        if (!instance) {
+            instance = undefined
+        }
+
         if (this.parent) {
-            let index = this.parent.children.indexOf(this)
+            const index = this.parent.children.indexOf(this)
             if (index !== -1) {
                 this.parent.children.splice(index, 1)
             }
@@ -536,13 +568,13 @@ export class Instance {
 
     Destroy() {
         //disconnect all connections created by instance
-        for (let connection of this._connectionReferences) {
+        for (const connection of this._connectionReferences) {
             connection.Disconnect()
         }
         this._connectionReferences = []
 
         //destroy all children
-        for (let child of this.GetChildren()) {
+        for (const child of this.GetChildren()) {
             child.Destroy()
         }
 
@@ -555,13 +587,13 @@ export class Instance {
         this.setParent(null)
 
         //set all properties to null
-        for (let property of this.getPropertyNames()) {
+        for (const property of this.getPropertyNames()) {
             this.setProperty(property, null)
         }
 
         //remove all references to instance
-        for (let instance of this._referencedBy) {
-            for (let propertyName of instance.getPropertyNames()) {
+        for (const instance of this._referencedBy) {
+            for (const propertyName of instance.getPropertyNames()) {
                 if (instance.Property(propertyName) === this) {
                     instance.setProperty(propertyName, null)
                 }
@@ -572,18 +604,18 @@ export class Instance {
         this.destroyed = true
     }
 
-    GetFullName() {
+    GetFullName(): string {
         if (this.parent && this.parent.className !== "DataModel") {
             return this.parent.GetFullName() + "." + this.name
         } else {
-            return this.name
+            return this.name || "null"
         }
     }
 
     GetChildren() { //It is done like this so setting parents doesnt mess up the list
-        let childrenList = []
+        const childrenList = []
 
-        for (let child of this.children) {
+        for (const child of this.children) {
             childrenList.push(child)
         }
 
@@ -593,35 +625,35 @@ export class Instance {
     GetDescendants() {
         let descendants = this.children
 
-        for (let child of this.children) {
+        for (const child of this.children) {
             descendants = descendants.concat(child.GetDescendants())
         }
 
         return descendants
     }
 
-    FindFirstChild(name) {
-        for (let child of this.GetChildren()) {
+    FindFirstChild(name: string) {
+        for (const child of this.GetChildren()) {
             if (child.Property("Name") == name) {
                 return child
             }
         }
     }
 
-    FindFirstDescendant(name) {
-        for (let child of this.GetDescendants()) {
+    FindFirstDescendant(name: string) {
+        for (const child of this.GetDescendants()) {
             if (child.Property("Name") == name) {
                 return child
             }
         }
     }
 
-    Child(name) {
+    Child(name: string) {
         return this.FindFirstChild(name)
     }
 
-    FindFirstChildOfClass(className) {
-        for (let child of this.children) {
+    FindFirstChildOfClass(className: string) {
+        for (const child of this.children) {
             if (child.className == className) {
                 return child
             }
@@ -629,17 +661,17 @@ export class Instance {
     }
 
     AccessoryBuildWeld() {
-        if (this.className === "Accessory") { //create accessory weld TODO: making the part0/C0 and part1/C1 accurate (0 = hat, 1 = body) would be good, probably
-            let humanoid = this.parent.FindFirstChildOfClass("Humanoid")
+        if (this.parent && this.className === "Accessory") { //create accessory weld TODO: making the part0/C0 and part1/C1 accurate (0 = hat, 1 = body) would be good, probably
+            const humanoid = this.parent.FindFirstChildOfClass("Humanoid")
 
             if (humanoid) {
-                let handle = this.FindFirstChild("Handle")
+                const handle = this.FindFirstChild("Handle")
                 if (handle) {
-                    let accessoryAttachment = handle.FindFirstChildOfClass("Attachment")
+                    const accessoryAttachment = handle.FindFirstChildOfClass("Attachment")
                     let bodyAttachment = null
-                    let bodyDescendants = this.parent.GetDescendants()
-                    for (let child of bodyDescendants) {
-                        if (child.className === "Attachment" && child.Property("Name") === accessoryAttachment.Property("Name") && child.parent && child.parent.parent === this.parent) {
+                    const bodyDescendants = this.parent.GetDescendants()
+                    for (const child of bodyDescendants) {
+                        if (child.className === "Attachment" && accessoryAttachment && child.Property("Name") === accessoryAttachment.Property("Name") && child.parent && child.parent.parent === this.parent) {
                             bodyAttachment = child
                         }
                     }
@@ -647,17 +679,21 @@ export class Instance {
                     if (!bodyAttachment) {
                         return
                     }
-
-                    if (handle.FindFirstChild("AccessoryWeld")) {
-                        handle.Child("AccessoryWeld").Destroy()
+                    if (!accessoryAttachment) {
+                        return
                     }
 
-                    let weld = new Instance("Weld")
+                    const oldAccessoryWeld = handle.FindFirstChild("AccessoryWeld")
+                    if (oldAccessoryWeld) {
+                        oldAccessoryWeld.Destroy()
+                    }
+
+                    const weld = new Instance("Weld")
 
                     weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
                     weld.addProperty(new Property("Archivable", DataType.Bool), true)
-                    weld.addProperty(new Property("C1", DataType.CFrame), accessoryAttachment.Property("CFrame").clone())
-                    weld.addProperty(new Property("C0", DataType.CFrame), bodyAttachment.Property("CFrame").clone())
+                    weld.addProperty(new Property("C1", DataType.CFrame), (accessoryAttachment.Property("CFrame") as CFrame).clone())
+                    weld.addProperty(new Property("C0", DataType.CFrame), (bodyAttachment.Property("CFrame") as CFrame).clone())
                     weld.addProperty(new Property("Part1", DataType.Referent), accessoryAttachment.parent)
                     weld.addProperty(new Property("Part0", DataType.Referent), bodyAttachment.parent)
                     weld.addProperty(new Property("Active", DataType.Bool), true)
@@ -673,24 +709,74 @@ export class Instance {
 }
 
 class INST {
-    classID //u32
-    className //string
-    objectFormat //u8
-    instanceCount //u32
-    referents //i32[]
+    classID!: number //u32
+    className!: string //string
+    objectFormat!: number //u8
+    instanceCount!: number //u32
+    referents!: number[] //i32[]
+
+    clone() {
+        const copy = new INST()
+        copy.classID = this.classID
+        copy.className = this.className
+        copy.objectFormat = this.objectFormat
+        copy.instanceCount = this.instanceCount
+        copy.referents = []
+        for (const referent of this.referents) {
+            copy.referents.push(referent)
+        }
+        return copy
+    }
 }
 
 class PROP {
-    classID //u32
-    propertyName //string
-    typeID //u8
-    values = []
+    classID!: number //u32
+    propertyName!: string //string
+    typeID!: number //u8
+    values: unknown[] = []
+
+    clone() {
+        const copy = new PROP()
+        copy.classID = this.classID
+        copy.propertyName = this.propertyName
+        copy.typeID = this.typeID
+        copy.values = []
+        for (const value of this.values) {
+            switch (this.typeID) {
+                case DataType.UDim:
+                case DataType.UDim2:
+                case DataType.Ray:
+                case DataType.Vector3:
+                case DataType.Color3:
+                case DataType.Color3uint8:
+                case DataType.CFrame:
+                    copy.values.push((value as {clone: () => unknown}).clone())
+                    break
+                default:
+                    copy.values.push(value)
+                    break
+            }
+        }
+        return copy
+    }
 }
 
 class PRNT {
     instanceCount = 0
-    childReferents = []
-    parentReferents = []
+    childReferents: number[] = []
+    parentReferents: number[] = []
+
+    clone() {
+        const copy = new PRNT()
+        copy.instanceCount = this.instanceCount
+        for (const childReferent of this.childReferents) {
+            copy.childReferents.push(childReferent)
+        }
+        for (const parentReferent of this.parentReferents) {
+            copy.parentReferents.push(parentReferent)
+        }
+        return copy
+    }
 }
 
 export class RBX {
@@ -698,10 +784,10 @@ export class RBX {
     classCount = 0 //i32
     instanceCount = 0 //i32
 
-    meta = new Map() //Map<string,string>
-    sstr = new Map() //Map<MD5,string>
-    instArray = [] //INST[]
-    propArray = [] //PROP[]
+    meta = new Map<string,string>() //Map<string,string>
+    sstr = new Map<number[],string>() //Map<MD5,string>
+    instArray: INST[] = [] //INST[]
+    propArray: PROP[] = [] //PROP[]
     prnt = new PRNT() //PRNT
 
     //not based on file format
@@ -727,8 +813,6 @@ export class RBX {
         this.propArray = []
         this.prnt = new PRNT()
 
-        this.classCount = new Map()
-
         this.classIDtoINST = new Map()
 
         this.dataModel = new Instance("DataModel")
@@ -737,514 +821,71 @@ export class RBX {
         this.dataModel.objectFormat = 0
     }
 
-    async fromOutfit(outfit) {
-        let outfitStartTime = performance.now()
-
-        let buffer = await GetAsset(`/assets/Rig${outfit.playerAvatarType}.rbxm`)
-
-        this.fromBuffer(buffer)
-        this.generateTree()
-        console.log(this)
-
-        let rig = this.dataModel.FindFirstChildOfClass("Model")
-        rig.setProperty("Name", outfit.name)
-
-        //assets
-        let assetPromises = []
-
-        for (let asset of outfit.assets) {
-            let assetTypeName = asset.assetType.name
-            assetPromises.push(new Promise(async (resolve, reject) => {
-                switch (assetTypeName) {
-                    case "TShirt":
-                    case "Shirt":
-                    case "Pants":
-                    case "Face":
-
-                    case "Hat":
-                    case "HairAccessory":
-                    case "FaceAccessory":
-                    case "NeckAccessory":
-                    case "ShoulderAccessory":
-                    case "FrontAccessory":
-                    case "BackAccessory":
-                    case "WaistAccessory":
-                    case "TShirtAccessory":
-                    case "ShirtAccessory":
-                    case "PantsAccessory":
-                    case "JacketAccessory":
-                    case "SweaterAccessory":
-                    case "ShortsAccessory":
-                    case "LeftShoeAccessory":
-                    case "RightShoeAccessory":
-                    case "DressSkirtAccessory":
-                    case "EyebrowAccessory":
-                    case "EyelashAccessory":
-                        {
-                            let headers = null
-
-                            if (outfit.playerAvatarType === AvatarType.R15 && !["TShirt","Shirt","Pants","Face"].includes(assetTypeName)) {
-                                headers = {"Roblox-AssetFormat":"avatar_meshpart_accessory"}
-                            }
-
-                            let buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + asset.id, headers)
-
-                            let clothingRBX = new RBX()
-                            try {
-                                clothingRBX.fromBuffer(buffer)
-                                clothingRBX.generateTree()
-
-                                let assetInstance = clothingRBX.dataModel.GetChildren()[0]
-                                if (assetInstance.className === "Decal") {
-                                    let rigHead = rig.FindFirstChild("Head")
-                                    if (rigHead) {
-                                        let rigFace = rigHead.FindFirstChildOfClass("Decal")
-                                        if (rigFace) {
-                                            rigFace.Destroy()
-                                        }
-
-                                        assetInstance.setParent(rigHead)
-                                    }
-                                } else {
-                                    let isLayered = false
-                                    let handle = assetInstance.FindFirstChild("Handle")
-                                    if (handle) {
-                                        isLayered = !!handle.FindFirstChildOfClass("WrapLayer")
-                                    }
-
-                                    if (!isLayered || outfit.playerAvatarType === AvatarType.R15) {
-                                        assetInstance.setParent(rig)
-                                    }
-                                }
-                            } catch (error) {
-                                console.warn(error)
-                            }
-                            
-
-                            break
-                        }
-                    case "Torso":
-                    case "LeftLeg":
-                    case "RightLeg":
-                    case "LeftArm":
-                    case "RightArm":
-                        {
-                            let buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + asset.id)
-
-                            let bodyPartRBX = new RBX()
-                            bodyPartRBX.fromBuffer(buffer)
-                            bodyPartRBX.generateTree()
-
-                            if (outfit.playerAvatarType === AvatarType.R6) {
-                                let R6Folder = bodyPartRBX.dataModel.FindFirstChild("R6")
-                                if (R6Folder) {
-                                    let characterMesh = R6Folder.FindFirstChildOfClass("CharacterMesh")
-                                    if (characterMesh) {
-                                        characterMesh.setParent(rig)
-                                    }
-                                }
-                            } else {
-                                //TODO: R15 body parts
-                                let R15Folder = bodyPartRBX.dataModel.FindFirstChild("R15ArtistIntent")
-                                if (!R15Folder || R15Folder.GetChildren().length === 0) {
-                                    R15Folder = bodyPartRBX.dataModel.FindFirstChild("R15Fixed")
-                                }
-
-                                if (R15Folder) { //TODO: make this more reliable (is this still a TODO? pretty sure i fixed it...)
-                                    let children = R15Folder.GetChildren()
-                                    for (let child of children) {
-                                        replaceBodyPart(rig, child)
-                                    }
-                                }
-                            }
-
-                            break
-                        }
-                    case "Head":
-                    case "DynamicHead":
-                        {
-                            if (outfit.playerAvatarType === AvatarType.R6) {
-                                let buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + asset.id)
-
-                                let headRBX = new RBX()
-                                headRBX.fromBuffer(buffer)
-                                headRBX.generateTree()
-
-                                let headMesh = headRBX.dataModel.FindFirstChildOfClass("SpecialMesh")
-                                if (headMesh) {
-                                    let bodyHeadMesh = rig.FindFirstChild("Head").FindFirstChildOfClass("SpecialMesh")
-                                    if (bodyHeadMesh) {
-                                        bodyHeadMesh.Destroy()
-                                    }
-
-                                    headMesh.setParent(rig.FindFirstChild("Head"))
-                                }
-                            } else {
-                                let buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + asset.id, {"Roblox-AssetFormat":"avatar_meshpart_head"})
-
-                                let ogHead = rig.FindFirstChild("Head")
-                                let ogFace = null
-
-                                if (ogHead) {
-                                    ogFace = ogHead.FindFirstChildOfClass("Decal")
-                                    ogFace.setParent(null)
-                                }
-
-                                let headRBX = new RBX()
-                                headRBX.fromBuffer(buffer)
-                                headRBX.generateTree()
-
-                                let head = headRBX.dataModel.FindFirstChildOfClass("MeshPart")
-
-                                if (head) {
-                                    replaceBodyPart(rig, head)
-                                }
-
-                                let currentHead = rig.FindFirstChild("Head")
-                                if (currentHead && ogFace) {
-                                    let currentHeadFace = currentHead.FindFirstChildOfClass("Decal")
-                                    if (currentHeadFace) {
-                                        currentHeadFace.Destroy()
-                                    }
-
-                                    ogFace.setParent(currentHead)
-                                }
-
-                                /*//TODO: make sizing accurate
-                                let head = rig.FindFirstChild("Head")
-                                head.setProperty("MeshId", headMesh.Prop("MeshId"))
-                                head.setProperty("TextureID", headMesh.Prop("TextureId"))
-
-                                console.log(head.Prop("MeshId"))
-                                let fetchStr = parseAssetString(head.Prop("MeshId"))
-
-                                let buffer = await GetAsset(fetchStr)
-                                let mesh = new FileMesh()
-                                mesh.fromBuffer(buffer)
-
-                                let meshSize = new Vector3(mesh.size[0], mesh.size[1], mesh.size[2])
-                                let originalSize = head.FindFirstChild("OriginalSize")
-                                if (originalSize) {
-                                    originalSize.setProperty("Value", meshSize)
-                                }
-                                head.setProperty("Size", meshSize)
-
-                                let scaleType = headMesh.FindFirstChild("AvatarPartScaleType")
-                                if (scaleType) {
-                                    let oldScaleType = head.FindFirstChild("AvatarPartScaleType")
-                                    if (oldScaleType) {
-                                        oldScaleType.Destroy()
-                                    }
-                                    scaleType.setParent(head)
-                                }
-
-                                for (let child of headMesh.GetChildren()) {
-                                    if (child.Prop("Name").endsWith("Attachment")) {
-                                        console.log(child)
-                                        let realChild = rig.Child("Head").FindFirstChild(child.Prop("Name"))
-                                        let ogCF = realChild.Prop("CFrame").clone()
-                                        let pos = child.Prop("Value")
-                                        ogCF.Position = [pos.X, pos.Y, pos.Z]
-                                        realChild.setProperty("CFrame", ogCF)
-
-                                        let originalPosition = realChild.FindFirstChild("OriginalPosition")
-                                        if (originalPosition) {
-                                            originalPosition.setProperty("Value", new Vector3(pos.X, pos.Y, pos.Z))
-                                        }
-                                    }
-                                }*/
-                            }
-
-                            break
-                        }
-                    default:
-                        {
-                            console.warn("Unsupported assetType: " + assetTypeName)
-                            break
-                        }
-                }
-
-                resolve()
-            }))
-        }
-
-        await Promise.all(assetPromises)
-
-        //body colors
-        let bodyColors = outfit.bodyColors
-        if (bodyColors.colorType === "BrickColor") {
-            bodyColors = bodyColors.toColor3()
-        }
-
-        //TODO: also change humanoid description and bodycolors instance
-        let limbs = [["headColor3","Head"],["torsoColor3","Torso"],["rightArmColor3","Right Arm"],["leftArmColor3", "Left Arm"],["rightLegColor3", "Right Leg"],["leftLegColor3", "Left Leg"]]
-        if (outfit.playerAvatarType === AvatarType.R15) {
-            limbs = [
-                ["headColor3","Head"],
-                ["torsoColor3","UpperTorso"],["torsoColor3","LowerTorso"],
-                ["rightArmColor3","RightUpperArm"],["rightArmColor3","RightLowerArm"],["rightArmColor3","RightHand"],
-                ["leftArmColor3","LeftUpperArm"],["leftArmColor3","LeftLowerArm"],["leftArmColor3","LeftHand"],
-                ["rightLegColor3", "RightUpperLeg"],["rightLegColor3", "RightLowerLeg"],["rightLegColor3", "RightFoot"],
-                ["leftLegColor3", "LeftUpperLeg"],["leftLegColor3", "LeftLowerLeg"],["leftLegColor3", "LeftFoot"],
-            ]
-        }
-        for (let limbData of limbs) {
-            let colorName = limbData[0]
-            let limbName = limbData[1]
-
-            let colorRGB = hexToRgb(bodyColors[colorName])
-            let color3uint8 = new Color3uint8()
-            color3uint8.R = colorRGB.r * 255
-            color3uint8.G = colorRGB.g * 255
-            color3uint8.B = colorRGB.b * 255
-
-            let limb = rig.FindFirstChild(limbName)
-            if (limb) {
-                limb.setProperty("Color", color3uint8)
-            }
-        }
-
-        //default clothing
-        if (!rig.FindFirstChildOfClass("Pants")) {
-            let minimumDeltaEBodyColorDifference = 11.4
-
-            let torsoColor = hexToRgb(bodyColors.torsoColor3)
-            let leftLegColor = hexToRgb(bodyColors.leftLegColor3)
-            let rightLegColor = hexToRgb(bodyColors.rightLegColor3)
-
-            let minDeltaE = Math.min(delta_CIEDE2000(torsoColor, leftLegColor), delta_CIEDE2000(torsoColor, rightLegColor))
-
-            console.log(minDeltaE)
-
-            if (minDeltaE <= minimumDeltaEBodyColorDifference) { //apply default clothing
-                let defaultShirtAssetIds = [
-                    855776101,
-                    855759986,
-                    855766170,
-                    855777285,
-                    855768337,
-                    855779322,
-                    855773572,
-                    855778082
-                ]
-                let defaultPantAssetIds = [
-                    867813066,
-                    867818313,
-                    867822311,
-                    867826313,
-                    867830078,
-                    867833254,
-                    867838635,
-                    867842477
-                ]
-
-                let defaultClothesIndex = Number(outfit.creatorId || 1) % defaultShirtAssetIds.length
-
-                //create default pants
-                let pants = new Instance("Pants")
-                pants.addProperty(new Property("Name", DataType.String), "Pants")
-                pants.addProperty(new Property("PantsTemplate", DataType.String), "rbxassetid://" + defaultPantAssetIds[defaultClothesIndex])
-                pants.setParent(rig)
-
-                //create default shirt
-                if (!rig.FindFirstChildOfClass("Shirt")) {
-                    let shirt = new Instance("Shirt")
-                    shirt.addProperty(new Property("Name", DataType.String), "Shirt")
-                    shirt.addProperty(new Property("ShirtTemplate", DataType.String), "rbxassetid://" + defaultShirtAssetIds[defaultClothesIndex])
-                    shirt.setParent(rig)
-                }
-            }
-        }
-
-        //apply scale
-        let scaleInfo = null
-
-        if (outfit.playerAvatarType === AvatarType.R15) {
-            scaleInfo = ScaleCharacter(rig, outfit)
-        } else {
-            let children = rig.GetChildren()
-            for (let child of children) {
-                if (child.className === "Accessory") {
-                    //BUG: Roblox scales accessories even in R6, it's also inconsistent and sometimes some accessories may not be scaled
-                    ScaleAccessory(child, new Vector3(1,1,1), new Vector3(1,1,1), null, null, rig)
-                }
-            }
-        }
-
-        //align feet with ground
-        if (scaleInfo) {
-            let hrp = rig.FindFirstChild("HumanoidRootPart")
-            let cf = hrp.Prop("CFrame").clone()
-            cf.Position[1] = scaleInfo.stepHeight + hrp.Prop("Size").Y / 2
-            hrp.setProperty("CFrame", cf)
-        }
-
-        //recalculate motor6ds
-        for (let child of rig.GetDescendants()) {
-            if (child.className === "Motor6D" || child.className === "Weld") {
-                child.setProperty("C0", child.Prop("C0"))
-            }
-        }
-
-        //scale accessories
-        /*
-        let children = rig.GetChildren()
-        console.log(children)
+    clone() { //DOES NOT COPY (DATAMODEL, classIDtoINST or treeGenerated), instead regenerate tree
+        const copy = new RBX()
+        copy.classCount = this.classCount
+        copy.instanceCount = this.instanceCount
         
-        for (let child of children) {
-            if (child.className === "Accessory") {
-                if (outfit.playerAvatarType === AvatarType.R6) {
-                    //BUG: Roblox scales accessories even in R6, it's also inconsistent and sometimes some accessories may not be scaled
-                    ScaleAccessory(child, new Vector3(1,1,1), new Vector3(1,1,1), null, null, rig)
-                } else {
-                    let bodyScale = new Vector3(outfit.scale.width, outfit.scale.height, outfit.scale.depth)
-                    let headScale = new Vector3(outfit.scale.head, outfit.scale.head, outfit.scale.head)
-
-                    //ScaleAccessory(child, bodyScale, headScale, outfit.scale.bodyType, outfit.scale.proportion, rig)
-                }
+        for (const key of this.meta.keys()) {
+            const value = this.meta.get(key)
+            if (value) {
+                copy.meta.set(key, value)
             }
         }
-        */
 
-        /*let currentAnimationIndex = 0
-
-        let animationIds = [
-            507765644, //climb
-            507772104, //dance
-            913376220, //run
-            913384386, //swim
-            913402848, //walk
-            //507766388, //idle
-            //10214311282, //https://www.roblox.com/catalog/10214406616/Frosty-Flair-Tommy-Hilfiger
-            //10714340543, //https://www.roblox.com/catalog/5917570207/Floss-Dance
-            //10714369624, //https://www.roblox.com/catalog/3696757129/Hype-Dance
-            //17684199561, //big bad wolf
-        ]
-
-        if (outfit.playerAvatarType === AvatarType.R6) {
-            animationIds = [
-                180436334, //climb
-                182436935, //dance3[0]
-                182436842, //dance2[0]
-                182435998, //dance1[0] (gangnam style)
-                180426354, //run
-            ]
-        }
-
-        let animationTracks = []
-
-        let animationPromises = []
-
-        for (let id of animationIds) {
-            animationPromises.push(new Promise((resolve, reject) => {
-                fetch("https://assetdelivery.roblox.com/v1/asset?id=" + id).then((response) => {
-                    return response.arrayBuffer()
-                }).then(buffer => {
-
-                    let rbx = new RBX()
-                    rbx.fromBuffer(buffer)
-                    console.log(rbx.generateTree())
-
-                    let animationTrack = new AnimationTrack()
-                    animationTrack.loadAnimation(rig, rbx.dataModel.GetChildren()[0])
-                    animationTrack.looped = true
-                    animationTracks.push(animationTrack)
-                    
-                    console.log(animationTrack)
-
-                    resolve()
-                })
-            }))
-        }
-
-        let animationTotalTime = 5
-        let animationTransitionTime = 0.5
-
-        Promise.all(animationPromises).then(() => {
-            function updateTrack(startTime, lastAnimationSwitch) {
-                let nextAnimationIndex = (currentAnimationIndex + 1) % animationIds.length
-
-                let animationTrack = animationTracks[currentAnimationIndex]
-                let nextAnimationTrack = animationTracks[nextAnimationIndex]
-
-                let newTime = performance.now() / 1000
-
-                let playedTime = newTime - lastAnimationSwitch
-                let firstHalfTime = animationTotalTime - animationTransitionTime
-
-                nextAnimationTrack.weight = Math.max(0, playedTime - firstHalfTime) / animationTransitionTime
-                animationTrack.weight = 1 - nextAnimationTrack.weight
-                nextAnimationTrack.weight *= 1
-                animationTrack.weight *= 1
-                
-                //console.log("----")
-                //console.log(animationTrack.weight)
-                animationTrack.resetMotorTransforms()
-                animationTrack.setTime((newTime - startTime))
-                nextAnimationTrack.setTime((newTime - startTime))
-
-                //recalculate motor6ds
-                for (let child of rig.GetDescendants()) {
-                    if (child.className === "Motor6D") {
-                        child.setProperty("Transform", child.Prop("Transform"))
-                    } else if (child.className === "Weld") {
-                        child.setProperty("C0", child.Prop("C0"))
-                    }
-                }
-
-                if (newTime - lastAnimationSwitch > animationTotalTime) {
-                    currentAnimationIndex++
-                    currentAnimationIndex = currentAnimationIndex % animationIds.length
-                    lastAnimationSwitch = performance.now() / 1000
-                }
-
-                setTimeout(() => {
-                    updateTrack(startTime, lastAnimationSwitch)
-                }, 1000 / 60 - 1)
+        for (const key of this.sstr.keys()) {
+            const value = this.sstr.get(key)
+            if (value) {
+                copy.sstr.set(key, value)
             }
+        }
 
-            let lastAnimationSwitch = performance.now() / 1000
-            updateTrack(performance.now() / 1000, lastAnimationSwitch)
-        })*/
+        for (const inst of this.instArray) {
+            copy.instArray.push(inst.clone())
+        }
 
-        console.log(`Loaded outfit after ${performance.now() - outfitStartTime}`)
-        console.log(this)
-        return this
+        for (const prop of this.propArray) {
+            copy.propArray.push(prop.clone())
+        }
+
+        copy.prnt = this.prnt.clone()
+
+        return copy
     }
 
-    readMETA(chunkView) {
-        let entriesCount = chunkView.readUint32()
+    readMETA(chunkView: RBXSimpleView) {
+        const entriesCount = chunkView.readUint32()
         for (let i = 0; i < entriesCount; i++) {
-            let metaKey = chunkView.readUtf8String()
-            let metaValue = chunkView.readUtf8String()
+            const metaKey = chunkView.readUtf8String()
+            const metaValue = chunkView.readUtf8String()
 
             this.meta.set(metaKey, metaValue)
         }
     }
 
-    readSSTR(chunkView) {
-        let version = chunkView.readUint32() //always 0
+    readSSTR(chunkView: RBXSimpleView) {
+        const version = chunkView.readUint32() //always 0
         if (version !== 0) {
             throw new Error("Unexpected SSTR version")
         }
 
-        let sharedStringCount = chunkView.readUint32()
+        const sharedStringCount = chunkView.readUint32()
         for (let i = 0; i < sharedStringCount; i++) {
-            let md5 = [chunkView.readUint32(), chunkView.readUint32(), chunkView.readUint32(), chunkView.readUint32()]
-            let str = chunkView.readUtf8String()
+            const md5 = [chunkView.readUint32(), chunkView.readUint32(), chunkView.readUint32(), chunkView.readUint32()]
+            const str = chunkView.readUtf8String()
 
             this.sstr.set(md5, str)
         }
     }
 
-    readINST(chunkView) {
-        let inst = new INST()
+    readINST(chunkView: RBXSimpleView) {
+        const inst = new INST()
 
         inst.classID = chunkView.readUint32()
         inst.className = chunkView.readUtf8String()
         inst.objectFormat = chunkView.readUint8()
         inst.instanceCount = chunkView.readUint32()
-        let referents = readReferents(inst.instanceCount, chunkView)
+        const referents = readReferents(inst.instanceCount, chunkView)
         inst.referents = referents
         //servicemarkes could be read here but is useless and a waste of time
 
@@ -1252,14 +893,14 @@ export class RBX {
         this.classIDtoINST.set(inst.classID, inst)
     }
 
-    readPROP(chunkView) {
-        let prop = new PROP()
+    readPROP(chunkView: RBXSimpleView) {
+        const prop = new PROP()
         prop.classID = chunkView.readUint32()
         prop.propertyName = chunkView.readUtf8String()
         prop.typeID = chunkView.readUint8()
 
         //read values
-        let valuesLength = this.classIDtoINST.get(prop.classID).instanceCount
+        const valuesLength = this.classIDtoINST.get(prop.classID).instanceCount
 
         switch (prop.typeID) {
             case DataType.String:
@@ -1280,7 +921,7 @@ export class RBX {
                 }
             case DataType.Int32:
                 {
-                    let nums = chunkView.readInterleaved32(valuesLength, false)
+                    const nums = chunkView.readInterleaved32(valuesLength, false) as number[]
                     //untransform
                     for (let i = 0; i < nums.length; i++) {
                         nums[i] = untransformInt32(nums[i])
@@ -1291,7 +932,7 @@ export class RBX {
                 }
             case DataType.Float32:
                 {
-                    let nums = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
+                    const nums = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
                     
                     for (let i = 0; i < nums.length; i++) {
                         prop.values.push(nums[i])
@@ -1308,11 +949,11 @@ export class RBX {
                 }
             case DataType.UDim:
                 {
-                    let scales = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let offsets = chunkView.readInterleaved32(valuesLength, false)
+                    const scales = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const offsets = chunkView.readInterleaved32(valuesLength, false) as number[]
 
                     for (let i = 0; i < valuesLength; i++) {
-                        let udim = new UDim()
+                        const udim = new UDim()
                         udim.Scale = scales[i]
                         udim.Offset = untransformInt32(offsets[i])
                         prop.values.push(udim)
@@ -1322,13 +963,13 @@ export class RBX {
                 }
             case DataType.UDim2:
                 {
-                    let scalesX = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let scalesY = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let offsetsX = chunkView.readInterleaved32(valuesLength, false)
-                    let offsetsY = chunkView.readInterleaved32(valuesLength, false)
+                    const scalesX = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const scalesY = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const offsetsX = chunkView.readInterleaved32(valuesLength, false) as number[]
+                    const offsetsY = chunkView.readInterleaved32(valuesLength, false) as number[]
 
                     for (let i = 0; i < valuesLength; i++) {
-                        let udim = new UDim2()
+                        const udim = new UDim2()
                         udim.X.Scale = scalesX[i]
                         udim.Y.Scale = scalesY[i]
                         udim.X.Offset = untransformInt32(offsetsX[i])
@@ -1341,7 +982,7 @@ export class RBX {
             case DataType.Ray: //TODO: NOT TESTED
                 {
                     for (let i = 0; i < valuesLength; i++) {
-                        let ray = new Ray()
+                        const ray = new Ray()
                         ray.Origin = [chunkView.readNormalFloat32(), chunkView.readNormalFloat32(), chunkView.readNormalFloat32()]
                         ray.Direction = [chunkView.readNormalFloat32(), chunkView.readNormalFloat32(), chunkView.readNormalFloat32()]
                         prop.values.push(ray)
@@ -1350,20 +991,20 @@ export class RBX {
                 }
             case DataType.BrickColor:
                 {
-                    let values = chunkView.readInterleaved32(valuesLength, false, "readUint32")
-                    for (let value of values) {
+                    const values = chunkView.readInterleaved32(valuesLength, false, "readUint32")
+                    for (const value of values) {
                         prop.values.push(value)
                     }
                     break
                 }
             case DataType.Color3: //TODO: NOT TESTED
                 {
-                    let xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let zValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
+                    const xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const zValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
 
                     for (let i = 0; i < valuesLength; i++) {
-                        let vector3 = new Color3()
+                        const vector3 = new Color3()
                         vector3.R = xValues[i]
                         vector3.G = yValues[i]
                         vector3.B = zValues[i]
@@ -1373,12 +1014,12 @@ export class RBX {
                 }
             case DataType.Vector3:
                 {
-                    let xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let zValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
+                    const xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const zValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
 
                     for (let i = 0; i < valuesLength; i++) {
-                        let vector3 = new Vector3()
+                        const vector3 = new Vector3()
                         vector3.X = xValues[i]
                         vector3.Y = yValues[i]
                         vector3.Z = zValues[i]
@@ -1388,14 +1029,14 @@ export class RBX {
                 }
             case DataType.CFrame:
                 {
-                    let cframes = []
+                    const cframes = []
 
                     for (let i = 0; i < valuesLength; i++) { //rotation array
-                        let cframe = new CFrame()
+                        const cframe = new CFrame()
 
-                        let id = chunkView.readUint8()
+                        const id = chunkView.readUint8()
                         if (id === 0) {
-                            let matrix = new Array(9)
+                            const matrix = new Array(9)
                             for (let x = 0; x < 3; x++) {
                                 for (let y = 0; y < 3; y++) {
                                     matrix[x + y*3] = chunkView.readNormalFloat32()
@@ -1405,7 +1046,7 @@ export class RBX {
                             cframe.Orientation = rotationMatrixToEulerAngles(matrix)
                             //cframe.Orientation[3] = matrix
                         } else {
-                            cframe.Orientation = { //TODO: double check this
+                            const orientationTable: {[K in number]: Vec3} = { //TODO: double check this
                                 0x02: [0, 0, 0],
                                 0x14: [0, 180, 0],
                                 0x03: [90, 0, 0],
@@ -1430,15 +1071,17 @@ export class RBX {
                                 0x22: [-90, 90, 0],
                                 0x11: [0, 90, 180],
                                 0x23: [0, -90, 180],
-                            }[id]
+                            }
+
+                            cframe.Orientation = orientationTable[id]
                         }
 
                         cframes.push(cframe)
                     }
 
-                    let xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
-                    let zValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32")
+                    const xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const zValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
 
                     for (let i = 0; i < valuesLength; i++) {
                         cframes[i].Position = [xValues[i], yValues[i], zValues[i]]
@@ -1448,26 +1091,26 @@ export class RBX {
                 }
             case DataType.Enum: //TODO: NOT TESTED
                 {
-                    let values = chunkView.readInterleaved32(valuesLength, false, "readUint32")
+                    const values = chunkView.readInterleaved32(valuesLength, false, "readUint32") as number[]
 
-                    for (let val of values) {
+                    for (const val of values) {
                         prop.values.push(val)
                     }
                     break
                 }
             case DataType.Referent: //Note: Referents become native references when tree is generated
                 {
-                    let referents = readReferents(valuesLength, chunkView)
+                    const referents = readReferents(valuesLength, chunkView)
 
-                    for (let referent of referents) {
+                    for (const referent of referents) {
                         prop.values.push(referent)
                     }
                     break
                 }
             case DataType.Color3uint8: //TODO: NOT TESTED
                 {
-                    let rs = []
-                    let gs = []
+                    const rs = []
+                    const gs = []
 
                     for (let i = 0; i < valuesLength; i++) {
                         rs.push(chunkView.readUint8())
@@ -1476,7 +1119,7 @@ export class RBX {
                         gs.push(chunkView.readUint8())
                     }
                     for (let i = 0; i < valuesLength; i++) {
-                        let color = new Color3uint8()
+                        const color = new Color3uint8()
                         color.R = rs[i]
                         color.G = gs[i]
                         color.B = chunkView.readUint8()
@@ -1487,7 +1130,7 @@ export class RBX {
                 }
             case DataType.Int64:
                 {
-                    let nums = chunkView.readInterleaved32(valuesLength, false, "readInt64", 8)
+                    const nums = chunkView.readInterleaved32(valuesLength, false, "readInt64", 8) as bigint[]
                     //untransform
                     for (let i = 0; i < nums.length; i++) {
                         nums[i] = untransformInt64(nums[i])
@@ -1505,13 +1148,13 @@ export class RBX {
         //}
     }
 
-    readPRNT(chunkView) {
-        let version = chunkView.readUint8()
+    readPRNT(chunkView: RBXSimpleView) {
+        const version = chunkView.readUint8()
         if (version !== 0) {
             throw new Error("Unexpected PRNT version")
         }
 
-        let prnt = new PRNT()
+        const prnt = new PRNT()
 
         prnt.instanceCount = chunkView.readUint32()
         prnt.childReferents = readReferents(prnt.instanceCount, chunkView)
@@ -1519,22 +1162,22 @@ export class RBX {
         this.prnt = prnt
     }
 
-    getChunkBuffer(view, compressedLength, uncompressedLength) {
+    getChunkBuffer(view: RBXSimpleView, compressedLength: number, uncompressedLength: number) {
         //compressed
         if (compressedLength !== 0) {
-            let isZSTD = view.readUint32() == 4247762216
+            const isZSTD = view.readUint32() == 4247762216
             view.viewOffset -= 4
-            let isLZ4 = !isZSTD
+            const isLZ4 = !isZSTD
 
             if (isZSTD) { //ZSTD
                 throw new Error("Compressed data is ZSTD") //TODO: implement
             } else if (isLZ4) { //LZ4
-                let uncompressed = Buffer.alloc(uncompressedLength)
+                const uncompressed = Buffer.alloc(uncompressedLength)
 
-                let compressedByteArray = view.buffer.slice(view.viewOffset, view.viewOffset + compressedLength)
-                let compressedIntArray = new Uint8Array(compressedByteArray)
+                const compressedByteArray = view.buffer.slice(view.viewOffset, view.viewOffset + compressedLength)
+                const compressedIntArray = new Uint8Array(compressedByteArray) as Buffer<ArrayBufferLike>
 
-                let uncompressedSize = LZ4.decodeBlock(compressedIntArray, uncompressed)
+                /*const uncompressedSize = */LZ4.decodeBlock(compressedIntArray, uncompressed)
                 
                 return uncompressed.buffer
             }
@@ -1544,33 +1187,37 @@ export class RBX {
         return view.buffer.slice(view.viewOffset, view.viewOffset + uncompressedLength)
     }
 
-    addItem(item, itemParent) {
-        let instance = new Instance(item.getAttribute("class"))
+    addItem(item: Element, itemParent?: Instance) {
+        const instance = new Instance(item.getAttribute("class") || "null")
 
-        let properties = item.querySelectorAll(":scope > Properties > *")
-        for (let propertyNode of properties) {
+        const properties = item.querySelectorAll(":scope > Properties > *")
+        for (const propertyNode of properties) {
             switch (propertyNode.nodeName) {
                 case "Content":
                     {
-                        let property = new Property()
-                        property.name = propertyNode.getAttribute("name")
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
                         property.typeID = DataType.String
 
                         instance.addProperty(property)
 
-                        let childElement = propertyNode.querySelector(":scope > *")
+                        const childElement = propertyNode.querySelector(":scope > *")
 
-                        if (childElement.nodeName === "null") {
-                            instance.setProperty(property.name, "")
+                        if (childElement) {
+                            if (childElement.nodeName === "null") {
+                                instance.setProperty(property.name, "")
+                            } else {
+                                instance.setProperty(property.name, childElement.textContent)
+                            }
                         } else {
-                            instance.setProperty(property.name, childElement.textContent)
+                            instance.setProperty(property.name, "")
                         }
                         break
                     }
                 case "string":
                     {
-                        let property = new Property()
-                        property.name = propertyNode.getAttribute("name")
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
                         property.typeID = DataType.String
 
                         instance.addProperty(property)
@@ -1579,8 +1226,8 @@ export class RBX {
                     }
                 case "bool":
                     {
-                        let property = new Property()
-                        property.name = propertyNode.getAttribute("name")
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
                         property.typeID = DataType.String
 
                         instance.addProperty(property)
@@ -1589,22 +1236,22 @@ export class RBX {
                     }
                 case "CoordinateFrame":
                     {
-                        let property = new Property()
-                        property.name = propertyNode.getAttribute("name")
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
                         property.typeID = DataType.CFrame
 
                         instance.addProperty(property)
 
-                        let cframeDesc = {}
+                        const cframeDesc: {[K in string]: number} = {}
 
-                        let childElements = propertyNode.querySelectorAll(":scope > *")
+                        const childElements = propertyNode.querySelectorAll(":scope > *")
 
-                        let cframe = new CFrame()
-                        for (let element of childElements) {
+                        const cframe = new CFrame()
+                        for (const element of childElements) {
                             cframeDesc[element.nodeName] = Number(element.textContent)
                         }
 
-                        let matrix = new Array(9)
+                        const matrix = new Array(9)
                         let i = 0
                         for (let x = 0; x < 3; x++) {
                             for (let y = 0; y < 3; y++) {
@@ -1632,17 +1279,17 @@ export class RBX {
                     }
                 case "Vector3":
                     {
-                        let property = new Property()
-                        property.name = propertyNode.getAttribute("name")
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
                         property.typeID = DataType.Vector3
 
                         instance.addProperty(property)
 
-                        let childElements = propertyNode.querySelectorAll(":scope > *")
+                        const childElements = propertyNode.querySelectorAll(":scope > *")
 
-                        let position = new Vector3()
-                        for (let element of childElements) {
-                            position[element.nodeName] = Number(element.textContent)
+                        const position = new Vector3()
+                        for (const element of childElements) {
+                            position[element.nodeName as ("X" | "Y" | "Z")] = Number(element.textContent)
                         }
 
                         instance.setProperty(property.name, position)
@@ -1651,8 +1298,8 @@ export class RBX {
                     }
                 case "token":
                     {
-                        let property = new Property()
-                        property.name = propertyNode.getAttribute("name")
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
                         property.typeID = DataType.Enum
 
                         instance.addProperty(property)
@@ -1662,15 +1309,15 @@ export class RBX {
                     }
                 case "Color3uint8":
                     {
-                        let color3uint8 = new Color3uint8()
+                        const color3uint8 = new Color3uint8()
 
-                        let intColor = Number(propertyNode.textContent)
-                        let colorRGB = intToRgb(intColor)
+                        const intColor = Number(propertyNode.textContent)
+                        const colorRGB = intToRgb(intColor)
                         color3uint8.R = colorRGB.R
                         color3uint8.G = colorRGB.G
                         color3uint8.B = colorRGB.B
 
-                        instance.addProperty(new Property(propertyNode.getAttribute("name"), DataType.Color3uint8), color3uint8)
+                        instance.addProperty(new Property(propertyNode.getAttribute("name") || "null", DataType.Color3uint8), color3uint8)
                         break
                     }
             }
@@ -1685,19 +1332,21 @@ export class RBX {
         return instance
     }
 
-    fromXML(xml) { //TODO: figure out how to do this accurately https://dom.rojo.space/xml.html
+    fromXML(xml: Document) { //TODO: figure out how to do this accurately https://dom.rojo.space/xml.html
         console.warn("Parsing RBX xml file, the result may not be accurate")
         //console.log(xml)
 
-        let currentItems = xml.querySelectorAll(":scope > Item")
-        while (currentItems.length > 0) {
-            let newCurrentItems = []
+        const itemParentMap = new Map<Element,Instance>()
 
-            for (let item of currentItems) {
-                let instance = this.addItem(item, item.itemParent)
-                let itemChildren = item.querySelectorAll(":scope > Item")
-                for (let itemChild of itemChildren) {
-                    itemChild.itemParent = instance
+        let currentItems: Element[] | NodeListOf<Element> = xml.querySelectorAll(":scope > Item")
+        while (currentItems.length > 0) {
+            const newCurrentItems = []
+
+            for (const item of currentItems) {
+                const instance = this.addItem(item, itemParentMap.get(item))
+                const itemChildren = item.querySelectorAll(":scope > Item")
+                for (const itemChild of itemChildren) {
+                    itemParentMap.set(itemChild, instance)
                     newCurrentItems.push(itemChild)
                 }
             }
@@ -1708,19 +1357,19 @@ export class RBX {
         this.treeGenerated = true
     }
 
-    fromBuffer(buffer) {
+    fromBuffer(buffer: ArrayBuffer) {
         this.reset()
 
-        let view = new RBXSimpleView(buffer)
+        const view = new RBXSimpleView(buffer)
 
         // FILE HEADER
 
         //verify magic
-        let readMagic = view.readUtf8String(magic.length)
+        const readMagic = view.readUtf8String(magic.length)
         if (readMagic !== magic) {
             if (readMagic === xmlMagic) {
-                let xmlString = new TextDecoder("utf-8").decode(buffer)
-                let xml = new DOMParser().parseFromString(xmlString, "text/xml")
+                const xmlString = new TextDecoder("utf-8").decode(buffer)
+                const xml = new DOMParser().parseFromString(xmlString, "text/xml")
                 this.fromXML(xml)
                 return
             } else {
@@ -1747,17 +1396,17 @@ export class RBX {
         let timeout = 0
         let foundEnd = false
         while (!foundEnd) {
-            let chunkName = view.readUtf8String(4)
-            let compressedLength = view.readUint32()
-            let uncompressedLength = view.readUint32()
+            const chunkName = view.readUtf8String(4)
+            const compressedLength = view.readUint32()
+            const uncompressedLength = view.readUint32()
 
             view.viewOffset += 4 //skip unused
 
-            let chunkBuffer = this.getChunkBuffer(view, compressedLength, uncompressedLength)
+            const chunkBuffer = this.getChunkBuffer(view, compressedLength, uncompressedLength)
 
             view.lock()
 
-            let chunkView = new RBXSimpleView(chunkBuffer)
+            const chunkView = new RBXSimpleView(chunkBuffer)
 
             //console.log(`CHUNK: ${chunkName}, USIZE: ${uncompressedLength}, CSIZE: ${compressedLength}`)
             //console.log(chunkBuffer)
@@ -1813,8 +1462,8 @@ export class RBX {
         }
     }
 
-    async fromAssetId(id) { //Return: dataModel | null
-        let buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + id)
+    /*async fromAssetId(id: number) { //Return: dataModel | null
+        const buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + id)
 
         this.fromBuffer(buffer)
         this.generateTree()
@@ -1822,7 +1471,7 @@ export class RBX {
         return this.dataModel
         
         return null
-    }
+    }*/
 
     generateTree() {
         if (this.treeGenerated) {
@@ -1830,12 +1479,12 @@ export class RBX {
             return
         }
 
-        let referentToInstance = new Map() //<referent,instance>
+        const referentToInstance = new Map() //<referent,instance>
 
         //instances
-        for (let inst of this.instArray) {
+        for (const inst of this.instArray) {
             for (let i = 0; i < inst.instanceCount; i++) {
-                let instance = new Instance(inst.className)
+                const instance = new Instance(inst.className)
                 instance.classID = inst.classID
                 instance.objectFormat = inst.objectFormat
 
@@ -1847,13 +1496,13 @@ export class RBX {
         }
 
         //properties
-        for (let prop of this.propArray) {
-            let inst = this.classIDtoINST.get(prop.classID)
+        for (const prop of this.propArray) {
+            const inst = this.classIDtoINST.get(prop.classID)
             for (let i = 0; i < inst.referents.length; i++) {
-                let referent = inst.referents[i]
-                let instance = referentToInstance.get(referent)
+                const referent = inst.referents[i]
+                const instance = referentToInstance.get(referent)
 
-                let property = new Property()
+                const property = new Property()
                 property.name = prop.propertyName
                 property.typeID = prop.typeID
                 
@@ -1861,7 +1510,7 @@ export class RBX {
                 switch (property.typeID) {
                     case DataType.Referent:
                         {
-                            let referenced = referentToInstance.get(prop.values[i])
+                            const referenced = referentToInstance.get(prop.values[i])
                             instance.setProperty(property.name, referenced)
                             break
                         }
@@ -1881,11 +1530,11 @@ export class RBX {
 
         //hierarchy
         for (let i = 0; i < this.prnt.instanceCount; i++) {
-            let childReferent = this.prnt.childReferents[i]
-            let parentReferent = this.prnt.parentReferents[i]
+            const childReferent = this.prnt.childReferents[i]
+            const parentReferent = this.prnt.parentReferents[i]
 
-            let child = referentToInstance.get(childReferent)
-            let parent = referentToInstance.get(parentReferent)
+            const child = referentToInstance.get(childReferent)
+            const parent = referentToInstance.get(parentReferent)
 
             if (!child) {
                 console.warn(`Child with referent ${childReferent} does not exist`)
@@ -1991,5 +1640,3 @@ fetch("https://assetdelivery.roblox.com/v1/asset?id=70794461472608").then((respo
     }
 })
 */
-
-export { ScaleCharacter, ScaleAccessory }

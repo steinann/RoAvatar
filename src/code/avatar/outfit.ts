@@ -773,7 +773,6 @@ class Outfit {
     }*/
 
     /*async getPurchaseInfo(auth: Authentication, userInfo: { id: number; }, ignoreOwned: boolean) { //RETURN: {purchaseInfos: purchaseInfo[], failedAssets[]: {id: Number, isOwned: boolean}}
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const outfit = this
 
         return new Promise((resolve) => {

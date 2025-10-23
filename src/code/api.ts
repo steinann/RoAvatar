@@ -3,6 +3,8 @@ import { Outfit } from "./avatar/outfit"
 import { browserCookiesGet } from "./browser"
 import { BODYCOLOR3 } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
+import { FileMesh } from "./rblx/mesh"
+import { RBX } from "./rblx/rbx"
 
 class Authentication {
     ROBLOSECURITY?: string
@@ -99,7 +101,7 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function RBLXGet(url: string, auth: Authentication, headers?: any): Promise<Response> {
+async function RBLXGet(url: string, auth?: Authentication, headers?: any): Promise<Response> {
     let robloxSecurityCookie = undefined
 
     if (auth) {
@@ -139,6 +141,36 @@ async function RBLXGet(url: string, auth: Authentication, headers?: any): Promis
 /*async function RBLXPatch(url: string, auth: Authentication, body: any, attempt = 0): Promise<Response> {
     return RBLXPost(url, auth, body, attempt, "PATCH")
 }*/
+
+function idFromStr(str: string) {
+    const numStrs = str.match(/\d+(\.\d+)?/g) || []
+    return numStrs.length > 0 ? Number(numStrs[numStrs.length - 1]) : NaN
+}
+
+function parseAssetString(str: string) {
+    if (!isNaN(Number(str))) {
+        return `https://assetdelivery.roblox.com/v1/asset?id=${str}`
+    } else if (str.startsWith("rbxassetid://")) {
+        return `https://assetdelivery.roblox.com/v1/asset?id=${str.slice(13)}`
+    } else if (str.startsWith("rbxasset://")) {
+        str = str.replaceAll("\\","/")
+        return "/assets/rbxasset/" + str.slice(11)
+    } else if (str.includes("roblox.com/asset")) { //i am tired of the 1 million variants of https://www.roblox.com/asset/?id=
+        return `https://assetdelivery.roblox.com/v1/asset?id=${idFromStr(str)}`
+    } else if (str.startsWith("https://assetdelivery.roblox.com/v1/asset/?id=")) {
+        return `https://assetdelivery.roblox.com/v1/asset?id=${str.slice(46)}`
+    } else if (str.includes("assetdelivery.roblox.com")) {
+        return `https://assetdelivery.roblox.com/v1/asset?id=${idFromStr(str)}`
+    } else {
+        console.warn(`Failed to parse path of ${str}`)
+    }
+}
+
+const CACHE = {
+    "AssetBuffer": new Map<string,ArrayBuffer>(),
+    "RBX": new Map<string,RBX>(),
+    "Mesh": new Map<string,FileMesh>()
+}
 
 const API = {
     "Auth": {
@@ -186,7 +218,7 @@ const API = {
         }
     },
     "Avatar": {
-        WearOutfit: async function(auth: Authentication, outfit: Outfit, onlyItems: boolean) {
+        WearOutfit: async function(auth: Authentication, outfit: Outfit, onlyItems: boolean): Promise<boolean> {
             return new Promise((returnResolve) => {
                 const promises: Promise<Response>[] = []
 
@@ -278,7 +310,79 @@ const API = {
 
                 return outfit
             } else {
-                return null
+                return response
+            }
+        }
+    },
+    "Asset": {
+        GetAssetBuffer: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
+            const fetchStr = parseAssetString(url) || url
+
+            let cacheStr = fetchStr
+            if (headers) {
+                cacheStr += JSON.stringify(headers)
+            }
+
+            const cachedBuffer = CACHE.AssetBuffer.get(cacheStr)
+            if (cachedBuffer) {
+                return cachedBuffer
+            } else {
+                const response = await RBLXGet(fetchStr, auth, headers)
+                if (response.status === 200) {
+                    const data = await response.arrayBuffer()
+                    CACHE.AssetBuffer.set(cacheStr, data)
+                    return data
+                } else {
+                    return response
+                }
+            }
+        },
+        GetRBX: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
+            const fetchStr = parseAssetString(url) || url
+
+            let cacheStr = fetchStr
+            if (headers) {
+                cacheStr += JSON.stringify(headers)
+            }
+
+            const cachedRBX = CACHE.RBX.get(cacheStr)
+            if (cachedRBX) {
+                return cachedRBX.clone()
+            } else {
+                const response = await this.GetAssetBuffer(fetchStr, headers, auth)
+                if (response instanceof ArrayBuffer) {
+                    const buffer = response
+                    const rbx = new RBX()
+                    rbx.fromBuffer(buffer)
+                    CACHE.RBX.set(cacheStr, rbx.clone())
+                    return rbx
+                } else {
+                    return response
+                }
+            }
+        },
+        GetMesh: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
+            const fetchStr = parseAssetString(url) || url
+
+            let cacheStr = fetchStr
+            if (headers) {
+                cacheStr += JSON.stringify(headers)
+            }
+
+            const cachedMesh = CACHE.Mesh.get(cacheStr)
+            if (cachedMesh) {
+                return cachedMesh.clone()
+            } else {
+                const response = await this.GetAssetBuffer(fetchStr, headers, auth)
+                if (response instanceof ArrayBuffer) {
+                    const buffer = response
+                    const mesh = new FileMesh()
+                    mesh.fromBuffer(buffer)
+                    CACHE.Mesh.set(cacheStr, mesh.clone())
+                    return mesh
+                } else {
+                    return response
+                }
             }
         }
     }

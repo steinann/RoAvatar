@@ -40,7 +40,7 @@ export default class RBXSimpleView {
         }
     }
 
-    readUtf8String(stringLength: number) {
+    readUtf8String(stringLength?: number) {
         this.lockCheck()
 
         if (!stringLength) {
@@ -132,7 +132,7 @@ export default class RBXSimpleView {
         return value
     }
     
-    readInterleaved32(length: number, littleEndian = true, readFunc = "readInt32", byteOffset = 4) {
+    readInterleaved32(length: number, littleEndian = true, readFunc = "readInt32", byteOffset = 4): number[] | bigint[] {
         this.lockCheck()
 
         length *= byteOffset

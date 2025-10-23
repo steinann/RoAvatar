@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { CFrame, Instance } from '../rblx/rbx';
+import { deg, lerp, rad } from '../misc/misc';
+import type { Vec3 } from '../rblx/mesh';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -37,7 +40,7 @@ function easeLinear(x: number) {
 
 //constant
 function easeConstant(x: number) {
-    return 0
+    return x * 0 //I cant just return 0 because the linter gets angry
 }
 
 //elastic
@@ -142,7 +145,7 @@ const EasingFunctionMap = {
 
 //HELPER FUNCTIONS
 function getEasingFunction(easingDirection: number, easingStyle: number) {
-    let func = EasingFunctionMap[easingDirection][easingStyle]
+    const func = EasingFunctionMap[easingDirection][easingStyle]
     if (!func) {
         throw new Error(`No function equivalent for easingStyle: ${easingStyle}`)
     }
@@ -150,66 +153,71 @@ function getEasingFunction(easingDirection: number, easingStyle: number) {
     return func
 }
 
-function animPriorityToNum(animationPriority: number) { //larger number has larger priority, unlike the enums
+/*function animPriorityToNum(animationPriority: number) { //larger number has larger priority, unlike the enums
     if (animationPriority === 1000) {
         return -1
     }
 
     return animationPriority
-}
+}*/
 
-function lerpCFrame(oldCFrame, newCFrame, easedTime) {
-    let oldPos = oldCFrame.Position
-    let oldRot = oldCFrame.Orientation
+function lerpCFrame(oldCFrame: CFrame, newCFrame: CFrame, easedTime: number) {
+    const oldPos = oldCFrame.Position
+    const oldRot = oldCFrame.Orientation
 
-    let newPos = newCFrame.Position
-    let newRot = newCFrame.Orientation
+    const newPos = newCFrame.Position
+    const newRot = newCFrame.Orientation
 
-    let oldEuler = new THREE.Euler(rad(oldRot[0]), rad(oldRot[1]), rad(oldRot[2]), "YXZ")
-    let oldQuat = new THREE.Quaternion().setFromEuler(oldEuler)
+    const oldEuler = new THREE.Euler(rad(oldRot[0]), rad(oldRot[1]), rad(oldRot[2]), "YXZ")
+    const oldQuat = new THREE.Quaternion().setFromEuler(oldEuler)
 
-    let newEuler = new THREE.Euler(rad(newRot[0]), rad(newRot[1]), rad(newRot[2]), "YXZ")
-    let newQuat = new THREE.Quaternion().setFromEuler(newEuler)
+    const newEuler = new THREE.Euler(rad(newRot[0]), rad(newRot[1]), rad(newRot[2]), "YXZ")
+    const newQuat = new THREE.Quaternion().setFromEuler(newEuler)
     
-    let resultQuat = oldQuat.slerp(newQuat, easedTime)
-    let resultEuler = new THREE.Euler().setFromQuaternion(resultQuat, "YXZ")
-    let resultOrientation = [deg(resultEuler.x), deg(resultEuler.y), deg(resultEuler.z)]
+    const resultQuat = oldQuat.slerp(newQuat, easedTime)
+    const resultEuler = new THREE.Euler().setFromQuaternion(resultQuat, "YXZ")
+    const resultOrientation: Vec3 = [deg(resultEuler.x), deg(resultEuler.y), deg(resultEuler.z)]
 
-    let resultX = lerp(oldPos[0], newPos[0], easedTime)
-    let resultY = lerp(oldPos[1], newPos[1], easedTime)
-    let resultZ = lerp(oldPos[2], newPos[2], easedTime)
+    const resultX = lerp(oldPos[0], newPos[0], easedTime)
+    const resultY = lerp(oldPos[1], newPos[1], easedTime)
+    const resultZ = lerp(oldPos[2], newPos[2], easedTime)
 
-    let resultCFrame = new CFrame(resultX, resultY, resultZ)
+    const resultCFrame = new CFrame(resultX, resultY, resultZ)
     resultCFrame.Orientation = resultOrientation
 
     return resultCFrame
 }
 
-function weightCFrame(cf, weight) {
+/*function weightCFrame(cf: CFrame, weight: number) {
     cf = cf.clone()
     cf.Position = [cf.Position[0] * weight, cf.Position[1] * weight, cf.Position[2] * weight]
     cf.Orientation = [cf.Orientation[0] * weight, cf.Orientation[1] * weight, cf.Orientation[2] * weight]
 
     return cf
-}
+}*/
 
 class PartKeyframe {
-    time
-    cframe
+    time: number
+    cframe: CFrame
     easingDirection = EasingDirection.In
     easingStyle = PoseEasingStyle.Linear
+
+    constructor(time: number, cframe: CFrame) {
+        this.time = time
+        this.cframe = cframe
+    }
 }
 
 class PartKeyframeGroup {
     motorParent = "LowerTorso"
     motorName = "Root"
 
-    keyframes = []
+    keyframes: PartKeyframe[] = []
 
-    getLowerKeyframe(time) {
+    getLowerKeyframe(time: number) {
         let resultKeyframe = null
 
-        for (let keyframe of this.keyframes) {
+        for (const keyframe of this.keyframes) {
             if (keyframe.time <= time) {
                 resultKeyframe = keyframe
             } else {
@@ -220,8 +228,8 @@ class PartKeyframeGroup {
         return resultKeyframe
     }
 
-    getHigherKeyframe(time) {
-        for (let keyframe of this.keyframes) {
+    getHigherKeyframe(time: number) {
+        for (const keyframe of this.keyframes) {
             if (keyframe.time > time) {
                 return keyframe
             }
@@ -233,7 +241,7 @@ class PartKeyframeGroup {
 
 class AnimationTrack {
     //data
-    keyframeGroups = [] //one group per motor6D
+    keyframeGroups: PartKeyframeGroup[] = [] //one group per motor6D
     
     //playing info
     isPlaying = false
@@ -243,24 +251,32 @@ class AnimationTrack {
     finished = true
 
     //static info
-    rig = null
+    rig?: Instance = undefined
     length = 0
     looped = false
     priority = AnimationPriority.Core
 
-    getNamedMotor(motorName, parentName) {
-        let parent = this.rig.FindFirstChild(parentName)
+    getNamedMotor(motorName: string, parentName: string): Instance | undefined {
+        if (!this.rig) {
+            return undefined
+        }
+
+        const parent = this.rig.FindFirstChild(parentName)
         if (parent) {
             return parent.FindFirstChild(motorName)
         }
 
-        return null
+        return undefined
     }
 
-    findMotor6D(part0, part1) {
-        let descendants = this.rig.GetDescendants()
+    findMotor6D(part0: Instance, part1: Instance): Instance | undefined {
+        if (!this.rig) {
+            return undefined
+        }
 
-        for (let child of descendants) {
+        const descendants = this.rig.GetDescendants()
+
+        for (const child of descendants) {
             if (child.className === "Motor6D") {
                 if (child.Prop("Part0") === part0 && child.Prop("Part1") === part1) {
                     return child
@@ -268,78 +284,89 @@ class AnimationTrack {
             }
         }
 
-        return null
+        return undefined
     }
 
-    findKeyframeGroup(motor) {
-        for (let group of this.keyframeGroups) {
-            if (group.motorParent === motor.parent.Prop("Name") && group.motorName === motor.Prop("Name")) {
+    findKeyframeGroup(motor: Instance) {
+        for (const group of this.keyframeGroups) {
+            if (motor.parent && group.motorParent === motor.parent.Prop("Name") && group.motorName === motor.Prop("Name")) {
                 return group
             }
         }
 
-        return null
+        return undefined
     }
 
-    addPartKeyframe(motor, keyframe) {
-        if (!motor || !keyframe) {
+    addPartKeyframe(motor: Instance, keyframe: PartKeyframe) {
+        if (!motor || !keyframe || !motor.parent) {
             return
         }
 
         let group = this.findKeyframeGroup(motor)
         if (!group) {
             group = new PartKeyframeGroup()
-            group.motorParent = motor.parent.Prop("Name")
-            group.motorName = motor.Prop("Name")
+            group.motorParent = motor.parent.Prop("Name") as string
+            group.motorName = motor.Prop("Name") as string
             this.keyframeGroups.push(group)
         }
 
         group.keyframes.push(keyframe)
     }
 
-    createPartKeyframe(keyframe, pose) {
-        let part0Name = pose.parent.Prop("Name")
-        let part1Name = pose.Prop("Name")
+    createPartKeyframe(keyframe: Instance, pose: Instance): [Instance, PartKeyframe] | [undefined, undefined] {
+        if (!pose.parent || !this.rig) {
+            return [undefined, undefined]
+        }
 
-        let part0 = this.rig.FindFirstChild(part0Name)
-        let part1 = this.rig.FindFirstChild(part1Name)
+        const part0Name = pose.parent.Prop("Name") as string
+        const part1Name = pose.Prop("Name") as string
 
-        let motor = null
-        let partKeyframe = null
+        const part0 = this.rig.FindFirstChild(part0Name)
+        const part1 = this.rig.FindFirstChild(part1Name)
+
+        let motor = undefined
+        let partKeyframe = undefined
 
         if (part0 && part1) {
             motor = this.findMotor6D(part0, part1)
 
-            partKeyframe = new PartKeyframe()
-            partKeyframe.time = keyframe.Prop("Time")
-            partKeyframe.cframe = pose.Prop("CFrame")
+            const time = keyframe.Prop("Time") as number
+            const cf = pose.Prop("CFrame") as CFrame
+            partKeyframe = new PartKeyframe(time, cf)
             if (pose.HasProperty("EasingDirection")) {
-                partKeyframe.easingDirection = pose.Prop("EasingDirection")
+                partKeyframe.easingDirection = pose.Prop("EasingDirection") as number
             }
             if (pose.HasProperty("EasingStyle")) {
-                partKeyframe.easingStyle = pose.Prop("EasingStyle")
+                partKeyframe.easingStyle = pose.Prop("EasingStyle") as number
             }
         } else {
             console.warn(`Missing either part0 or part1 with names: ${part0Name} ${part1Name}`)
+            return [undefined, undefined]
+        }
+
+        if (!motor || !partKeyframe) {
+            return [undefined, undefined]
         }
 
         return [motor, partKeyframe]
     }
 
-    addKeyframe(keyframe) {
+    addKeyframe(keyframe: Instance) {
         //traverse keyframe tree
         let children = keyframe.GetChildren()
 
         while (children.length > 0) {
-            let validChildren = []
+            const validChildren = []
 
-            for (let child of children) {
+            for (const child of children) {
                 if (child.className === "Pose") { //its a valid keyframe
                     validChildren.push(child)
 
-                    if (child.Prop("Weight") >= 0.999) {//if this is actually a keyframe that affects the current part
-                        let [motor, partKeyframe] = this.createPartKeyframe(keyframe, child)
-                        this.addPartKeyframe(motor, partKeyframe)
+                    if (child.Prop("Weight") as number >= 0.999) {//if this is actually a keyframe that affects the current part
+                        const [motor, partKeyframe] = this.createPartKeyframe(keyframe, child)
+                        if (motor && partKeyframe) {
+                            this.addPartKeyframe(motor, partKeyframe)
+                        }
                     }
                 } else {
                     console.warn(`Unknown animation child with className: ${child.className}`, child)
@@ -347,44 +374,44 @@ class AnimationTrack {
             }
 
             //update list of children
-            let newChildren = []
-            for (let child of validChildren) {
+            let newChildren: Instance[] = []
+            for (const child of validChildren) {
                 newChildren = newChildren.concat(child.GetChildren())
             }
             children = newChildren
         }
     }
 
-    loadAnimation(rig, animation) {
+    loadAnimation(rig: Instance, animation: Instance) {
         if (animation.className !== "KeyframeSequence") {
             throw new Error("Animation is not a KeyframeSequence")
         }
 
         //set animation details
-        this.looped = animation.Prop("Loop")
-        this.priority = animation.Prop("Priority")
+        this.looped = animation.Prop("Loop") as boolean
+        this.priority = animation.Prop("Priority") as number
         this.length = 0
         this.rig = rig
 
         //sort keyframes based on time
-        let keyframeInstances = []
+        const keyframeInstances: Instance[] = []
 
-        let animationChildren = animation.GetChildren()
-        for (let child of animationChildren) {
+        const animationChildren = animation.GetChildren()
+        for (const child of animationChildren) {
             if (child.className === "Keyframe") {
                 if (child.GetChildren().length > 0) {
-                    this.length = Math.max(this.length, child.Prop("Time"))
+                    this.length = Math.max(this.length, child.Prop("Time") as number)
                     keyframeInstances.push(child)
                 }
             }
         }
 
         keyframeInstances.sort((a, b) => {
-            return a.Prop("Time") - b.Prop("Time")
+            return a.Prop("Time") as number - (b.Prop("Time") as number)
         })
 
         //add keyframes
-        for (let child of keyframeInstances) {
+        for (const child of keyframeInstances) {
             this.addKeyframe(child)
         }
 
@@ -392,9 +419,13 @@ class AnimationTrack {
     }
 
     resetMotorTransforms() {
-        let descendants = this.rig.GetDescendants()
+        if (!this.rig) {
+            return
+        }
 
-        for (let motor of descendants) {
+        const descendants = this.rig.GetDescendants()
+
+        for (const motor of descendants) {
             if (motor.className === "Motor6D") {
                 motor.setProperty("Transform", new CFrame(0,0,0))
             }
@@ -402,34 +433,34 @@ class AnimationTrack {
     }
 
     renderPose() {
-        let time = this.timePosition
+        const time = this.timePosition
 
-        for (let group of this.keyframeGroups) {
-            let motor = this.getNamedMotor(group.motorName, group.motorParent)
+        for (const group of this.keyframeGroups) {
+            const motor = this.getNamedMotor(group.motorName, group.motorParent)
             if (motor) {
-                let lowerKeyframe = group.getLowerKeyframe(time)
-                let higherKeyframe = group.getHigherKeyframe(time)
+                const lowerKeyframe = group.getLowerKeyframe(time)
+                const higherKeyframe = group.getHigherKeyframe(time)
 
                 if (lowerKeyframe && higherKeyframe) {
-                    let higherTime = higherKeyframe.time - lowerKeyframe.time
-                    let fromLowerTime = time - lowerKeyframe.time
-                    let keyframeTime = fromLowerTime / higherTime
+                    const higherTime = higherKeyframe.time - lowerKeyframe.time
+                    const fromLowerTime = time - lowerKeyframe.time
+                    const keyframeTime = fromLowerTime / higherTime
 
-                    let easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
+                    const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
 
-                    let oldTransformCF = motor.Prop("Transform").clone()
-                    let transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
+                    const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                    const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
                     motor.setProperty("Transform", transformCF)
                 } else if (lowerKeyframe) {
-                    let oldTransformCF = motor.Prop("Transform").clone()
-                    let transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
+                    const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                    const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
                     motor.setProperty("Transform", transformCF)
                 }
             }
         }
     }
 
-    setTime(time) {
+    setTime(time: number) {
         if (this.looped) {
             time = time % this.length
         }

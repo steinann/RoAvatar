@@ -3,16 +3,26 @@
 R15 --> Slim = R15_Wide * R15_Proportions
 
 */
-//scaling data
-let originalPositionName = "OriginalPosition"
-let originalSizeName = "OriginalSize"
-let rigAttachmentName = "RigAttachment"
 
-let stepHeightNarrow = 2.4
-let stepHeightWide = 2.7
+import { AvatarType } from "../avatar/constant"
+import type { Outfit } from "../avatar/outfit"
+import { lerp, lerpVec3, specialClamp } from "../misc/misc"
+import { DataType, MeshType } from "./constant"
+import type { Vec3 } from "./mesh"
+import { CFrame, Instance, Property, Vector3 } from "./rbx"
+
+type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
+
+//scaling data
+const originalPositionName = "OriginalPosition"
+const originalSizeName = "OriginalSize"
+const rigAttachmentName = "RigAttachment"
+
+const stepHeightNarrow = 2.4
+const stepHeightWide = 2.7
 
 //Default positions of the attachments related to the Head part
-let headAttachmentMap = {
+const headAttachmentMap: {[K in string]: Vector3} = {
 	FaceCenterAttachment: Vector3.new(0, 0, 0),
 	FaceFrontAttachment: Vector3.new(0, 0, -0.6),
 	HairAttachment: Vector3.new(0, 0.6, 0),
@@ -21,7 +31,7 @@ let headAttachmentMap = {
 }
 
 //Default scaling values for character with classic proportions (used in lerp calcuations with desired scaling factor)
-let scalingWideValues = {
+const scalingWideValues: {[K in string]: Vector3} = {
 	LeftLowerArm: Vector3.new(1.1289999485016, 1.3420000076294, 1.1319999694824),
 	LeftFoot: Vector3.new(1.0789999961853, 1.2669999599457, 1.1289999485016),
 	Head: Vector3.new(0.94199997186661, 0.94199997186661, 0.94199997186661),
@@ -40,7 +50,7 @@ let scalingWideValues = {
 }
 
 //Default scaling values for character with classic proportions (used in lerp calcuations with desired scaling factor)
-let scalingNarrowValues = {
+const scalingNarrowValues: {[K in string]: Vector3} = {
 	LeftLowerArm: Vector3.new(1.0035555362701, 1.2079209089279, 1.0062222480774),
 	LowerTorso: Vector3.new(0.9856870174408, 1.0046048164368, 1.0133333206177),
 	Head: Vector3.new(0.89628922939301, 0.94199997186661, 0.89628922939301),
@@ -60,7 +70,7 @@ let scalingNarrowValues = {
 
 //Default scaling values for character with slender or normal proportions
 //(used in lerp calcuations with desired scaling factor)
-let scalingNativeR15ToWide = {
+const scalingNativeR15ToWide: {[K in string]: Vector3} = {
 	LeftLowerArm: Vector3.new(0.89206063747406, 1.468428850174, 1.033057808876),
 	LowerTorso: Vector3.new(0.98619323968887, 1.228501200676, 1.0822510719299),
 	Head: Vector3.new(0.625, 0.625, 0.625),
@@ -80,7 +90,7 @@ let scalingNativeR15ToWide = {
 
 //Default scaling values for character with slender or normal proportions
 //(used in lerp calcuations with desired scaling factor)
-let scalingNativeR15ToNarrow = {
+const scalingNativeR15ToNarrow: {[K in string]: Vector3} = {
 	LeftLowerArm: Vector3.new(0.79294276237488, 1.3217180967331, 0.91827362775803),
 	LowerTorso: Vector3.new(0.94102412462234, 0.94282519817352, 0.96200096607208),
 	Head: Vector3.new(0.59467172622681, 0.625, 0.59467172622681),
@@ -98,7 +108,7 @@ let scalingNativeR15ToNarrow = {
 	LeftLowerLeg: Vector3.new(0.97566312551498, 1.0608818531036, 0.84175086021423)
 }
 
-const SCALE_R15_Wide = {
+const SCALE_R15_Wide: {[K in string]: Vector3} = {
     Head: Vector3.new(0.9420000314712524,0.9419999718666077,0.9419999718666077),
     LeftHand: Vector3.new(1.065999984741211,1.1740000247955322,1.2309999465942383),
     RightHand: Vector3.new(1.065999984741211,1.1740000247955322,1.2309999465942383),
@@ -116,7 +126,7 @@ const SCALE_R15_Wide = {
     RightUpperLeg: Vector3.new(1.0230000019073486,1.50600004196167,1.0230000019073486),
 }
 
-const SCALE_R15_Proportions = {
+const SCALE_R15_Proportions: {[K in string]: Vector3} = {
     Head: Vector3.new(0.9514747858047485,1,0.9514748454093933),
     LeftHand: Vector3.new(0.8888888955116272,1,0.8888888955116272),
     RightHand: Vector3.new(0.8888888955116272,1,0.8888888955116272),
@@ -134,7 +144,7 @@ const SCALE_R15_Proportions = {
     RightUpperLeg: Vector3.new(0.9541985392570496,0.9302324652671814,0.888888955116272)
 }
 
-const SCALE_Wide_R15 = {
+const SCALE_Wide_R15: {[K in string]: Vector3} = {
     LeftLowerArm: Vector3.new(1.121000051498413,0.6809999942779541,0.968000054359436),
     RightLowerArm: Vector3.new(1.121000051498413,0.6809999942779541,0.968000054359436),
     LeftUpperArm: Vector3.new(1.121000051498413,0.6809999942779541,0.968000054359436),
@@ -152,19 +162,10 @@ const SCALE_Wide_R15 = {
     RightFoot: Vector3.new(1.4040000438690186,0.953000009059906,0.9309999942779541)
 }
 
-//Linear interpolation function
-function lerp(a,b,t) {
-	return a + (b - a) * t
-}
-
-function lerpVec3(a,b,t) {
-	return a.add((b.minus(a)).multiply(new Vector3(t,t,t)))
-}
-
 //Returns an array of the character parts
-function GetCharacterParts(rig) {
-	let characterParts = []
-	for (let item of rig.GetChildren()) {
+function GetCharacterParts(rig: Instance) {
+	const characterParts = []
+	for (const item of rig.GetChildren()) {
 		if (item.className === "MeshPart" || item.className === "Part") {
 		    characterParts.push(item)	
         }
@@ -173,10 +174,10 @@ function GetCharacterParts(rig) {
 }
 
 //Returns the matching attachment found on the character
-function FindFirstMatchingAttachment(attachmentName, rig) {
-	let characterParts = GetCharacterParts(rig)
-	for (let part of characterParts) {
-		for (let child of part.GetChildren()) {
+function FindFirstMatchingAttachment(attachmentName: string, rig: Instance) {
+	const characterParts = GetCharacterParts(rig)
+	for (const part of characterParts) {
+		for (const child of part.GetChildren()) {
 			if (child.Prop("Name") == attachmentName) {
 				return child
             }
@@ -186,26 +187,26 @@ function FindFirstMatchingAttachment(attachmentName, rig) {
 }
 
 //Returns the character part the accessory is attached to
-function GetAttachedPart(accessory, rig) {
-	let handle = accessory.FindFirstChild("Handle")
+function GetAttachedPart(accessory: Instance, rig: Instance) {
+	const handle = accessory.FindFirstChild("Handle")
 	if (!handle) {
 		return
     }
 
-	let accessoryWeld = handle.FindFirstChild("AccessoryWeld")
+	const accessoryWeld = handle.FindFirstChild("AccessoryWeld")
 	if (accessoryWeld) {
 		let attachedPart
 		if (accessoryWeld.Prop("Part0") !== handle) {
-			attachedPart = accessoryWeld.Prop("Part0")
+			attachedPart = accessoryWeld.Prop("Part0") as Instance
         } else {
-			attachedPart = accessoryWeld.Prop("Part1")
+			attachedPart = accessoryWeld.Prop("Part1") as Instance
         }
 		return attachedPart
     }
 
-	let accessoryAttachment = handle.FindFirstChildOfClass("Attachment")
+	const accessoryAttachment = handle.FindFirstChildOfClass("Attachment")
 	if (accessoryAttachment) {
-		let matchingAttachment = FindFirstMatchingAttachment(accessoryAttachment.Prop("Name"), rig)
+		const matchingAttachment = FindFirstMatchingAttachment(accessoryAttachment.Prop("Name") as string, rig)
 		if (matchingAttachment && matchingAttachment.parent) {
 			return matchingAttachment.parent
         }
@@ -215,13 +216,13 @@ function GetAttachedPart(accessory, rig) {
 }
 
 //Returns the scale of a part with consideration for proportion type
-function getPartScale(part, wideToNarrow, anthroPercent, partType, baseType) {
+function getPartScale(part: Instance, wideToNarrow: number, anthroPercent: number, partType: string, baseType: string) {
 	let scale = new Vector3(1.0,1.0,1.0)
 	if (!part) {
 		return scale
     }
 
-	let partName = part.Prop("Name")
+	const partName = part.Prop("Name") as string
 
 	let wideScale = scalingWideValues[partName]
 	let narrowScale = scalingNarrowValues[partName]
@@ -234,7 +235,7 @@ function getPartScale(part, wideToNarrow, anthroPercent, partType, baseType) {
 	if (!wideScale) { wideScale = Vector3.new(1.0,1.0,1.0) }
 	if (!narrowScale) { narrowScale = Vector3.new(1.0,1.0,1.0) }
 
-	let anthroScale = lerpVec3(wideScale, narrowScale, wideToNarrow)
+	const anthroScale = lerpVec3(wideScale, narrowScale, wideToNarrow)
 	scale = lerpVec3(scale, anthroScale, anthroPercent)
 
 	let base = Vector3.new(1.0,1.0,1.0)
@@ -249,13 +250,13 @@ function getPartScale(part, wideToNarrow, anthroPercent, partType, baseType) {
 }
 
 //Returns the original size of the part or will create one if it cannot find one
-function getOriginalSize(part) {
-	let originalSize = part.Prop("Size")
-	let originalSizeValue = part.FindFirstChild(originalSizeName)
+function getOriginalSize(part: Instance) {
+	let originalSize = part.Prop("Size") as Vector3
+	const originalSizeValue = part.FindFirstChild(originalSizeName)
 	if (originalSizeValue) {
-		originalSize = originalSizeValue.Prop("Value")
+		originalSize = originalSizeValue.Prop("Value") as Vector3
     } else {
-		let partSizeValue = new Instance("Vector3Value")
+		const partSizeValue = new Instance("Vector3Value")
         partSizeValue.addProperty(new Property("Name", DataType.String), originalSizeName)
         partSizeValue.addProperty(new Property("Value", DataType.Vector3), part.Prop("Size"))
 		partSizeValue.setParent(part)
@@ -264,53 +265,53 @@ function getOriginalSize(part) {
 }
 
 //Scales the attachment or special mesh child found on a part
-function scaleChildrenOfPart(part, scaleVector) {
-	for (let child of part.GetChildren()) {
+function scaleChildrenOfPart(part: Instance, scaleVector: Vector3) {
+	for (const child of part.GetChildren()) {
 		if (child.className === "Attachment") {
-			let originalPosition = child.Prop("CFrame").Position
+			let originalPosition: Vec3 | Vector3 = (child.Prop("CFrame") as CFrame).Position
             originalPosition = new Vector3(originalPosition[0], originalPosition[1], originalPosition[2])
             originalPosition = originalPosition.multiply(scaleVector)
 
-            let newCF = child.Prop("CFrame").clone()
+            const newCF = (child.Prop("CFrame") as CFrame).clone()
             newCF.Position = [originalPosition.X, originalPosition.Y, originalPosition.Z]
 			child.setProperty("CFrame", newCF)
         } else if (child.className === "SpecialMesh") {
 			if (child.Prop("MeshType") !== MeshType.Head) {
-				let orignalScale = child.Prop("Scale")
+				const orignalScale = child.Prop("Scale") as Vector3
 				child.setProperty("Scale", orignalScale.multiply(scaleVector))
             }
         }
     }
 }
 
-function getAvatarPartScaleType(bodyPart) {
-    let avatarPartScaleTypeVal = bodyPart.FindFirstDescendant("AvatarPartScaleType")
+/*function getAvatarPartScaleType(bodyPart: Instance) {
+    const avatarPartScaleTypeVal = bodyPart.FindFirstDescendant("AvatarPartScaleType")
     if (avatarPartScaleTypeVal) {
-        return avatarPartScaleTypeVal.Prop("Value")
+        return avatarPartScaleTypeVal.Prop("Value") as string
     }
 
     return "Classic"
-}
+}*/
 
 //SOURCE: https://devforum.roblox.com/t/rthro-scaling-specification/199611
-function sampleScaleTables(bodyPart, scaleType) {
+/*function sampleScaleTables(bodyPart: Instance, scaleType?: string) {
 	// Determine the scale type for this body part.
 	if (!scaleType) {
 		scaleType = getAvatarPartScaleType(bodyPart)
     }
 	
 	// Sample the scaling tables
-	let limbName = bodyPart.Prop("Name")
-	let sampleNoChange = Vector3.new(1, 1, 1)
+	const limbName = bodyPart.Prop("Name") as string
+	const sampleNoChange = Vector3.new(1, 1, 1)
 	
-	let sampleR15ToNormal = scalingWideValues[limbName]
-	let sampleNormalToR15 = scalingNativeR15ToWide[limbName]
+	const sampleR15ToNormal = scalingWideValues[limbName]
+	const sampleNormalToR15 = scalingNativeR15ToWide[limbName]
 
-	let sampleR15ToSlender = scalingNarrowValues[limbName]
-	let sampleSlenderToR15 = scalingNativeR15ToNarrow[limbName]
+	const sampleR15ToSlender = scalingNarrowValues[limbName]
+	const sampleSlenderToR15 = scalingNativeR15ToNarrow[limbName]
 
-	let sampleNormalToSlender = (sampleR15ToNormal.divide(sampleR15ToSlender))
-	let sampleSlenderToNormal = (sampleR15ToSlender.divide(sampleR15ToNormal))
+	const sampleNormalToSlender = (sampleR15ToNormal.divide(sampleR15ToSlender))
+	const sampleSlenderToNormal = (sampleR15ToSlender.divide(sampleR15ToNormal))
 	
 	// Select the scales that will be interpolated
 	let scaleR15, scaleNormal, scaleSlender
@@ -330,32 +331,32 @@ function sampleScaleTables(bodyPart, scaleType) {
     }
 	
 	return [scaleR15, scaleNormal, scaleSlender]
-}
+}*/
 
-function computeLimbScale(bodyPart, bodyScaleVector, headScaleVector, bodyTypeScale, bodyProportionScale) {
+/*function computeLimbScale(bodyPart: Instance, bodyScaleVector: Vector3, headScaleVector: Vector3, bodyTypeScale: number, bodyProportionScale: number) {
 	// Determine the scale type for this body part.
-	let scaleType = getAvatarPartScaleType(bodyPart)
+	//const scaleType = getAvatarPartScaleType(bodyPart)
 	
 	// Select the scales we will interpolate
-	let [scaleR15, scaleNormal, scaleSlender] = sampleScaleTables(bodyPart)
+	const [scaleR15, scaleNormal, scaleSlender] = sampleScaleTables(bodyPart)
 	
 	// Compute the Rthro scaling based on the current proportions and body-type.
-	let bodyType = bodyTypeScale
-	let proportions = bodyProportionScale
+	const bodyType = bodyTypeScale
+	const proportions = bodyProportionScale
 	
-	let scaleProportions = lerpVec3(scaleNormal, scaleSlender, proportions)
-	let scaleBodyType = lerpVec3(scaleR15, scaleProportions, bodyType)
+	const scaleProportions = lerpVec3(scaleNormal, scaleSlender, proportions)
+	const scaleBodyType = lerpVec3(scaleR15, scaleProportions, bodyType)
 	
 	// Handle the rest of the scale values.
 	if (bodyPart.Prop("Name") == "Head") {
 		return scaleBodyType.multiply(headScaleVector)
     } else {
-		let baseScale = bodyScaleVector
+		const baseScale = bodyScaleVector
 		return scaleBodyType.multiply(baseScale)
     }
-}
+}*/
 
-function OLDALTScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeScale, bodyProportionScale, rig) {
+/*function OLDALTScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeScale, bodyProportionScale, rig) {
     let handle = accessory.FindFirstChild("Handle")
 	if (!handle) {
 		return
@@ -396,43 +397,43 @@ function OLDALTScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyT
     scaleChildrenOfPart(handle, relativeScaleVector)
 	handle.setProperty("Size", originalSize.multiply(newScaleVector))
 	accessory.AccessoryBuildWeld()
-}
+}*/
 
 //This is the only working accessory scaling function, all the other ones are incorrect
-function ScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeScale, bodyProportionScale, rig) {
-	let handle = accessory.FindFirstChild("Handle")
+function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, headScaleVector: Vector3, bodyTypeScale: number | null, bodyProportionScale: number | null, rig: Instance) {
+	const handle = accessory.FindFirstChild("Handle")
 	if (!handle) {
 		return
     }
 
-	let attachedPart = GetAttachedPart(accessory, rig)
+	const attachedPart = GetAttachedPart(accessory, rig)
 
     let resultScale = Vector3.new(1,1,1)
 
     //head vs width,depth,height
 	let regularScaleVector = bodyScaleVector
-	if (attachedPart.Prop("Name") === "Head") {
+	if (attachedPart && attachedPart.Prop("Name") === "Head") {
 		regularScaleVector = headScaleVector
     }
     resultScale = resultScale.multiply(regularScaleVector)
 
 	//find appropriate relative scaling with attached part
 	if (attachedPart) {
-        let bodyPartName = attachedPart.Prop("Name")
+        const bodyPartName = attachedPart.Prop("Name") as string
         if (SCALE_Wide_R15[bodyPartName] === undefined) {
             return
         }
 
 	    let accessoryScaleType = "Classic"
-        let accessoryScaleTypeValue = accessory.FindFirstDescendant("AvatarPartScaleType")
+        const accessoryScaleTypeValue = accessory.FindFirstDescendant("AvatarPartScaleType")
 		if (accessoryScaleTypeValue) {
-			accessoryScaleType = accessoryScaleTypeValue.Prop("Value")
+			accessoryScaleType = accessoryScaleTypeValue.Prop("Value") as string
         }
 
 	    let attachedPartScaleType = "Classic"
-        let attachedPartScaleTypeValue = attachedPart.FindFirstDescendant("AvatarPartScaleType")
+        const attachedPartScaleTypeValue = attachedPart.FindFirstDescendant("AvatarPartScaleType")
 		if (attachedPartScaleTypeValue) {
-			attachedPartScaleType = attachedPartScaleTypeValue.Prop("Value")
+			attachedPartScaleType = attachedPartScaleTypeValue.Prop("Value") as string
         }
 
         let relativeScaleVector = Vector3.new(1,1,1)
@@ -460,27 +461,27 @@ function ScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeSca
                 case "Classic":
                     {
                         //apply scale as Classic
-                        let bodyTypeScaleVector = SCALE_R15_Wide[bodyPartName]
-                        let bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
-                        let finalVector = lerpVec3(Vector3.new(1,1,1), bodyTypeScaleVector.multiply(bodyProportionScaleVector), bodyTypeScale).multiply(relativeScaleVector)
+                        const bodyTypeScaleVector = SCALE_R15_Wide[bodyPartName]
+                        const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
+                        const finalVector = lerpVec3(Vector3.new(1,1,1), bodyTypeScaleVector.multiply(bodyProportionScaleVector), bodyTypeScale).multiply(relativeScaleVector)
                         resultScale = resultScale.multiply(finalVector)
                         break
                     }
                 case "ProportionsNormal":
                     {
                         //apply scale as ProportionsNormal
-                        let bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
-                        let bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
-                        let finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
+                        const bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
+                        const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
+                        const finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
                         resultScale = resultScale.multiply(finalVector)
                         break
                     }
                 case "ProportionsSlender":
                     {
                         //apply scale as ProportionsSlender
-                        let bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
-                        let bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1).divide(SCALE_R15_Proportions[bodyPartName]), Vector3.new(1,1,1), bodyProportionScale)
-                        let finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
+                        const bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
+                        const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1).divide(SCALE_R15_Proportions[bodyPartName]), Vector3.new(1,1,1), bodyProportionScale)
+                        const finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
                         resultScale = resultScale.multiply(finalVector)
                         break
                     }
@@ -492,14 +493,14 @@ function ScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeSca
         console.warn("Failed to find attached part for accessory:", accessory)
     }
 
-	let originalSize = getOriginalSize(handle)
+	const originalSize = getOriginalSize(handle)
     //used to double check
-    console.log(accessory.Prop("Name"))
-    console.log("SCALE HERE \n HERE\nHERE\nHERE\nHERE")
-    console.log(resultScale.multiply(originalSize))
+    //console.log(accessory.Prop("Name"))
+    //console.log("SCALE HERE \n HERE\nHERE\nHERE\nHERE")
+    //console.log(resultScale.multiply(originalSize))
     //throw "check the scale"
-	let currentScaleVector = handle.Prop("Size").divide(originalSize)
-    let relativeScaleVector = resultScale.divide(currentScaleVector);
+	const currentScaleVector = (handle.Prop("Size") as Vector3).divide(originalSize)
+    const relativeScaleVector = resultScale.divide(currentScaleVector);
 
 	//scale accessory and as well as its welds and attachments
     scaleChildrenOfPart(handle, relativeScaleVector)
@@ -507,7 +508,7 @@ function ScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeSca
 	accessory.AccessoryBuildWeld()
 }
 
-function OLDScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeScale, bodyProportionScale, rig) {
+/*function OLDScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyTypeScale, bodyProportionScale, rig) {
 	let handle = accessory.FindFirstChild("Handle")
 	if (!handle) {
 		return
@@ -575,33 +576,33 @@ function OLDScaleAccessory(accessory, bodyScaleVector, headScaleVector, bodyType
     scaleChildrenOfPart(handle, relativeScaleVector)
 	handle.setProperty("Size", originalSize.multiply(newScaleVector))
 	accessory.AccessoryBuildWeld()
-}
+}*/
 
 //Returns the original mesh scale of the part or will create one if it cannot find one
-function getOriginalMeshScale(mesh) {
-	let originalScale = mesh.Prop("Scale")
-	let originalScaleValue = mesh.FindFirstChild(originalSizeName)
+function getOriginalMeshScale(mesh: Instance) {
+	let originalScale = mesh.Prop("Scale") as Vector3
+	const originalScaleValue = mesh.FindFirstChild(originalSizeName)
 	if (originalScaleValue) {
-		originalScale = originalScaleValue.Prop("Value")
+		originalScale = originalScaleValue.Prop("Value") as Vector3
     } else {
-		let partScaleValue = new Instance("Vector3Value")
+		const partScaleValue = new Instance("Vector3Value")
         partScaleValue.addProperty(new Property("Name", DataType.String), originalSizeName)
-        partScaleValue.addProperty(new Property("Value", DataType.Vector3), mesh.Scale)
+        partScaleValue.addProperty(new Property("Value", DataType.Vector3), mesh.Prop("Scale"))
 		partScaleValue.setParent(mesh)
     }
 	return originalScale
 }
 
 //Returns the original attachment position or will create one if it cannot find one
-function getOriginalAttachmentPosition(attachment) {
-	let originalPosition = attachment.FindFirstChild(originalPositionName)
+function getOriginalAttachmentPosition(attachment: Instance) {
+	const originalPosition = attachment.FindFirstChild(originalPositionName)
 	if (originalPosition) {
-		return originalPosition.Prop("Value")
+		return (originalPosition.Prop("Value") as Vector3)
     }
 
-	let position = attachment.Prop("Position")
+	const position = attachment.Prop("Position") as Vector3
 
-	let attachmentLocationValue = new Instance("Vector3Value")
+	const attachmentLocationValue = new Instance("Vector3Value")
     attachmentLocationValue.addProperty(new Property("Name", DataType.String), originalPositionName)
 	attachmentLocationValue.addProperty(new Property("Value", DataType.Vector3), position)
 	attachmentLocationValue.setParent(attachment)
@@ -610,9 +611,9 @@ function getOriginalAttachmentPosition(attachment) {
 }
 
 //Scale character part and any attachments using values found in the configurations folder
-function ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercent, wideToNarrow) {
-	let partName = part.Prop("Name")
-	let originalSize = getOriginalSize(part)
+function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleVector: Vector3, anthroPercent: number, wideToNarrow: number) {
+	const partName = part.Prop("Name")
+	const originalSize = getOriginalSize(part)
 
 	let newScaleVector = bodyScaleVector
 	if (partName == "Head") {
@@ -621,10 +622,10 @@ function ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercen
 
 	//check for native part information on special mesh in the Head Part
 	if (part && partName == "Head") {
-		let mesh = part.FindFirstChildOfClass("SpecialMesh")
+		const mesh = part.FindFirstChildOfClass("SpecialMesh")
 		if (mesh) {
-			let nameNative = "AvatarPartScaleType"
-			let meshScaleTypeValue = mesh.FindFirstChild(nameNative)
+			const nameNative = "AvatarPartScaleType"
+			const meshScaleTypeValue = mesh.FindFirstChild(nameNative)
 			if (meshScaleTypeValue) {
 				let headScaleTypeValue = part.FindFirstChild(nameNative)
 				if (!headScaleTypeValue) {
@@ -638,15 +639,15 @@ function ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercen
 				if (headScaleTypeValue) {
 					headScaleTypeValue.setProperty("Value", meshScaleTypeValue.Prop("Value"))
                 }
-            } else if (!part.className === "MeshPart") {
-				let headScaleTypeValue = part.FindFirstChild(nameNative)
+            } else if (part.className !== "MeshPart") {
+				const headScaleTypeValue = part.FindFirstChild(nameNative)
 				if (headScaleTypeValue) {
 					headScaleTypeValue.Destroy()
                 }
             }
-        } else if (!part.className === "MeshPart") {
-			let nameNative = "AvatarPartScaleType";
-			let headScaleTypeValue = part.FindFirstChild(nameNative)
+        } else if (part.className !== "MeshPart") {
+			const nameNative = "AvatarPartScaleType";
+			const headScaleTypeValue = part.FindFirstChild(nameNative)
 			if (headScaleTypeValue) {
 				headScaleTypeValue.Destroy();
             }
@@ -655,38 +656,41 @@ function ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercen
 
 	//find the appropriate scale for the part
 	let humanoidPropType = "Classic"
-	if (part.FindFirstChild("AvatarPartScaleType")) {
-		humanoidPropType = part.Child("AvatarPartScaleType").Prop("Value")
+	const avatarPartScaleType = part.FindFirstChild("AvatarPartScaleType")
+	if (avatarPartScaleType) {
+		humanoidPropType = avatarPartScaleType.Prop("Value") as string
     }
-	let scale = getPartScale(part, wideToNarrow, anthroPercent, humanoidPropType, humanoidPropType)
+	const scale = getPartScale(part, wideToNarrow, anthroPercent, humanoidPropType, humanoidPropType)
 
 	//scale head mesh and attachments
 	if (part && partName == "Head") {
-		let mesh = part.FindFirstChildOfClass("SpecialMesh")
+		const mesh = part.FindFirstChildOfClass("SpecialMesh")
 		if (mesh) {
 			let headScale = newScaleVector
 			if (mesh.Prop("MeshType") == MeshType.Head) {
 				headScale = Vector3.new(1.0,1.0,1.0)
             }
-			let originalScale = getOriginalMeshScale(mesh)
+			const originalScale = getOriginalMeshScale(mesh)
 
 			if (mesh.Prop("MeshType") !== MeshType.Head) {
 				mesh.setProperty("Scale", originalScale.multiply(scale).multiply(headScale))
             }
 
-			let attachmentNames = ["FaceCenterAttachment", "FaceFrontAttachment", "HairAttachment",
+			const attachmentNames = ["FaceCenterAttachment", "FaceFrontAttachment", "HairAttachment",
 				"HatAttachment", "NeckRigAttachment"]
 
-            for (aname of attachmentNames) {
-				let originalPosValue = mesh.FindFirstChild(aname)
-				let headAttachment = part.FindFirstChild(aname)
-				let originalPosition = headAttachment.FindFirstChild(originalPositionName)
-				if (headAttachment && originalPosition) {
-					if (originalPosValue) {
-						originalPosition.setProperty("Value", originalPosValue)
-                    } else {
-						originalPosition.setProperty("Value", headAttachmentMap[aname])
-                    }
+            for (const aname of attachmentNames) {
+				const originalPosValue = mesh.FindFirstChild(aname)
+				const headAttachment = part.FindFirstChild(aname)
+				if (headAttachment) {
+					const originalPosition = headAttachment.FindFirstChild(originalPositionName)
+					if (originalPosition) {
+						if (originalPosValue) {
+							originalPosition.setProperty("Value", originalPosValue)
+						} else {
+							originalPosition.setProperty("Value", headAttachmentMap[aname])
+						}
+					}
                 }
             }
         }
@@ -696,11 +700,11 @@ function ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercen
 	part.setProperty("Size", originalSize.multiply(scale).multiply(newScaleVector))
 
 	//scale attachments
-    for (let child of part.GetChildren()) {
+    for (const child of part.GetChildren()) {
 		if (child.className === "Attachment") {
-			let originalAttachment = getOriginalAttachmentPosition(child)
-            let ogCF = child.Prop("CFrame").clone()
-            let newPos = originalAttachment.multiply(scale).multiply(newScaleVector)
+			const originalAttachment = getOriginalAttachmentPosition(child)
+            const ogCF = (child.Prop("CFrame") as CFrame).clone()
+            const newPos = originalAttachment.multiply(scale).multiply(newScaleVector)
             ogCF.Position = [newPos.X, newPos.Y, newPos.Z]
 			child.setProperty("CFrame", ogCF)
         }
@@ -708,12 +712,12 @@ function ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercen
 }
 
 //Updates the step height
-function SetStepHeight(self, value) {
+function SetStepHeight(self: RigData, value: number) {
 	if (!value) {
 		return
     }
 
-	let stepHeight = self.stepHeight
+	const stepHeight = self.stepHeight
 
 	value = specialClamp(value, -100.0, 100.0)
 
@@ -723,8 +727,8 @@ function SetStepHeight(self, value) {
 }
 
 //Scale accessories using values found in the configurations folder
-function ScaleAccessories(bodyScaleVector, headScaleVector, anthroPercent, wideToNarrow, rig) {
-    for (let item of rig.GetChildren()) {
+function ScaleAccessories(bodyScaleVector: Vector3, headScaleVector: Vector3, anthroPercent: number, wideToNarrow: number, rig: Instance) {
+    for (const item of rig.GetChildren()) {
 		if (item.className === "Accessory") {
 			ScaleAccessory(item,bodyScaleVector,headScaleVector,anthroPercent,wideToNarrow, rig)
         }
@@ -732,38 +736,45 @@ function ScaleAccessories(bodyScaleVector, headScaleVector, anthroPercent, wideT
 }
 
 //Adjusts any rig attachments as needed
-function AdjustRootRigAttachmentPosition(self, rootPart, matchingPart, rootAttachment, matchingAttachment) {
-	let rightHipAttachment = matchingPart.FindFirstChild("RightHipAttachment")
-	let leftHipAttachment = matchingPart.FindFirstChild("LeftHipAttachment")
+function AdjustRootRigAttachmentPosition(_self: RigData, rootPart: Instance, matchingPart: Instance, rootAttachment: Instance, matchingAttachment: Instance) {
+	const rightHipAttachment = matchingPart.FindFirstChild("RightHipAttachment")
+	const leftHipAttachment = matchingPart.FindFirstChild("LeftHipAttachment")
 
 	if (leftHipAttachment || rightHipAttachment) {
 		let rightHipDistance = 9999999999
 		let leftHipDistance = 9999999999
 		if (rightHipAttachment) {
-			rightHipDistance = rightHipAttachment.Prop("Position").Y
+			rightHipDistance = (rightHipAttachment.Prop("Position") as Vector3).Y
         }
 		if (leftHipAttachment) {
-			leftHipDistance = leftHipAttachment.Prop("Position").Y
+			leftHipDistance = (leftHipAttachment.Prop("Position") as Vector3).Y
         }
 
-		let hipDistance = Math.min(leftHipDistance, rightHipDistance)
+		const hipDistance = Math.min(leftHipDistance, rightHipDistance)
 
-		let rootAttachmentToHipDistance = matchingAttachment.Prop("Position").Y - hipDistance
-		let halfRootPartHeight = rootPart.Prop("Size").Y / 2.0
+		const rootAttachmentToHipDistance = (matchingAttachment.Prop("Position") as Vector3).Y - hipDistance
+		const halfRootPartHeight = (rootPart.Prop("Size") as Vector3).Y / 2.0
 
-		let currentPivot = rootAttachment.Prop("Position")
-		let newYPivot = rootAttachmentToHipDistance - halfRootPartHeight
+		const currentPivot = rootAttachment.Prop("Position") as Vector3
+		const newYPivot = rootAttachmentToHipDistance - halfRootPartHeight
 
-        let ogCF = rootAttachment.Prop("CFrame").clone()
+        const ogCF = (rootAttachment.Prop("CFrame") as CFrame).clone()
         ogCF.Position = [currentPivot.X, newYPivot, currentPivot.Z]
 		rootAttachment.setProperty("CFrame", ogCF)
     }
 }
 
 //Creates a joint between two attachments
-function createJoint(jointName,att0,att1) {
-	let part0 = att0.parent
-    let part1 = att1.parent
+function createJoint(jointName: string, att0: Instance, att1: Instance) {
+	const part0 = att0.parent
+    const part1 = att1.parent
+
+	if (!part0 || !part1) {
+		console.log(att0)
+		console.log(att1)
+		throw new Error("Missing at least one parent")
+	}
+
 	let newMotor = part1.FindFirstChild(jointName)
 
 	if (!(newMotor && newMotor.className === "Motor6D")) {
@@ -783,128 +794,128 @@ function createJoint(jointName,att0,att1) {
 }
 
 //Updates the cumulative step heights with any new scaling
-function UpdateCumulativeStepHeight(self, part) {
+function UpdateCumulativeStepHeight(self: RigData, part: Instance) {
 	if (!part) {
 		return
     }
 
-	let partName = part.Prop("Name")
+	const partName = part.Prop("Name")
 
 	if (partName == "HumanoidRootPart") {
-		let rigAttach = part.FindFirstChild("RootRigAttachment")
+		const rigAttach = part.FindFirstChild("RootRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - rigAttach.Prop("Position").Y
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - rigAttach.Prop("Position").Y;
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y;
         }
-		self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (part.Prop("Size").Y / 2.0)
-		self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (part.Prop("Size").Y / 2.0)
+		self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - ((part.Prop("Size") as Vector3).Y / 2.0)
+		self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - ((part.Prop("Size") as Vector3).Y / 2.0)
 
     } else if (partName == "LowerTorso") {
 		let rigAttach = part.FindFirstChild("RootRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + rigAttach.Prop("Position").Y
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
 		rigAttach = part.FindFirstChild("RightHipRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
         }
 		rigAttach = part.FindFirstChild("LeftHipRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y
         }
 
     } else if (partName == "LeftUpperLeg") {
 		let rigAttach = part.FindFirstChild("LeftHipRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + rigAttach.Prop("Position").Y
-			self.cumulativeLegLeft = self.cumulativeLegLeft + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegLeft = self.cumulativeLegLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
 		rigAttach = part.FindFirstChild("LeftKneeRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - rigAttach.Prop("Position").Y
-			self.cumulativeLegLeft = self.cumulativeLegLeft - rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegLeft = self.cumulativeLegLeft - (rigAttach.Prop("Position") as Vector3).Y
         }
     } else if (partName == "LeftLowerLeg") {
 		let rigAttach = part.FindFirstChild("LeftKneeRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + rigAttach.Prop("Position").Y
-			self.cumulativeLegLeft = self.cumulativeLegLeft + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegLeft = self.cumulativeLegLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
 		rigAttach = part.FindFirstChild("LeftAnkleRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - rigAttach.Prop("Position").Y
-			self.cumulativeLegLeft = self.cumulativeLegLeft - rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegLeft = self.cumulativeLegLeft - (rigAttach.Prop("Position") as Vector3).Y
         }
 
     } else if (partName == "LeftFoot") {
-		let rigAttach = part.FindFirstChild("LeftAnkleRigAttachment")
+		const rigAttach = part.FindFirstChild("LeftAnkleRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + rigAttach.Prop("Position").Y
-			self.cumulativeLegLeft = self.cumulativeLegLeft + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegLeft = self.cumulativeLegLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
-		self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (part.Prop("Size").Y / 2.0)
-		self.cumulativeLegLeft = self.cumulativeLegLeft + (part.Prop("Size").Y / 2.0)
+		self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + ((part.Prop("Size") as Vector3).Y / 2.0)
+		self.cumulativeLegLeft = self.cumulativeLegLeft + ((part.Prop("Size") as Vector3).Y / 2.0)
 
     } else if (partName == "RightUpperLeg") {
 		let rigAttach = part.FindFirstChild("RightHipRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + rigAttach.Prop("Position").Y
-			self.cumulativeLegRight = self.cumulativeLegRight + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegRight = self.cumulativeLegRight + (rigAttach.Prop("Position") as Vector3).Y
         }
 		rigAttach = part.FindFirstChild("RightKneeRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - rigAttach.Prop("Position").Y
-			self.cumulativeLegRight = self.cumulativeLegRight - rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegRight = self.cumulativeLegRight - (rigAttach.Prop("Position") as Vector3).Y
         }
 
     } else if (partName == "RightLowerLeg") {
 		let rigAttach = part.FindFirstChild("RightKneeRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + rigAttach.Prop("Position").Y
-			self.cumulativeLegRight = self.cumulativeLegRight + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegRight = self.cumulativeLegRight + (rigAttach.Prop("Position") as Vector3).Y
         }
 		rigAttach = part.FindFirstChild("RightAnkleRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - rigAttach.Prop("Position").Y
-			self.cumulativeLegRight = self.cumulativeLegRight - rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegRight = self.cumulativeLegRight - (rigAttach.Prop("Position") as Vector3).Y
         }
     } else if (partName == "RightFoot") {
-		let rigAttach = part.FindFirstChild("RightAnkleRigAttachment")
+		const rigAttach = part.FindFirstChild("RightAnkleRigAttachment")
 		if (rigAttach) {
-			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + rigAttach.Prop("Position").Y
-			self.cumulativeLegRight = self.cumulativeLegRight + rigAttach.Prop("Position").Y
+			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
+			self.cumulativeLegRight = self.cumulativeLegRight + (rigAttach.Prop("Position") as Vector3).Y
         }
-		self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (part.Prop("Size").Y / 2.0);
-		self.cumulativeLegRight = self.cumulativeLegRight + (part.Prop("Size").Y / 2.0);
+		self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + ((part.Prop("Size") as Vector3).Y / 2.0);
+		self.cumulativeLegRight = self.cumulativeLegRight + ((part.Prop("Size") as Vector3).Y / 2.0);
     }
 }
 
 //Traverses joints between parts by using the attachments on the character and updates or creates joints accordingly
-function TraverseRigFromAttachmentsInternal(self, part, characterParts, buildJoints) {
+function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, characterParts: Instance[], buildJoints: boolean) {
 	if (!part) {
         console.log("nevermind!")
 		return
     }
 
 	// first, loop thru all of the part's children to find attachments
-	for (let attachment of part.GetChildren()) {
+	for (const attachment of part.GetChildren()) {
 		if (attachment.className === "Attachment") {
 			// only do joint build from "RigAttachments"
-			let attachmentName = attachment.Prop("Name")
-			let findPos = attachmentName.indexOf(rigAttachmentName)
+			const attachmentName = attachment.Prop("Name") as string
+			const findPos = attachmentName.indexOf(rigAttachmentName)
 
 			if (findPos) {
 				// also don't make double joints (there is the same named
                 // rigattachment under two parts)
-				let jointName = attachmentName.substring(0,findPos)
-				let joint = part.FindFirstChild(jointName)
+				const jointName = attachmentName.substring(0,findPos)
+				const joint = part.FindFirstChild(jointName)
 				if (!joint || joint.className !== "Motor6D") {
 
 					// try to find other part with same rig attachment name
-					for (let characterPart of characterParts) {
+					for (const characterPart of characterParts) {
 						if (part !== characterPart) {
-							let matchingAttachment = characterPart.FindFirstChild(attachmentName)
+							const matchingAttachment = characterPart.FindFirstChild(attachmentName)
 							if (matchingAttachment && matchingAttachment.className === "Attachment") {
 								AdjustRootRigAttachmentPosition(self, part, characterPart, attachment, matchingAttachment)
 								if (buildJoints) {
@@ -925,7 +936,7 @@ function TraverseRigFromAttachmentsInternal(self, part, characterParts, buildJoi
 
 //Builds the joints from the attachment and scales accordingly
 //This function also adjusts for assymetrical legs
-function BuildJointsFromAttachments(self, rootPart, characterParts) {
+function BuildJointsFromAttachments(self: RigData, rootPart: Instance, characterParts: Instance[]) {
 
 	// rig the character to get initial leg parts
 	TraverseRigFromAttachmentsInternal(self, rootPart, characterParts, true)
@@ -939,13 +950,13 @@ function BuildJointsFromAttachments(self, rootPart, characterParts) {
 		if (self.cumulativeLegLeft > self.cumulativeLegRight) {
 			yScale = self.cumulativeLegLeft / self.cumulativeLegRight
 			legParts = []
-			for (let part of characterParts) {
+			for (const part of characterParts) {
 				if (part.Prop("Name") == "RightUpperLeg" || part.Prop("Name") == "RightLowerLeg" || part.Prop("Name") == "RightFoot") {
 					legParts.push(part)
                 }
             }
         } else {
-			for (let part of characterParts) {
+			for (const part of characterParts) {
 				if (part.Prop("Name") == "LeftUpperLeg" || part.Prop("Name") == "LeftLowerLeg" || part.Prop("Name") == "LeftFoot") {
 					legParts.push(part)
                 }
@@ -953,23 +964,23 @@ function BuildJointsFromAttachments(self, rootPart, characterParts) {
         }
 
 		//scale parts
-		let adjustScale = Vector3.new(1.0, yScale, 1.0)
-		for (let part of legParts) {
-			let originalSize = getOriginalSize(part)
-			let currentScale = part.Prop("Size").divide(originalSize)
-			let totalScale = currentScale.multiply(adjustScale)
+		const adjustScale = Vector3.new(1.0, yScale, 1.0)
+		for (const part of legParts) {
+			const originalSize = getOriginalSize(part)
+			const currentScale = (part.Prop("Size") as Vector3).divide(originalSize)
+			const totalScale = currentScale.multiply(adjustScale)
 			part.setProperty("Size", originalSize.multiply(totalScale))
 
 			//scale attachments
-			for (let child of part.GetChildren()) {
-				let attachment = child.FindFirstChildOfClass("Attachment")
+			for (const child of part.GetChildren()) {
+				const attachment = child.FindFirstChildOfClass("Attachment")
 				if (attachment) {
-					let originalPosition = attachment.FindFirstChild(originalPositionName)
+					const originalPosition = attachment.FindFirstChild(originalPositionName)
 					if (originalPosition) {
-						let originalP = originalPosition.Prop("Value")
+						const originalP = originalPosition.Prop("Value") as Vector3
 
-                        let ogCF = attachment.Prop("CFrame").clone()
-                        let newPos = originalP.multiply(totalScale)
+                        const ogCF = (attachment.Prop("CFrame") as CFrame).clone()
+                        const newPos = originalP.multiply(totalScale)
                         ogCF.Position = [newPos.X, newPos.Y, newPos.Z]
 						attachment.setProperty("CFrame", ogCF)
                     }
@@ -991,56 +1002,64 @@ function BuildJointsFromAttachments(self, rootPart, characterParts) {
 		stepHeight = Math.min(self.cumulativeStepHeightLeft, self.cumulativeStepHeightRight)
     }
 	if (stepHeight < 0.0) {
-		stepHeight = (rootPart.Prop("Size").Y / 2)
+		stepHeight = ((rootPart.Prop("Size") as Vector3).Y / 2)
     }
 	SetStepHeight(self, stepHeight)
 }
 
 //Builds the joints on a character
-function BuildJoints(self) {
-	let character = self.rig
-	let characterParts = GetCharacterParts(character)
+function BuildJoints(self: RigData) {
+	const character = self.rig
+	const characterParts = GetCharacterParts(character)
 
-	BuildJointsFromAttachments(self, character.Child("HumanoidRootPart"), characterParts)
+	const hrp = character.FindFirstChild("HumanoidRootPart")
+	if (hrp) {
+		BuildJointsFromAttachments(self, hrp, characterParts)
+	} else {
+		console.log(self)
+		throw new Error("Rig is missing HumanoidRootPart")
+	}
 }
 
 //Scales the character including any accessories and attachments
 //NOTE: Scaling is supported only for R15 Characters
-function ScaleCharacter(rig, outfit) {
+export function ScaleCharacter(rig: Instance, outfit: Outfit) {
 	if (outfit.playerAvatarType === AvatarType.R6) {
 		return
 	}
 
 	//scale parts
-	let bodyScaleVector = Vector3.new(
+	const bodyScaleVector = Vector3.new(
         outfit.scale.width,
 		outfit.scale.height,
 		outfit.scale.depth
     )
-	let headScaleVector = Vector3.new(outfit.scale.head,outfit.scale.head,outfit.scale.head)
-	let anthroPercent = outfit.scale.bodyType
-	let wideToNarrow = outfit.scale.proportion
-	let characterParts = GetCharacterParts(rig)
+	const headScaleVector = Vector3.new(outfit.scale.head,outfit.scale.head,outfit.scale.head)
+	const anthroPercent = outfit.scale.bodyType
+	const wideToNarrow = outfit.scale.proportion
+	const characterParts = GetCharacterParts(rig)
 
-	for (let part of characterParts) {
+	for (const part of characterParts) {
 		if (part) {
 			ScaleCharacterPart(part, bodyScaleVector, headScaleVector, anthroPercent, wideToNarrow)
         }
     }
 
 	//scale step height
-	let stepHeight = lerp(stepHeightWide, stepHeightNarrow, wideToNarrow)
-	let newStepHeight = lerp(2.0, stepHeight, anthroPercent)
+	const stepHeight = lerp(stepHeightWide, stepHeightNarrow, wideToNarrow)
+	const newStepHeight = lerp(2.0, stepHeight, anthroPercent)
 
-    let self = {
+    const self: RigData = {
         "outfit": outfit,
         "rig": rig,
+		"cumulativeStepHeightLeft": 0.0,
+		"cumulativeStepHeightRight": 0.0,
+		"cumulativeLegLeft": 0.0,
+		"cumulativeLegRight": 0.0,
+		"stepHeight": 0.0,
+		"bodyScale": bodyScaleVector,
+		"headScale": headScaleVector.X
     }
-
-    self.cumulativeStepHeightLeft = 0.0
-    self.cumulativeStepHeightRight = 0.0
-    self.cumulativeLegLeft = 0.0
-    self.cumulativeLegRight = 0.0
 
 	SetStepHeight(self, newStepHeight * bodyScaleVector.Y)
 
@@ -1056,23 +1075,60 @@ function ScaleCharacter(rig, outfit) {
     return self
 }
 
-function ScaleAccessoryForRig(accessory, rig, outfit) {
-    let scale = outfit.scale
+export function ScaleAccessoryForRig(accessory: Instance, rig: Instance, outfit: Outfit) {
+    const scale = outfit.scale
 
     if (outfit.playerAvatarType === AvatarType.R6) {
-        console.log("SCALING FOR R6")
+        //console.log("SCALING FOR R6")
 		ScaleAccessory(accessory, new Vector3(1,1,1), new Vector3(1,1,1), null, null, rig)
 	} else {
-        console.log("SCALING FOR R15")
+        //console.log("SCALING FOR R15")
         //scale parts
-        let bodyScaleVector = Vector3.new(
+        const bodyScaleVector = Vector3.new(
             scale.width,
             scale.height,
             scale.depth
         )
-        let headScaleVector = Vector3.new(scale.head, scale.head, scale.head)
+        const headScaleVector = Vector3.new(scale.head, scale.head, scale.head)
 
         //scale accessories
         ScaleAccessory(accessory, bodyScaleVector, headScaleVector, scale.bodyType, scale.proportion, rig)
     }
+}
+
+export function replaceBodyPart(rig: Instance, child: Instance) {
+	const childName = child.Prop("Name") as string
+	const oldBodyPart = rig.FindFirstChild(childName)
+	if (oldBodyPart) {
+		const motor6ds = rig.GetDescendants()
+		for (const motor of motor6ds) {
+			if (motor.className === "Motor6D" || motor.className === "Weld") {
+				const part0 = motor.Prop("Part0")
+				const part1 = motor.Prop("Part1")
+				if (part0 && oldBodyPart === part0) {
+					motor.setProperty("Part0", child)
+				}
+				if (part1 && oldBodyPart === part1) {
+					motor.setProperty("Part1", child)
+				}
+			}
+		}
+
+		const oldMotor6ds = oldBodyPart.GetChildren()
+		for (const motor of oldMotor6ds) {
+			if (motor.className === "Motor6D") {
+				const motorName = motor.Prop("Name") as string
+
+				const selfMotor = child.FindFirstChild(motorName)
+				if (selfMotor) {
+					//if (!selfMotor.Prop("Part0")) {
+					//    selfMotor.setProperty("Part0", motor.Prop("Part0"))
+					//}
+				}
+			}
+		}
+		
+		oldBodyPart.Destroy()
+	}
+	child.setParent(rig)
 }
