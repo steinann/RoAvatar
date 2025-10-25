@@ -5,13 +5,12 @@
 //https://s3.amazonaws.com/setup.roblox.com/[VERSION_HERE]-API-Dump.json
 
 import * as THREE from 'three';
-import { Buffer } from 'buffer';
 import RBXSimpleView from './rbx-simple-view';
-import LZ4 from 'lz4';
 import { rad, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from './mesh';
 import { DataType, magic, xmlMagic } from './constant';
+import * as LZ4 from './lz4'
 
 //datatype structs
 export class UDim {
@@ -443,12 +442,16 @@ export class Instance {
             this._properties.set(property.name, property)
         }
 
-        if (value) {
+        if (value !== undefined) {
             this.setProperty(property.name, value)
         }
     }
 
     fixPropertyName(name: string) {
+        if (this._properties.get(name)) {
+            return name
+        }
+
         switch (name) {
             case "Size": {
                 name = "size"
@@ -472,8 +475,6 @@ export class Instance {
     }
 
     setProperty(name: string, value: unknown) {
-        name = this.fixPropertyName(name)
-
         const property = this._properties.get(name)
         if (property) {
             //special stuff
@@ -518,7 +519,7 @@ export class Instance {
     Property(name: string): unknown {
         name = this.fixPropertyName(name)
 
-        if (name == "Position") {
+        if (name == "Position" && !this.HasProperty("Position")) {
             const cf = this.Prop("CFrame") as CFrame
             const pos = cf.Position
             return new Vector3(pos[0], pos[1], pos[2])
@@ -1172,14 +1173,18 @@ export class RBX {
             if (isZSTD) { //ZSTD
                 throw new Error("Compressed data is ZSTD") //TODO: implement
             } else if (isLZ4) { //LZ4
-                const uncompressed = Buffer.alloc(uncompressedLength)
+                //const uncompressed = Buffer.alloc(uncompressedLength)
+
+                //const compressedByteArray = view.buffer.slice(view.viewOffset, view.viewOffset + compressedLength)
+                //const compressedIntArray = new Uint8Array(compressedByteArray) as Buffer<ArrayBufferLike>
+
+                ///*const uncompressedSize = */LZ4.decodeBlock(compressedIntArray, uncompressed)
+                
+                //return uncompressed.buffer
 
                 const compressedByteArray = view.buffer.slice(view.viewOffset, view.viewOffset + compressedLength)
-                const compressedIntArray = new Uint8Array(compressedByteArray) as Buffer<ArrayBufferLike>
-
-                /*const uncompressedSize = */LZ4.decodeBlock(compressedIntArray, uncompressed)
                 
-                return uncompressed.buffer
+                return LZ4.decompress(compressedByteArray, uncompressedLength)
             }
         }
 
@@ -1476,10 +1481,10 @@ export class RBX {
     generateTree() {
         if (this.treeGenerated) {
             console.warn("Tree already generated")
-            return
+            return this.dataModel
         }
 
-        const referentToInstance = new Map() //<referent,instance>
+        const referentToInstance = new Map<number,Instance>() //<referent,instance>
 
         //instances
         for (const inst of this.instArray) {
@@ -1502,6 +1507,10 @@ export class RBX {
                 const referent = inst.referents[i]
                 const instance = referentToInstance.get(referent)
 
+                if (!instance) {
+                    throw new Error(`Instance with referent ${referent} is missing`)
+                }
+
                 const property = new Property()
                 property.name = prop.propertyName
                 property.typeID = prop.typeID
@@ -1510,7 +1519,7 @@ export class RBX {
                 switch (property.typeID) {
                     case DataType.Referent:
                         {
-                            const referenced = referentToInstance.get(prop.values[i])
+                            const referenced = referentToInstance.get(prop.values[i] as number)
                             instance.setProperty(property.name, referenced)
                             break
                         }

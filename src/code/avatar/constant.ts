@@ -1,4 +1,4 @@
-const BrickColors: {[K in number]: string} = {
+export const BrickColors: {[K in number]: string} = {
     1 :"#F2F3F3",
     2 :"#A1A5A2",
     3 :"#F9E999",
@@ -209,7 +209,52 @@ const BrickColors: {[K in number]: string} = {
     1032 :"#FF00BF",
 }
 
-const LayeredClothingAssetOrder: {[K in number]: number} = {
+export const defaultShirtAssetIds = [
+    855776103,
+    855760101,
+    855766176,
+    855777286,
+    855768342,
+    855779323,
+    855773575,
+    855778084
+]
+
+export const defaultPantAssetIds = [
+    855783877,
+    855780360,
+    855781078,
+    855782781,
+    855781508,
+    855785499,
+    855782253,
+    855784936
+]
+
+export const defaultShirtTemplateAssetIds = [
+    855776101,
+    855759986,
+    855766170,
+    855777285,
+    855768337,
+    855779322,
+    855773572,
+    855778082
+]
+export const defaultPantTemplateAssetIds = [
+    867813066,
+    867818313,
+    867822311,
+    867826313,
+    867830078,
+    867833254,
+    867838635,
+    867842477
+]
+
+export const minimumDeltaEBodyColorDifference = 11.4
+
+export const LayeredClothingAssetOrder: {[K in number]: number} = {
   76: 0, // Eyebrow Accessory
   77: 1, // Eyelash Accessory
   /*
@@ -230,7 +275,7 @@ const LayeredClothingAssetOrder: {[K in number]: number} = {
   41: 13 // Hair (i.e. Hair Accessory)
 };
 
-const MaxPerAsset: {[K in string]: number} = {
+export const MaxPerAsset: {[K in string]: number} = {
     "Head": 1,
     "TShirt": 1,
     "Shirt": 1,
@@ -253,18 +298,16 @@ const MaxPerAsset: {[K in string]: number} = {
     "MoodAnimation": 1,
 }
 
-type OutfitOrigin = "WebAvatar" | "WebOutfit" | "Other" | "Look"
-const OutfitOrigin: {[K in OutfitOrigin]: OutfitOrigin} = {
+export type OutfitOrigin = "WebAvatar" | "WebOutfit" | "Other" | "Look"
+export const OutfitOrigin: {[K in OutfitOrigin]: OutfitOrigin} = {
     "WebAvatar": "WebAvatar",
     "WebOutfit": "WebOutfit",
     "Other": "Other",
     "Look": "Look",
 }
 
-type AvatarType = "R6" | "R15"
-const AvatarType = {
+export type AvatarType = "R6" | "R15"
+export const AvatarType: {[K in AvatarType]: AvatarType} = {
     "R15": "R15",
     "R6": "R6",
 }
-
-export { BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin, AvatarType }

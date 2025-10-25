@@ -1,0 +1,48 @@
+-- Accessory and LC limits
+    -- 5 reserved for accessories
+    -- 5 reserved for LC
+    -- 5 shared between accessories and LC
+    IMPORTANT NOTE: DO NOT USE ASSETTYPE TO DETERMINE IF ASSET IS LAYERED, regular accessories can have wrap layers! this is also probably why 5 slots are shared
+        Depending on scenario you either want to check for wrap layer or check assettype AND if it can be a layered accessory (example: hair)
+
+y = {
+        64: "Tops",
+        65: "Tops",
+        66: "Bottoms",
+        69: "Bottoms",
+        72: "Bottoms",
+        67: "Outerwear",
+        68: "Tops"
+    }
+      , d = {
+        Tops: 1,
+        Bottoms: 1,
+        Outerwear: 1
+    }
+      , t (default order for asset id) = {
+        76: 0,
+        77: 1,
+        70: 5,
+        71: 5,
+        66: 6,
+        69: 7,
+        72: 8,
+        64: 9,
+        65: 10,
+        68: 11,
+        67: 12,
+        41: 13
+    c = {
+        41: 2
+    }
+      , n (both layered and regular) = [41, 76, 77];
+
+--Limits i think for real this time (WRONG)
+    - Total count (should not be added twice for hair) <= 15
+    - Accessory count <= 10
+    - Can be layered count (includes hair and stuff) <= 10
+
+--Limits
+    - Accessory count <= 10
+    - Layered count <= 10
+    EyebrowAccessory, EyelashAccessory and HairAccessory count in both

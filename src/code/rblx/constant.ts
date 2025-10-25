@@ -1,6 +1,8 @@
 export const magic = "<roblox!"
 export const xmlMagic = "<roblox "
 
+//local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
+
 export const MeshType = {
     "Brick": 6,
     "Cylinder": 4,
@@ -9,6 +11,75 @@ export const MeshType = {
     "Sphere": 3,
     "Torso": 1,
     "Wedge": 2,
+}
+
+export const AccessoryType = { //THIS IS THE ENUM FROM ROBLOX STUDIO, NOT TO BE MISTAKEN WITH THE ACTUAL ASSET TYPE ID
+    "Unknown": 0,
+    "Hat": 1,
+    "Hair": 2,
+    "Face": 3,
+    "Neck": 4,
+    "Shoulder": 5,
+    "Front": 6,
+    "Back": 7,
+    "Waist": 8,
+    "TShirt": 9,
+    "Shirt": 10,
+    "Pants": 11,
+    "Jacket": 12,
+    "Sweater": 13,
+    "Shorts": 14,
+    "LeftShoe": 15,
+    "RightShoe": 16,
+    "DressSkirt": 17,
+    "Eyebrow": 18,
+    "Eyelash": 19,
+}
+
+export const HumanoidRigType = {
+    "R6": 0,
+    "R15": 1,
+}
+
+export const AssetTypeToAccessoryType = {
+    "Hat": AccessoryType.Hat,
+    "HairAccessory": AccessoryType.Hair,
+    "FaceAccessory": AccessoryType.Face,
+    "NeckAccessory": AccessoryType.Neck,
+    "ShoulderAccessory": AccessoryType.Shoulder,
+    "FrontAccessory": AccessoryType.Front,
+    "BackAccessory": AccessoryType.Back,
+    "WaistAccessory": AccessoryType.Waist,
+    "TShirtAccessory": AccessoryType.TShirt,
+    "ShirtAccessory": AccessoryType.Shirt,
+    "PantsAccessory": AccessoryType.Pants,
+    "JacketAccessory": AccessoryType.Jacket,
+    "SweaterAccessory": AccessoryType.Sweater,
+    "ShortsAccessory": AccessoryType.Shorts,
+    "LeftShoeAccessory": AccessoryType.LeftShoe,
+    "RightShoeAccessory": AccessoryType.RightShoe,
+    "DressSkirtAccessory": AccessoryType.DressSkirt,
+    "EyebrowAccessory": AccessoryType.Eyebrow,
+    "EyelashAccessory": AccessoryType.Eyelash,
+}
+
+export const NeverLayeredAccessoryTypes = [
+    AccessoryType.Hat,
+    AccessoryType.Face,
+    AccessoryType.Neck,
+    AccessoryType.Shoulder,
+    AccessoryType.Front,
+    AccessoryType.Back,
+    AccessoryType.Waist,
+]
+
+export const BodyPart = {
+    "Head": 0,
+    "Torso": 1,
+    "LeftArm": 2,
+    "RightArm": 3,
+    "LeftLeg": 4,
+    "RightLeg": 5,
 }
 
 export const DataType = {

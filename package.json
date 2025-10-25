@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
-    "lz4": "^0.6.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "three": "^0.180.0",
@@ -19,8 +18,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@rollup/plugin-commonjs": "^28.0.9",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "@types/chrome": "^0.1.24",
-    "@types/lz4": "^0.6.4",
     "@types/node": "^24.9.1",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
@@ -33,6 +33,7 @@
     "globals": "^16.4.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vite-plugin-wasm": "^3.5.0"
   }
 }

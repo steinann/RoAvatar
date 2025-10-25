@@ -1,5 +1,5 @@
 import type { Vec3 } from "../rblx/mesh";
-import { Vector3 } from "../rblx/rbx";
+import { Color3, Vector3 } from "../rblx/rbx";
 
 function download(filename: string, text: string) {
     const element = document.createElement('a');
@@ -197,4 +197,19 @@ function rotationMatrixToEulerAngles(te: number[], order = "YXZ"): Vec3 { //from
     return [deg(x),deg(y),deg(z)];
 }
 
-export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, clonePrimitiveArray, rotationMatrixToEulerAngles }
+function hexToRgb(hex: string) {
+    hex = hex.toLowerCase()
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16) / 255,
+        g: parseInt(result[2], 16) / 255,
+        b: parseInt(result[3], 16) / 255
+    } : null;
+}
+
+function hexToColor3(hex: string) {
+    const rgb = hexToRgb(hex)
+    return new Color3(rgb?.r, rgb?.g, rgb?.b)
+}
+
+export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

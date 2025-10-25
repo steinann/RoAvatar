@@ -285,7 +285,7 @@ function scaleChildrenOfPart(part: Instance, scaleVector: Vector3) {
 }
 
 //This is the only working accessory scaling function, all the other ones are incorrect
-function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, headScaleVector: Vector3, bodyTypeScale: number | null, bodyProportionScale: number | null, rig: Instance) {
+export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, headScaleVector: Vector3, bodyTypeScale: number | null, bodyProportionScale: number | null, rig: Instance) {
 	const handle = accessory.FindFirstChild("Handle")
 	if (!handle) {
 		return

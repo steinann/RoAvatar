@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { Authentication } from './code/api'
 import { AuthContext } from './react/auth-context'
+import Test from './react/test'
 
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
@@ -19,7 +20,7 @@ function App() {
   return (
     <>
       <AuthContext value={auth}>
-        
+        <Test/>
       </AuthContext>
     </>
   )

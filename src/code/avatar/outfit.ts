@@ -2,7 +2,7 @@
 
 import { API, type Authentication } from "../api";
 import { BODYCOLOR3 } from "../misc/flags"
-import { download } from "../misc/misc";
+import { download, hexToRgb } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
 import { Asset, AssetMeta, AssetType } from "./asset";
 import type { AssetJson } from "./asset"
@@ -12,16 +12,7 @@ function createAccessoryBlob(asset: Asset, assetType: string) {
     return {"Order": asset.meta?.order, "AssetId": asset.id, "AccessoryType": assetType, "Puffiness": asset.meta?.puffiness}
 }
 
-function hexToRgb(hex: string) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16) / 255,
-        g: parseInt(result[2], 16) / 255,
-        b: parseInt(result[3], 16) / 255
-    } : null;
-}
-
-type ColorType = "BrickColor" | "Color3"
+export type ColorType = "BrickColor" | "Color3"
 
 type ScaleJson = {
     height?: number,
@@ -52,7 +43,7 @@ type OutfitJson = {
     scales?: ScaleJson //i hate this inconsistency, my code will always use scale
 }
 
-class Scale {
+export class Scale {
     height!: number //1
     width!: number //1
     head!: number //0.95
@@ -100,7 +91,7 @@ class Scale {
     }
 }
 
-class BodyColor3s {
+export class BodyColor3s {
     colorType: ColorType //Color3
 
     headColor3!: string // FFFFFF
@@ -175,7 +166,7 @@ class BodyColor3s {
     }
 }
 
-class BodyColors {
+export class BodyColors {
     colorType: ColorType //BrickColor
 
     headColorId!: number //1001 - Institutional White
@@ -265,7 +256,7 @@ class BodyColors {
     }
 }
 
-class Outfit {
+export class Outfit {
     scale: Scale = new Scale()
     bodyColors: BodyColors | BodyColor3s = new BodyColor3s()
     playerAvatarType: AvatarType = "R15"
@@ -682,7 +673,18 @@ class Outfit {
         return contains
     }
 
-    containsLayered() {
+    containsAssetType(assetType: string) {
+        for (const asset of this.assets) {
+            if (asset.assetType.name === assetType) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    //INCORRECT IMPLEMENTATION, SOME REGULAR ACCESSORIES CAN CONTAIN WrapLayer
+    /*containsLayered() {
         let contains = false
 
         for (const asset of this.assets) {
@@ -705,7 +707,7 @@ class Outfit {
         }
 
         return contains
-    }
+    }*/
 
     removeAsset(assetId: number) {
         let index = null
@@ -1038,5 +1040,3 @@ class Outfit {
         return {"success": true, "response": response}
     }
 }*/
-
-export { Outfit }
