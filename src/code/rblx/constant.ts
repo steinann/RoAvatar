@@ -13,6 +13,12 @@ export const MeshType = {
     "Wedge": 2,
 }
 
+export const AlphaMode = {
+    "Overlay": 0,
+    "Transparency": 1,
+    "TintMask": 2,
+}
+
 export const AccessoryType = { //THIS IS THE ENUM FROM ROBLOX STUDIO, NOT TO BE MISTAKEN WITH THE ACTUAL ASSET TYPE ID
     "Unknown": 0,
     "Hat": 1,
