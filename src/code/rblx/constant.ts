@@ -3,6 +3,17 @@ export const xmlMagic = "<roblox "
 
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
+export const RenderedClassTypes = ["Part", "MeshPart"]
+
+export const NormalId = {
+    "Right": 0,
+    "Top": 1,
+    "Back": 2,
+    "Left": 3,
+    "Bottom": 4,
+    "Front": 5,
+}
+
 export const MeshType = {
     "Brick": 6,
     "Cylinder": 4,
@@ -89,6 +100,35 @@ export const BodyPart = {
 }
 
 export const AllBodyParts = Object.values(BodyPart)
+
+export const BodyPartNameToEnum: {[K in string]: number} = {
+    "Head": BodyPart.Head,
+    "Torso": BodyPart.Torso,
+    "Left Arm": BodyPart.LeftArm,
+    "Right Arm": BodyPart.RightArm,
+    "Left Leg": BodyPart.LeftLeg,
+    "Right Leg": BodyPart.RightLeg,
+
+    //R15
+    "LeftUpperArm": BodyPart.LeftArm,
+    "LeftLowerArm": BodyPart.LeftArm,
+    "LeftHand": BodyPart.LeftArm,
+
+    "RightUpperArm": BodyPart.RightArm,
+    "RightLowerArm": BodyPart.RightArm,
+    "RightHand": BodyPart.RightArm,
+
+    "LeftUpperLeg": BodyPart.LeftLeg,
+    "LeftLowerLeg": BodyPart.LeftLeg,
+    "LeftFoot": BodyPart.LeftLeg,
+
+    "RightUpperLeg": BodyPart.RightLeg,
+    "RightLowerLeg": BodyPart.RightLeg,
+    "RightFoot": BodyPart.RightLeg,
+
+    "UpperTorso": BodyPart.Torso,
+    "LowerTorso": BodyPart.Torso,
+}
 
 export const DataType = {
     "String": 0x01,

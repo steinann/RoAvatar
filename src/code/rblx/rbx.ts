@@ -9,7 +9,7 @@ import RBXSimpleView from './rbx-simple-view';
 import { rad, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from './mesh';
-import { DataType, magic, xmlMagic } from './constant';
+import { BodyPartNameToEnum, DataType, magic, xmlMagic } from './constant';
 import * as LZ4 from './lz4'
 
 //datatype structs
@@ -132,6 +132,10 @@ export class Color3uint8 {
 
     clone() {
         return new Color3uint8(this.R, this.G, this.B)
+    }
+
+    toColor3() {
+        return new Color3(this.R / 255, this.G / 255, this.B / 255)
     }
 }
 
@@ -1633,7 +1637,22 @@ export class RBX {
     }
 }
 
+export function isAffectedByHumanoid(child: Instance) {
+    const parent = child.parent
+    if (!parent) {
+        return false
+    }
+    if (BodyPartNameToEnum[child.Property("Name") as string] && child.name !== "Head") { //check if part is one of the parts inside an R6 rig affected by humanoids
+        if (parent) {
+            const humanoid = parent.FindFirstChildOfClass("Humanoid")
+            if (humanoid) {
+                return true
+            }
+        }
+    }
 
+    return false
+}
 
 
 // EXAMPLE ON CALCULATING part1 CFRAME FOR MOTOR6D

@@ -169,10 +169,36 @@ export function parseAssetString(str: string) {
 const CACHE = {
     "AssetBuffer": new Map<string,ArrayBuffer>(),
     "RBX": new Map<string,RBX>(),
-    "Mesh": new Map<string,FileMesh>()
+    "Mesh": new Map<string,FileMesh>(),
+    "Image": new Map<string,HTMLImageElement | undefined>(),
 }
 
 const API = {
+    "Generic": {
+        LoadImage: async function(url: string): Promise<HTMLImageElement | undefined> {
+            return new Promise((resolve) => {
+                const fetchStr = parseAssetString(url) || url
+
+                const cachedImage = CACHE.Image.get(fetchStr)
+
+                if (cachedImage) {
+                    resolve(cachedImage)
+                } else {
+                    const image = new Image()
+                    image.onload = () => {
+                        CACHE.Image.set(fetchStr, image)
+                        resolve(image)
+                    }
+                    image.onerror = () => {
+                        CACHE.Image.set(fetchStr, undefined)
+                        resolve(undefined)
+                    }
+                    image.crossOrigin = "anonymous"
+                    image.src = fetchStr
+                }
+            })
+        }
+    },
     "Auth": {
         GetCookie: async function() {
             let returnedCookie = await browserCookiesGet(".ROBLOSECURITY", "https://www.roblox.com")

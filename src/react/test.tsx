@@ -5,6 +5,7 @@ import { Instance, RBX } from "../code/rblx/rbx"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import { Outfit } from "../code/avatar/outfit"
 import { addRBX, mount } from "../code/render/legacy-renderer"
+import { Material } from "../code/render/material"
 
 export default function Test(): React.JSX.Element {
     const auth = useContext(AuthContext)
@@ -48,6 +49,15 @@ export default function Test(): React.JSX.Element {
                                             console.log(rig)
                                             console.log("Adding rbx to 3d view")
                                             addRBX(rigRBX)
+
+                                            const material = new Material()
+                                            const upperTorso = rig.FindFirstChild("UpperTorso")
+                                            if (upperTorso) {
+                                                material.fromInstance(upperTorso)
+                                                console.log("THIS IS THE UPPERTORSO MATERIAL")
+                                                console.log(material)
+                                                console.log(material.compileTexture("color"))
+                                            }
                                         })
                                         
                                     } else {
