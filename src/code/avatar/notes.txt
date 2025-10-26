@@ -45,4 +45,4 @@ y = {
 --Limits
     - Accessory count <= 10
     - Layered count <= 10
-    EyebrowAccessory, EyelashAccessory and HairAccessory count in both
+    EyebrowAccessory, EyelashAccessory and HairAccessory count in both (really?? i think its only hair)
