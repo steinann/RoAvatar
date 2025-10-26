@@ -1,15 +1,16 @@
-import { API } from "../../api";
+import { API, Authentication } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { delta_CIEDE2000 } from "../color-similarity";
-import { AccessoryType, AssetTypeToAccessoryType, BodyPart, DataType, HumanoidRigType, NeverLayeredAccessoryTypes } from "../constant";
+import { AccessoryType, AllBodyParts, AssetTypeToAccessoryType, BodyPart, DataType, HumanoidRigType, NeverLayeredAccessoryTypes } from "../constant";
 import { CFrame, Color3, Instance, Property, RBX, Vector3 } from "../rbx";
-import { ScaleAccessory, ScaleCharacter } from "../scale";
+import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
 import BodyPartDescriptionWrapper from "./BodyPartDescription";
 import InstanceWrapper from "./InstanceWrapper";
 
+type ClothingDiffType = "Shirt" | "Pants" | "GraphicTShirt"
 type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory"
 
 function hasSameValFloat(instance0: Instance, instance1: Instance, propertyName: string) {
@@ -62,6 +63,8 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         "Shirt",
         "Face",
     ]
+
+    cancelApply: boolean = false //apply changes to original description to reflect progress, this way we dont have to mark the entire old one dirty if we cancel OR combine comparison of both humanoid descriptions?
 
     setup() {
         // BASIC
@@ -130,11 +133,11 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     }
 
     /**
-     * @returns [diffs, <AccessoryDescription[]>unchangedAccessories]
+     * @returns [diffs, addedAccessories, removedAccessories]
     */
-    compare(otherW: HumanoidDescriptionWrapper): [HumanoidDescriptionDiff[], Instance[]] {
+    compare(originalW: HumanoidDescriptionWrapper): [HumanoidDescriptionDiff[], bigint[], bigint[]] {
         const self = this.instance
-        const other = otherW.instance
+        const other = originalW.instance
 
         const diffs: HumanoidDescriptionDiff[] = []
 
@@ -167,12 +170,12 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         // BODY COLORS & BODY PARTS
         let bodyColorsSame = true
         let bodyPartsSame = true
-        const bodyParts = [BodyPart.Head, BodyPart.Torso, BodyPart.RightArm, BodyPart.LeftArm, BodyPart.RightLeg, BodyPart.LeftLeg]
-        for (const bodyPart of bodyParts) {
-            if (!isSameColor(this.getBodyPartColor(bodyPart), otherW.getBodyPartColor(bodyPart))) {
+        
+        for (const bodyPart of AllBodyParts) {
+            if (!isSameColor(this.getBodyPartColor(bodyPart), originalW.getBodyPartColor(bodyPart))) {
                 bodyColorsSame = false
             }
-            if (this.getBodyPartId(bodyPart) !== otherW.getBodyPartId(bodyPart)) {
+            if (this.getBodyPartId(bodyPart) !== originalW.getBodyPartId(bodyPart)) {
                 bodyPartsSame = false
             }
         }
@@ -201,10 +204,9 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
 
         //ACCESSORIES
-        const unchangedAccessories = []
         let accessoriesSame = true
         const selfAccessoryDescriptions = this.getAccessoryDescriptions()
-        const otherAccessoryDescriptions = otherW.getAccessoryDescriptions()
+        const otherAccessoryDescriptions = originalW.getAccessoryDescriptions()
 
         if (selfAccessoryDescriptions.length !== otherAccessoryDescriptions.length) {
             accessoriesSame = false
@@ -214,7 +216,6 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                 for (const otherDesc of otherAccessoryDescriptions) {
                     if (isSameAccessoryDesc(desc, otherDesc)) {
-                        unchangedAccessories.push(desc)
                         foundSame = true
                         break
                     }
@@ -231,7 +232,26 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             diffs.push("accessory")
         }
 
-        return [diffs, unchangedAccessories]
+        //ADDED AND REMOVED ACCESSORIES
+        const originalIdList = originalW.getAccessoryIds()
+        const newIdList = this.getAccessoryIds()
+
+        const addedIds: bigint[] = []
+        const removedIds: bigint[] = []
+
+        for (const id of newIdList) {
+            if (!originalIdList.includes(id)) {
+                addedIds.push(id)
+            }
+        }
+
+        for (const id of originalIdList) {
+            if (!newIdList.includes(id)) {
+                removedIds.push(id)
+            }
+        }
+
+        return [diffs, addedIds, removedIds]
     }
 
     getAccessoryDescriptions(): Instance[] {
@@ -244,6 +264,27 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
 
         return accessoryDescriptions
+    }
+
+    getAccessoryIds(): bigint[] {
+        const descs = this.getAccessoryDescriptions()
+        const ids: bigint[] = []
+
+        for (const desc of descs) {
+            ids.push(desc.Prop("AssetId") as bigint)
+        }
+
+        return ids
+    }
+
+    getAccessoryDescriptionWithId(id: bigint): Instance | undefined {
+        for (const desc of this.getAccessoryDescriptions()) {
+            if (desc.Prop("AssetId") as bigint === id) {
+                return desc
+            }
+        }
+
+        return undefined
     }
 
     getBodyPartDescription(bodyPart: number): Instance | undefined {
@@ -281,7 +322,40 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return 0n
     }
 
-    async fromOutfit(outfit: Outfit): Promise<Instance | Response> {
+    createRigData(): RigData | undefined {
+        const humanoid = this.instance.parent
+        const rig = humanoid?.parent
+
+        if (rig) {
+            const mockOutfit = new Outfit()
+            mockOutfit.playerAvatarType = AvatarType.R15
+            mockOutfit.scale.bodyType = this.instance.Prop("BodyTypeScale") as number
+            mockOutfit.scale.proportion = this.instance.Prop("ProportionScale") as number
+
+            mockOutfit.scale.width = this.instance.Prop("WidthScale") as number
+            mockOutfit.scale.height = this.instance.Prop("HeightScale") as number
+            mockOutfit.scale.depth = this.instance.Prop("DepthScale") as number
+            mockOutfit.scale.head = this.instance.Prop("HeadScale") as number
+
+            const self: RigData = {
+                "outfit": mockOutfit,
+                "rig": rig,
+                "cumulativeStepHeightLeft": 0.0,
+                "cumulativeStepHeightRight": 0.0,
+                "cumulativeLegLeft": 0.0,
+                "cumulativeLegRight": 0.0,
+                "stepHeight": 0.0,
+                "bodyScale": new Vector3(mockOutfit.scale.width, mockOutfit.scale.height, mockOutfit.scale.depth),
+                "headScale": mockOutfit.scale.head
+            }
+
+            return self
+        } else {
+            return undefined
+        }
+    }
+
+    async fromOutfit(outfit: Outfit, auth: Authentication): Promise<Instance | Response> {
         // SCALE
         this.instance.setProperty("BodyTypeScale", outfit.scale.bodyType)
         this.instance.setProperty("ProportionScale", outfit.scale.proportion)
@@ -404,7 +478,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                             if (accessoryType === AccessoryType.Hair) {
                                 assetPromises.push(new Promise((resolve) => {
-                                    API.Asset.GetRBX(`rbxassetid://${asset.id}`).then(result => {
+                                    API.Asset.GetRBX(`rbxassetid://${asset.id}`, undefined, auth).then(result => {
                                         if (result instanceof RBX) {
                                             const dataModel = result.generateTree()
                                             const descendants = dataModel.GetDescendants()
@@ -508,9 +582,8 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return this.instance
     }
 
-    applyScale(humanoid: Instance) {
+    _applyScale(humanoid: Instance) {
         const rig = humanoid.parent
-        
         if (!rig) {
             return
         }
@@ -560,13 +633,6 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             }
         }
 
-        //recalculate motor6ds
-        for (const child of rig.GetDescendants()) {
-            if (child.className === "Motor6D" || child.className === "Weld") {
-                child.setProperty("C0", child.Prop("C0"))
-            }
-        }
-
         //align feet with ground
         if (scaleInfo) {
             const hrp = rig.FindFirstChild("HumanoidRootPart")
@@ -576,32 +642,413 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 hrp.setProperty("CFrame", cf)
             }
         }
+
+        //recalculate motor6ds
+        for (const child of rig.GetDescendants()) {
+            if (child.className === "Motor6D" || child.className === "Weld") {
+                child.setProperty("C0", child.Prop("C0"))
+            }
+        }
     }
 
-    async applyAll(humanoid: Instance) {
+    _applyBodyColors(humanoid: Instance) {
+        const rig = humanoid.parent
+        if (!rig) {
+            return
+        }
+
+        const bodyColors = rig.FindFirstChildOfClass("BodyColors")
+        if (bodyColors) {
+            bodyColors.setProperty("HeadColor3", this.getBodyPartColor(BodyPart.Head))
+            bodyColors.setProperty("TorsoColor3", this.getBodyPartColor(BodyPart.Torso))
+
+            bodyColors.setProperty("LeftArmColor3", this.getBodyPartColor(BodyPart.LeftArm))
+            bodyColors.setProperty("RightArmColor3", this.getBodyPartColor(BodyPart.RightArm))
+
+            bodyColors.setProperty("LeftLegColor3", this.getBodyPartColor(BodyPart.LeftLeg))
+            bodyColors.setProperty("RightLegColor3", this.getBodyPartColor(BodyPart.RightLeg))
+        }
+    }
+
+    async _applyBodyParts(humanoid: Instance, auth: Authentication, toChange = AllBodyParts) {
+        const rig = humanoid.parent
+        if (!rig) {
+            return undefined
+        }
+
+        const avatarType = humanoid.Prop("RigType") === HumanoidRigType.R15 ? AvatarType.R15 : AvatarType.R6
+
+        const promises: Promise<undefined | Response>[] = []
+
+        for (const bodyPart of toChange) {
+            const assetId = this.getBodyPartId(bodyPart)
+            if (assetId > 0) {
+                promises.push(new Promise((resolve) => {
+                    let headers: HeadersInit | undefined = undefined
+                    if (avatarType === AvatarType.R15 && bodyPart === BodyPart.Head) {
+                        headers = {"Roblox-AssetFormat":"avatar_meshpart_head"}
+                    }
+
+                    API.Asset.GetRBX(`rbxassetid://${assetId}`, headers, auth).then(bodyPartRBX => {
+                        if (this.cancelApply) resolve(undefined)
+                        if (!(bodyPartRBX instanceof RBX)) {
+                            resolve(bodyPartRBX)
+                        } else {
+                            const dataModel = bodyPartRBX.generateTree()
+
+                            //non head body parts
+                            if (bodyPart !== BodyPart.Head) {
+                                if (avatarType === AvatarType.R6) {
+                                    const R6Folder = dataModel.FindFirstChild("R6")
+                                    if (R6Folder) {
+                                        const characterMesh = R6Folder.FindFirstChildOfClass("CharacterMesh")
+                                        if (characterMesh) {
+                                            for (const oldCharacterMesh of rig.GetChildren()) {
+                                                if (oldCharacterMesh.className === "CharacterMesh") {
+                                                    if (oldCharacterMesh.Prop("BodyPart") === characterMesh.Prop("BodyPart")) {
+                                                        oldCharacterMesh.Destroy()
+                                                    }
+                                                }
+                                            }
+
+                                            characterMesh.setParent(rig)
+                                        }
+                                    }
+                                } else {
+                                    //TODO: R15 body parts
+                                    let R15Folder = dataModel.FindFirstChild("R15ArtistIntent")
+                                    if (!R15Folder || R15Folder.GetChildren().length === 0) {
+                                        R15Folder = dataModel.FindFirstChild("R15Fixed")
+                                    }
+
+                                    if (R15Folder) { //TODO: make this more reliable (is this still a TODO? pretty sure i fixed it...)
+                                        const children = R15Folder.GetChildren()
+                                        for (const child of children) {
+                                            replaceBodyPart(rig, child)
+
+                                            /*
+                                            const rigData = this.createRigData()
+                                            if (rigData) {
+                                                BuildJoints(rigData)
+                                            }
+                                            */
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (avatarType === AvatarType.R6) {
+                                    const headMesh = dataModel.FindFirstChildOfClass("SpecialMesh")
+                                    if (headMesh) {
+                                        const bodyHeadMesh = rig.FindFirstChild("Head")?.FindFirstChildOfClass("SpecialMesh")
+                                        if (bodyHeadMesh) {
+                                            bodyHeadMesh.Destroy()
+                                        }
+
+                                        headMesh.setParent(rig.FindFirstChild("Head"))
+                                    }
+                                } else {
+                                    const head = dataModel.FindFirstChildOfClass("MeshPart")
+
+                                    if (head) {
+                                        replaceBodyPart(rig, head)
+                                    }
+                                }
+                            }
+
+                            resolve(undefined)
+                        }
+                    })
+                }))
+            }
+        }
+
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
+        
+        for (const value of values) {
+            if (value) {
+                return value
+            }
+        }
+
+        return undefined
+    }
+
+    async _applyClothing(humanoid: Instance, auth: Authentication, toChange: ClothingDiffType[] = ["Shirt", "Pants", "GraphicTShirt"]): Promise<undefined | Response> {
+        const rig = humanoid.parent
+        if (!rig) {
+            return undefined
+        }
+
+        const promises: Promise<undefined | Response>[] = []
+
+        for (const change of toChange) {
+            const id = this.instance.Prop(change)
+            promises.push(new Promise((resolve) => {
+                API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(rbx => {
+                    if (this.cancelApply) resolve(undefined)
+                    if (rbx instanceof RBX) {
+                        const dataModel = rbx.generateTree()
+                        const asset = dataModel.GetChildren()[0]
+                        if (asset) {
+                            const assetClassName = asset.className
+                            const originalAsset = rig.FindFirstChildOfClass(assetClassName)
+                            if (originalAsset) {
+                                originalAsset.Destroy()
+                            }
+
+                            asset.setParent(rig)
+                        }
+                        resolve(undefined)
+                    } else {
+                        resolve(rbx)
+                    }
+                })
+            }))
+        }
+
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
+
+        for (const value of values) {
+            if (value) {
+                return value
+            }
+        }
+
+        return undefined
+    }
+
+    async _applyFace(humanoid: Instance, auth: Authentication): Promise<undefined | Response> {
+        const rig = humanoid.parent
+        if (!rig) {
+            return undefined
+        }
+
+        const rbx = await API.Asset.GetRBX(`rbxassetid://${this.instance.Prop("Face")}`, undefined, auth)
+        if (this.cancelApply) return undefined
+        if (rbx instanceof RBX) {
+            const dataModel = rbx.generateTree()
+            const face = dataModel.GetChildren()[0]
+            if (face) {
+                const head = rig.FindFirstChild("Head")
+                if (head) {
+                    const oldFace = head.FindFirstChildOfClass("Decal")
+                    if (oldFace) {
+                        oldFace.Destroy()
+                    }
+                    face.setParent(head)
+                }
+            }
+        } else {
+            return rbx
+        }
+
+        return undefined
+    }
+
+    async _applyAccessories(humanoid: Instance, auth: Authentication, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
+        if (!addedIds || !removedIds) {
+            addedIds = this.getAccessoryIds()
+            removedIds = []
+        }
+
+        const rig = humanoid.parent
+        if (!rig) {
+            return undefined
+        }
+
+        const avatarType = humanoid.Prop("RigType") === HumanoidRigType.R15 ? AvatarType.R15 : AvatarType.R6
+
+        // remove old accessories
+        if (!originalW) {
+            for (const accessory of rig.GetChildren()) {
+                if (accessory.className === "Accessory") {
+                    accessory.Destroy()
+                }
+            }
+        } else {
+            const descs = originalW.getAccessoryDescriptions()
+            for (const desc of descs) {
+                const accessory = desc.Prop("Instance") as Instance | undefined
+                if (accessory) {
+                    if (removedIds.includes(desc.Prop("AssetId") as bigint)) {
+                        accessory.Destroy()
+                    }
+                }
+            }
+        }
+
+        const promises: Promise<undefined | Response>[] = []
+
+        // add new accessories
+        for (const id of addedIds) {
+            let headers: undefined | HeadersInit = undefined
+            if (avatarType === AvatarType.R15) {
+                headers = {"Roblox-AssetFormat":"avatar_meshpart_accessory"}
+            }
+
+            promises.push(new Promise((resolve) => {
+                API.Asset.GetRBX(`rbxassetid://${id}`, headers, auth).then(rbx => {
+                    if (this.cancelApply) resolve(undefined)
+                    if (rbx instanceof RBX) {
+                        const dataModel = rbx.generateTree()
+                        const accessory = dataModel.GetChildren()[0]
+
+                        if (accessory) {
+                            let isLayered = false
+                            const handle = accessory.FindFirstChild("Handle")
+                            if (handle) {
+                                isLayered = !!handle.FindFirstChildOfClass("WrapLayer")
+                            }
+
+                            if (!isLayered || avatarType === AvatarType.R15) {
+                                accessory.setParent(rig)
+                            }
+
+                            const accessoryDesc = this.getAccessoryDescriptionWithId(id)
+                            if (accessoryDesc) {
+                                accessoryDesc.setProperty("Instance", accessory)
+                            }
+                        }
+                        
+                        resolve(undefined)
+                    } else {
+                        resolve(rbx)
+                    }
+                })
+            }))
+        }
+
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
+
+        for (const value of values) {
+            if (value) {
+                return value
+            }
+        }
+
+        return undefined
+    }
+
+    async _applyAll(humanoid: Instance, auth: Authentication) {
+        const promises: Promise<Response | undefined>[] = []
+
+        promises.push(this._applyAccessories(humanoid, auth))
+        promises.push(this._applyClothing(humanoid, auth))
+        promises.push(this._applyBodyParts(humanoid, auth))
+        promises.push(this._applyFace(humanoid, auth))
+        
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
+        
+        for (const value of values) {
+            if (value) {
+                return value
+            }
+        }
+        
+        this._applyBodyColors(humanoid)
         //scale should be last, right?
-        this.applyScale(humanoid)
+        this._applyScale(humanoid)
+        this._applyScale(humanoid)
+
+        return undefined
     }
 
-    async applyDescription(humanoid: Instance): Promise<Instance | Response> {
+    async applyDescription(humanoid: Instance, auth: Authentication): Promise<Instance | Response | undefined> {
         if (this.instance.parent?.className === "Humanoid") {
             throw new Error("This HumanoidDescription has already been applied! Create a new one instead")
         }
 
+        const promises: Promise<undefined | Response>[] = []
+        const results: (undefined | Response)[] = []
+
         const originalDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
 
         if (!originalDescription) {
-            this.applyAll(humanoid)
+            promises.push(this._applyAll(humanoid, auth))
         } else {
-            const [diffs, unchangedAccessories] = this.compare(new HumanoidDescriptionWrapper(originalDescription))
-            console.log(unchangedAccessories)
+            const originalDescriptionW = new HumanoidDescriptionWrapper(originalDescription)
+            const [diffs, addedAccessories, removedAccessories] = this.compare(originalDescriptionW)
             
+            const miniPromises: Promise<undefined | Response>[] = []
+
+            //accessories
+            if (diffs.includes("accessory")) {
+                miniPromises.push(this._applyAccessories(humanoid, auth, originalDescriptionW, addedAccessories, removedAccessories))
+            }
+
+            //face
+            if (diffs.includes("face")) {
+                miniPromises.push(this._applyFace(humanoid, auth))
+            }
+
+            //clothing
+            if (diffs.includes("clothing")) {
+                const toChange: ClothingDiffType[] = []
+                if (this.instance.Prop("Shirt") !== originalDescriptionW.instance.Prop("Shirt")) {
+                    toChange.push("Shirt")
+                }
+                if (this.instance.Prop("Pants") !== originalDescriptionW.instance.Prop("Pants")) {
+                    toChange.push("Pants")
+                }
+                if (this.instance.Prop("GraphicTShirt") !== originalDescriptionW.instance.Prop("GraphicTShirt")) {
+                    toChange.push("GraphicTShirt")
+                }
+
+                miniPromises.push(this._applyClothing(humanoid, auth, toChange))
+            }
+
+            //body parts
+            if (diffs.includes("bodyPart")) {
+                const toChange = []
+                for (const bodyPart of AllBodyParts) {
+                    if (this.getBodyPartId(bodyPart) !== originalDescriptionW.getBodyPartId(bodyPart)) {
+                        toChange.push(bodyPart)
+                    }
+                }
+
+                miniPromises.push(this._applyBodyParts(humanoid, auth, toChange))
+            }
+
+            const miniValues = await Promise.all(miniPromises)
+            if (this.cancelApply) return undefined
+
+            for (const value of miniValues) {
+                if (value) {
+                    return value
+                }
+            }
+
+            //body color
+            if (diffs.includes("bodyPart") || diffs.includes("bodyColor")) {
+                this._applyBodyColors(humanoid)
+            }
+
+            //scale
             if (diffs.includes("scale") || diffs.includes("bodyPart") || diffs.includes("accessory")) {
-                this.applyScale(humanoid)
+                //only applying it once breaks stuff (I DONT KNOW WHY) TODO: FIX THIS
+                this._applyScale(humanoid)
+                this._applyScale(humanoid)
             }
         }
 
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
         originalDescription?.Destroy()
+
+        for (const value of values) {
+            results.push(value)
+        }
+
+        for (const result of results) {
+            if (result) {
+                return result
+            }
+        }
+
         this.instance.setParent(humanoid)
         
         return this.instance

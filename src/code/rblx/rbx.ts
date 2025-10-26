@@ -113,6 +113,10 @@ export class Color3 {
     clone() {
         return new Color3(this.R, this.G, this.B)
     }
+
+    toColor3uint8() {
+        return new Color3uint8(Math.round(this.R * 255), Math.round(this.G * 255), Math.round(this.B * 255))
+    }
 }
 
 export class Color3uint8 {
@@ -265,6 +269,7 @@ export class Instance {
     ChildAdded = new Event()
     Destroying = new Event()
     Changed = new Event()
+    AncestryChanged = new Event()
 
     constructor(className: string) {
         if (!className) {
@@ -387,13 +392,67 @@ export class Instance {
                         const changedConnection = this.Changed.Connect(() => {
                             update(this)
                         })
+                        const ancestryChangedConnection = this.AncestryChanged.Connect(() => {
+                            update(this)
+                        })
+                        this.addConnectionReference(changedConnection)
+                        this.addConnectionReference(ancestryChangedConnection)
+                    }
+
+                    setup.bind(this)()
+                }
+                break
+            case "BodyColors":
+                {
+                    function update(self: Instance) {
+                        const rig = self.parent
+                        if (!rig) {
+                            return
+                        }
+
+                        const humanoid = rig.FindFirstChildOfClass("Humanoid")
+                        if (!humanoid) {
+                            return
+                        }
+
+                        const bodyPartDictionary: {[K in string]: string[]} = {
+                            "Head": ["Head"],
+                            "Torso": ["Torso", "UpperTorso", "LowerTorso"],
+                            "LeftArm": ["Left Arm", "LeftHand", "LeftLowerArm", "LeftUpperArm"],
+                            "RightArm": ["Right Arm", "RightHand", "RightLowerArm", "RightUpperArm"],
+                            "LeftLeg": ["Left Leg", "LeftFoot", "LeftLowerLeg", "LeftUpperLeg"],
+                            "RightLeg": ["Right Leg", "RightFoot", "RightLowerLeg", "RightUpperLeg"]
+                        }
+
+                        const bodyParts: Instance[] = []
+                        for (const child of rig.GetChildren()) {
+                            if (child.className === "Part" || child.className === "MeshPart") {
+                                bodyParts.push(child)
+                            }
+                        }
+
+                        for (const bodyPart in bodyPartDictionary) {
+                            const bodyPartNames = bodyPartDictionary[bodyPart]
+                            const color = (self.Prop(bodyPart + "Color3") as Color3).toColor3uint8()
+                            for (const child of bodyParts) {
+                                if (bodyPartNames.includes(child.Prop("Name") as string)) {
+                                    child.setProperty("Color", color)
+                                }
+                            }
+                        }
+                    }
+
+                    function setup(this: Instance) {
+                        const changedConnection = this.Changed.Connect(() => {
+                            update(this)
+                        })
+
                         this.addConnectionReference(changedConnection)
                     }
 
                     setup.bind(this)()
-
-                    break
                 }
+                break
         }
     }
 
@@ -475,6 +534,8 @@ export class Instance {
     }
 
     setProperty(name: string, value: unknown) {
+        name = this.fixPropertyName(name)
+
         const property = this._properties.get(name)
         if (property) {
             //special stuff
@@ -564,7 +625,11 @@ export class Instance {
         if (instance) {
             instance.children.push(this)
             instance.ChildAdded.Fire(this)
+            instance.AncestryChanged.Fire(this, instance)
         }
+
+        //events
+        this.AncestryChanged.Fire(this, instance)
     }
 
     Destroy() {
@@ -613,7 +678,7 @@ export class Instance {
         }
     }
 
-    GetChildren() { //It is done like this so setting parents doesnt mess up the list
+    GetChildren(): Instance[] { //It is done like this so setting parents doesnt mess up the list
         const childrenList = []
 
         for (const child of this.children) {
@@ -822,7 +887,7 @@ export class RBX {
         this.dataModel.objectFormat = 0
     }
 
-    clone() { //DOES NOT COPY (DATAMODEL, classIDtoINST or treeGenerated), instead regenerate tree
+    clone() { //DOES NOT COPY (DATAMODEL or treeGenerated), instead regenerate tree
         const copy = new RBX()
         copy.classCount = this.classCount
         copy.instanceCount = this.instanceCount
@@ -843,6 +908,7 @@ export class RBX {
 
         for (const inst of this.instArray) {
             copy.instArray.push(inst.clone())
+            copy.classIDtoINST.set(inst.classID, inst)
         }
 
         for (const prop of this.propArray) {

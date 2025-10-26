@@ -147,7 +147,7 @@ function idFromStr(str: string) {
     return numStrs.length > 0 ? Number(numStrs[numStrs.length - 1]) : NaN
 }
 
-function parseAssetString(str: string) {
+export function parseAssetString(str: string) {
     if (!isNaN(Number(str))) {
         return `https://assetdelivery.roblox.com/v1/asset?id=${str}`
     } else if (str.startsWith("rbxassetid://")) {
@@ -339,6 +339,10 @@ const API = {
         },
         GetRBX: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
             const fetchStr = parseAssetString(url) || url
+
+            if (!auth && fetchStr.startsWith("http")) {
+                console.warn(`Fetching ${url} WITHOUT authentication, this is likely a mistake`)
+            }
 
             let cacheStr = fetchStr
             if (headers) {

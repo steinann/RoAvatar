@@ -11,7 +11,7 @@ import { DataType, MeshType } from "./constant"
 import type { Vec3 } from "./mesh"
 import { CFrame, Instance, Property, Vector3 } from "./rbx"
 
-type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
+export type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
 
 //scaling data
 const originalPositionName = "OriginalPosition"
@@ -598,10 +598,10 @@ function createJoint(jointName: string, att0: Instance, att1: Instance) {
 
     newMotor.addProperty(new Property("Name", DataType.String), jointName)
     newMotor.addProperty(new Property("Archivable", DataType.Bool), true)
-    newMotor.addProperty(new Property("C1", DataType.CFrame), att1.Prop("CFrame"))
     newMotor.addProperty(new Property("C0", DataType.CFrame), att0.Prop("CFrame"))
-    newMotor.addProperty(new Property("Part1", DataType.Referent), part1)
+	newMotor.addProperty(new Property("C1", DataType.CFrame), att1.Prop("CFrame"))
     newMotor.addProperty(new Property("Part0", DataType.Referent), part0)
+	newMotor.addProperty(new Property("Part1", DataType.Referent), part1)
     newMotor.addProperty(new Property("Active", DataType.Bool), true)
     newMotor.addProperty(new Property("Enabled", DataType.Bool), true)
 
@@ -823,7 +823,7 @@ function BuildJointsFromAttachments(self: RigData, rootPart: Instance, character
 }
 
 //Builds the joints on a character
-function BuildJoints(self: RigData) {
+export function BuildJoints(self: RigData) {
 	const character = self.rig
 	const characterParts = GetCharacterParts(character)
 
@@ -943,6 +943,15 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 			}
 		}
 		
+		const face = oldBodyPart.FindFirstChildOfClass("Decal")
+		if (face) {
+			const childFace = child.FindFirstChildOfClass("Decal")
+			if (childFace) {
+				childFace.Destroy()
+			}
+			face.setParent(child)
+		}
+
 		oldBodyPart.Destroy()
 	}
 	child.setParent(rig)

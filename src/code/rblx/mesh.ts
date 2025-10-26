@@ -412,14 +412,14 @@ export class FileMesh {
                         const uvString = vertData[i*9 + j*3 + 2]
 
                         const readPosition = positionString.split(",").map((val) => {return Number(val)})
-                        const position: Vec3 = [readPosition[0] | 0, readPosition[1] | 0, readPosition[2] | 0]
+                        const position: Vec3 = [readPosition[0] || 0, readPosition[1] || 0, readPosition[2] || 0]
                         if (version.startsWith("version 1.00")) {
                             position[0] *= 0.5
                             position[1] *= 0.5
                             position[2] *= 0.5
                         }
                         const readNormal = normalString.split(",").map((val) => {return Number(val)})
-                        const normal: Vec3 = [readNormal[0] | 0, readNormal[1] | 0, readNormal[2] | 0]
+                        const normal: Vec3 = [readNormal[0] || 0, readNormal[1] || 0, readNormal[2] || 0]
                         const readUv = uvString.split(",").map((val) => {return Number(val)})
                         if (readUv.length > 2) {
                             readUv.pop()
@@ -427,7 +427,7 @@ export class FileMesh {
                         if (readUv[1]) {
                             readUv[1] = 1 - readUv[1]
                         }
-                        const uv: Vec2 = [readUv[0] | 0, readUv[1] | 0]
+                        const uv: Vec2 = [readUv[0] || 0, readUv[1] || 0]
 
                         const vert = new FileMeshVertex(position, normal, uv)
                         this.coreMesh.verts.push(vert)

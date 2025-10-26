@@ -82,6 +82,8 @@ export const BodyPart = {
     "RightLeg": 5,
 }
 
+export const AllBodyParts = Object.values(BodyPart)
+
 export const DataType = {
     "String": 0x01,
     "Bool": 0x02,
