@@ -264,7 +264,7 @@ class TextureLayer {
 }
 
 type MaterialLayer = ColorLayer | TextureLayer
-export class Material {
+export class MaterialDesc {
     layers: MaterialLayer[] = []
 
     transparent: boolean = false
@@ -275,7 +275,7 @@ export class Material {
     bodyPart?: number //should only be accounted for if uvType != Normal in TextureLayer
     avatarType?: AvatarType
 
-    isSame(other: Material) {
+    isSame(other: MaterialDesc) {
         const propertiesSame = this.transparent === other.transparent &&
                                 Math.round(this.transparency * 100) === Math.round(other.transparency * 100) &&
                                 this.doubleSided === other.doubleSided &&
@@ -391,7 +391,8 @@ export class Material {
                                 break
                             //TODO: Decal
                             default:
-                                console.warn(`Unsupported uvType: ${layer.uvType}`)
+                                mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 0, 0, canvas.width, canvas.height)
+                                console.warn(`Unsupported uvType: ${layer.uvType}, treating as Normal`)
                         }
                     }
                 } else if (layer instanceof ColorLayer) {
