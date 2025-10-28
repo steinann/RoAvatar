@@ -1,7 +1,8 @@
 import { CFrame, Instance, Vector3 } from "../rblx/rbx"
 
 export class MeshDesc {
-    scale: Vector3 = new Vector3(1,1,1)
+    size: Vector3 = new Vector3(1,1,1)
+    scaleIsRelative: boolean = false
     mesh?: string
 
     deformationReference?: string
