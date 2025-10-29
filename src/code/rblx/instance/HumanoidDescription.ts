@@ -1,10 +1,16 @@
+/*
+ISSUES
+-- Equipping dynamic head then unequipping results in default face
+-- Accessories cannot be unequipped
+*/
+
 import { API, Authentication } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { delta_CIEDE2000 } from "../color-similarity";
-import { AccessoryType, AllBodyParts, AssetTypeToAccessoryType, BodyPart, DataType, HumanoidRigType, NeverLayeredAccessoryTypes } from "../constant";
-import { CFrame, Color3, Instance, Property, RBX, Vector3 } from "../rbx";
+import { AccessoryType, AllBodyParts, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, HumanoidRigType, NeverLayeredAccessoryTypes } from "../constant";
+import { CFrame, Color3, hasSameVal, hasSameValFloat, Instance, isSameColor, isSameVector3, Property, RBX, Vector3 } from "../rbx";
 import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
 import BodyPartDescriptionWrapper from "./BodyPartDescription";
@@ -12,22 +18,6 @@ import InstanceWrapper from "./InstanceWrapper";
 
 type ClothingDiffType = "Shirt" | "Pants" | "GraphicTShirt"
 type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory"
-
-function hasSameValFloat(instance0: Instance, instance1: Instance, propertyName: string) {
-    return Math.round(instance0.Prop(propertyName) as number * 1000) === Math.round(instance1.Prop(propertyName) as number * 1000)
-}
-
-function hasSameVal(instance0: Instance, instance1: Instance, propertyName: string) {
-    return instance0.Prop(propertyName) === instance1.Prop(propertyName)
-}
-
-function isSameColor(color0: Color3, color1: Color3) {
-    return Math.round(color0.R * 1000) === Math.round(color1.R * 1000) && Math.round(color0.G * 1000) === Math.round(color1.G * 1000) && Math.round(color0.B * 1000) === Math.round(color1.B * 1000)
-}
-
-function isSameVector3(vec0: Vector3, vec1: Vector3) {
-    return Math.round(vec0.X * 1000) === Math.round(vec1.X * 1000) && Math.round(vec0.Y * 1000) === Math.round(vec1.Y * 1000) && Math.round(vec0.Z * 1000) === Math.round(vec1.Z * 1000)
-}
 
 function isSameAccessoryDesc(desc0: Instance, desc1: Instance) {
     return hasSameVal(desc0, desc1, "AssetId") &&
@@ -735,6 +725,8 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                         }
                                     }
                                 }
+
+                                resolve(undefined)
                             } else {
                                 if (avatarType === AvatarType.R6) {
                                     const headMesh = dataModel.FindFirstChildOfClass("SpecialMesh")
@@ -753,9 +745,37 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                         replaceBodyPart(rig, head)
                                     }
                                 }
-                            }
 
+                                /*this._applyFace(humanoid, auth).then(result => {
+                                    if (!result) {
+                                        resolve(undefined)
+                                    } else {
+                                        resolve(result)
+                                    }
+                                })*/
+                               resolve(undefined)
+                            }
+                        }
+                    })
+                }))
+            } else {
+                promises.push(new Promise((resolve) => {
+                    API.Asset.GetRBX(avatarType === AvatarType.R6 ? "../assets/RigR6.rbxm" : "../assets/RigR15.rbxm", undefined, auth).then(result => {
+                        if (this.cancelApply) resolve(undefined)
+                        if (result instanceof RBX) {
+                            const dataModel = result.generateTree()
+                            const rigSource = dataModel.GetChildren()[0]
+                            if (rigSource) {
+                                for (const bodyPartName of BodyPartEnumToNames[bodyPart]) {
+                                    const bodyPartPart = rigSource.FindFirstChild(bodyPartName)
+                                    if (bodyPartPart) {
+                                        replaceBodyPart(rig, bodyPartPart)
+                                    }
+                                }
+                            }
                             resolve(undefined)
+                        } else {
+                            resolve(result)
                         }
                     })
                 }))
@@ -783,28 +803,44 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         const promises: Promise<undefined | Response>[] = []
 
         for (const change of toChange) {
-            const id = this.instance.Prop(change)
-            promises.push(new Promise((resolve) => {
-                API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(rbx => {
-                    if (this.cancelApply) resolve(undefined)
-                    if (rbx instanceof RBX) {
-                        const dataModel = rbx.generateTree()
-                        const asset = dataModel.GetChildren()[0]
-                        if (asset) {
-                            const assetClassName = asset.className
-                            const originalAsset = rig.FindFirstChildOfClass(assetClassName)
-                            if (originalAsset) {
-                                originalAsset.Destroy()
-                            }
+            const id = this.instance.Prop(change) as bigint
 
-                            asset.setParent(rig)
+            if (id > 0) {
+                promises.push(new Promise((resolve) => {
+                    API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(rbx => {
+                        if (this.cancelApply) resolve(undefined)
+                        if (rbx instanceof RBX) {
+                            console.log(rbx)
+                            const dataModel = rbx.generateTree()
+                            console.log(dataModel)
+                            const asset = dataModel.GetChildren()[0]
+                            if (asset) {
+                                const assetClassName = asset.className
+                                const originalAsset = rig.FindFirstChildOfClass(assetClassName)
+                                if (originalAsset) {
+                                    originalAsset.Destroy()
+                                }
+
+                                console.log(`Replaced ${change}`)
+                                asset.setParent(rig)
+                            }
+                            resolve(undefined)
+                        } else {
+                            resolve(rbx)
                         }
-                        resolve(undefined)
-                    } else {
-                        resolve(rbx)
-                    }
-                })
-            }))
+                    })
+                }))
+            } else {
+                let className: string = change
+                if (className === "GraphicTShirt") {
+                    className = "ShirtGraphic"
+                }
+
+                const originalAsset = rig.FindFirstChildOfClass(change)
+                if (originalAsset) {
+                    originalAsset.Destroy()
+                }
+            }
         }
 
         const values = await Promise.all(promises)
@@ -825,23 +861,39 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             return undefined
         }
 
-        const rbx = await API.Asset.GetRBX(`rbxassetid://${this.instance.Prop("Face")}`, undefined, auth)
-        if (this.cancelApply) return undefined
-        if (rbx instanceof RBX) {
-            const dataModel = rbx.generateTree()
-            const face = dataModel.GetChildren()[0]
-            if (face) {
-                const head = rig.FindFirstChild("Head")
-                if (head) {
-                    const oldFace = head.FindFirstChildOfClass("Decal")
-                    if (oldFace) {
-                        oldFace.Destroy()
+        const id = this.instance.Prop("Face") as bigint
+
+        if (id > 0) {
+            const rbx = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth)
+            if (this.cancelApply) return undefined
+            if (rbx instanceof RBX) {
+                const dataModel = rbx.generateTree()
+                const face = dataModel.GetChildren()[0]
+                if (face) {
+                    const head = rig.FindFirstChild("Head")
+                    if (head) {
+                        const oldFace = head.FindFirstChildOfClass("Decal")
+                        if (oldFace) {
+                            oldFace.Destroy()
+                        }
+                        if (!head.FindFirstChildOfClass("FaceControls")) { //TODO: find out how roblox avoids adding faces to dynamic heads
+                            face.setParent(head)
+                        } else {
+                            face.Destroy()
+                        }
                     }
-                    face.setParent(head)
                 }
+            } else {
+                return rbx
             }
         } else {
-            return rbx
+            const head = rig.FindFirstChild("Head")
+            if (head) {
+                const oldFace = head.FindFirstChildOfClass("Decal")
+                if (oldFace) {
+                    oldFace.setProperty("Texture","rbxasset://textures/face.png")
+                }
+            }
         }
 
         return undefined

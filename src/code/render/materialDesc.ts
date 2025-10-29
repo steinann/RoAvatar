@@ -11,6 +11,7 @@ function mapImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sX: number
     ctx.rotate(rad(rotation))
     ctx.translate(-oX,-oY)
 
+    ctx.drawImage(img, sX, sY, sW, sH, oX - 2, oY - 2, oW + 4, oH + 4)
     ctx.drawImage(img, sX, sY, sW, sH, oX, oY, oW, oH)
 
     ctx.restore()
@@ -344,9 +345,15 @@ export class MaterialDesc {
                     canvas.width = 768
                     canvas.height = 512
                 }
-            } else { //TODO: make this the size of the largest texture
-                canvas.width = 1024
-                canvas.height = 1024
+            } else {
+                let imgWidth = 2
+                let imgHeight = 2
+                for (const [, img] of colorTextures) {
+                    imgWidth = Math.max(imgWidth, img.width)
+                    imgHeight = Math.max(imgHeight, img.height)
+                }
+                canvas.width = imgWidth
+                canvas.height = imgHeight
             }
 
             if (!ctx) {
@@ -355,6 +362,8 @@ export class MaterialDesc {
 
             const texture = new THREE.CanvasTexture(canvas)
             texture.colorSpace = THREE.SRGBColorSpace
+            texture.wrapS = THREE.RepeatWrapping
+            texture.wrapT = THREE.RepeatWrapping
 
             for (const layer of this.layers) {
                 if (layer instanceof TextureLayer && layer.color) {
@@ -456,8 +465,8 @@ export class MaterialDesc {
         } else { //NOT PBR
             material = new THREE.MeshPhongMaterial({
                 map: colorTexture,
-                specular: new THREE.Color(102 / 255, 102 / 255, 102 / 255),
-                shininess: 0.9,
+                specular: new THREE.Color(1 / 102, 1 / 102, 1 / 102),
+                shininess: 9,
                 transparent: this.transparent,
                 opacity: 1 - this.transparency,
                 side: this.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
@@ -523,6 +532,11 @@ export class MaterialDesc {
                 if (specialMesh) {
                     switch (specialMesh.Property("MeshType")) {
                         case MeshType.FileMesh: {
+                            if (isAffectedByHumanoid(child)) {
+                                const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                                const partcolorLayer = new ColorLayer(partColor)
+                                this.layers.push(partcolorLayer)
+                            }
                             const colorLayer = new TextureLayer()
                             colorLayer.color = specialMesh.Property("TextureId") as string
                             this.layers.push(colorLayer)
@@ -537,7 +551,7 @@ export class MaterialDesc {
                     }
     
                     const decal = child.FindFirstChildOfClass("Decal")
-                    if (decal) {
+                    if (decal && ((specialMesh.Prop("TextureId") as string).length < 1 || !isAffectedByHumanoid(child))) {
                         const decalTexture = decal.Property("Texture") as string
                         const colorLayer = new TextureLayer()
                         colorLayer.color = decalTexture
@@ -630,12 +644,14 @@ export class MaterialDesc {
                 //clothing
                 if (affectedByHumanoid && child.parent) {
                     const bodyPart = BodyPartNameToEnum[child.Prop("Name") as string]
-                    if (bodyPart) {
+                    if (Object.hasOwn(BodyPartNameToEnum, child.Prop("Name") as string)) {
                         this.bodyPart = bodyPart
                         this.avatarType = AvatarType.R15
                     }
 
-                    this.addClothingLayers(child.parent)
+                    if (bodyPart !== BodyPart.Head) {
+                        this.addClothingLayers(child.parent)
+                    }
                 }
 
                 //meshpart texture
@@ -647,7 +663,7 @@ export class MaterialDesc {
 
                 //decal
                 const decal = child.FindFirstChildOfClass("Decal")
-                if (decal) {
+                if (decal && ((meshPartTexture.length < 1 && !surfaceAppearance) || !isAffectedByHumanoid(child))) {
                     const decalTexture = decal.Property("Texture") as string
                     const decalLayer = new TextureLayer()
                     decalLayer.color = decalTexture

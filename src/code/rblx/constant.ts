@@ -130,6 +130,15 @@ export const BodyPartNameToEnum: {[K in string]: number} = {
     "LowerTorso": BodyPart.Torso,
 }
 
+export const BodyPartEnumToNames: {[K in number]: string[]} = {
+    [BodyPart.Head]: ["Head"],
+    [BodyPart.Torso]: ["Torso", "UpperTorso", "LowerTorso"],
+    [BodyPart.LeftArm]: ["Left Arm", "LeftUpperArm", "LeftLowerArm", "LeftHand"],
+    [BodyPart.RightArm]: ["Right Arm", "RightUpperArm", "RightLowerArm", "RightHand"],
+    [BodyPart.LeftLeg]: ["Left Leg", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot"],
+    [BodyPart.RightLeg]: ["Right Leg", "RightUpperLeg", "RightLowerLeg", "RightFoot"]
+}
+
 export const DataType = {
     "String": 0x01,
     "Bool": 0x02,

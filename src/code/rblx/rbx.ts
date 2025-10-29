@@ -94,6 +94,12 @@ export class Vector3 {
         return new Vector3(this.X, this.Y, this.Z)
     }
 
+    isSame(other: Vector3) {
+        return isSameFloat(this.X, other.X) &&
+                isSameFloat(this.Y, other.Y) &&
+                isSameFloat(this.Z, other.Z)
+    }
+
     static new(X: number,Y: number,Z: number) {
         return new Vector3(X,Y,Z)
     }
@@ -190,11 +196,20 @@ export class CFrame {
 
         return newCf
     }
+
+    isSame(other: CFrame) {
+        return isSameFloat(this.Position[0], other.Position[0]) &&
+                isSameFloat(this.Position[1], other.Position[1]) &&
+                isSameFloat(this.Position[2], other.Position[2]) &&
+                isSameFloat(this.Orientation[0], other.Orientation[0]) &&
+                isSameFloat(this.Orientation[1], other.Orientation[1]) &&
+                isSameFloat(this.Orientation[2], other.Orientation[2])
+    }
 }
 
 //hierarchy structs
 
-class Connection {
+export class Connection {
     Connected = true
     _callback
     _event: Event | undefined
@@ -864,6 +879,7 @@ export class RBX {
     classIDtoINST = new Map()
     dataModel = new Instance("DataModel")
     treeGenerated = false
+    xmlString?: string
 
     get instances() {
         return this.dataModel.children
@@ -920,6 +936,8 @@ export class RBX {
         }
 
         copy.prnt = this.prnt.clone()
+
+        copy.xmlString = this.xmlString
 
         return copy
     }
@@ -1445,6 +1463,7 @@ export class RBX {
             if (readMagic === xmlMagic) {
                 const xmlString = new TextDecoder("utf-8").decode(buffer)
                 const xml = new DOMParser().parseFromString(xmlString, "text/xml")
+                this.xmlString = xmlString
                 this.fromXML(xml)
                 return
             } else {
@@ -1554,85 +1573,90 @@ export class RBX {
             return this.dataModel
         }
 
-        const referentToInstance = new Map<number,Instance>() //<referent,instance>
+        if (!this.xmlString) {
+            const referentToInstance = new Map<number,Instance>() //<referent,instance>
 
-        //instances
-        for (const inst of this.instArray) {
-            for (let i = 0; i < inst.instanceCount; i++) {
-                const instance = new Instance(inst.className)
-                instance.classID = inst.classID
-                instance.objectFormat = inst.objectFormat
+            //instances
+            for (const inst of this.instArray) {
+                for (let i = 0; i < inst.instanceCount; i++) {
+                    const instance = new Instance(inst.className)
+                    instance.classID = inst.classID
+                    instance.objectFormat = inst.objectFormat
 
-                if (referentToInstance.get(inst.referents[i])) {
-                    throw new Error(`Duplicate referent ${inst.referents[i]}`)
+                    if (referentToInstance.get(inst.referents[i])) {
+                        throw new Error(`Duplicate referent ${inst.referents[i]}`)
+                    }
+                    referentToInstance.set(inst.referents[i], instance)
                 }
-                referentToInstance.set(inst.referents[i], instance)
             }
-        }
 
-        //properties
-        for (const prop of this.propArray) {
-            const inst = this.classIDtoINST.get(prop.classID)
-            for (let i = 0; i < inst.referents.length; i++) {
-                const referent = inst.referents[i]
-                const instance = referentToInstance.get(referent)
+            //properties
+            for (const prop of this.propArray) {
+                const inst = this.classIDtoINST.get(prop.classID)
+                for (let i = 0; i < inst.referents.length; i++) {
+                    const referent = inst.referents[i]
+                    const instance = referentToInstance.get(referent)
 
-                if (!instance) {
-                    throw new Error(`Instance with referent ${referent} is missing`)
+                    if (!instance) {
+                        throw new Error(`Instance with referent ${referent} is missing`)
+                    }
+
+                    const property = new Property()
+                    property.name = prop.propertyName
+                    property.typeID = prop.typeID
+                    
+                    instance.addProperty(property)
+                    switch (property.typeID) {
+                        case DataType.Referent:
+                            {
+                                const referenced = referentToInstance.get(prop.values[i] as number)
+                                instance.setProperty(property.name, referenced)
+                                break
+                            }
+                        default:
+                            {
+                                instance.setProperty(property.name, prop.values[i])
+                                break
+                            }
+                    }
+
+                    //if (property.typeID == DataType.BrickColor) {
+                    //    console.log(instance.GetFullName())
+                    //    console.log(property.name)
+                    //}
+                }
+            }
+
+            //hierarchy
+            for (let i = 0; i < this.prnt.instanceCount; i++) {
+                const childReferent = this.prnt.childReferents[i]
+                const parentReferent = this.prnt.parentReferents[i]
+
+                const child = referentToInstance.get(childReferent)
+                const parent = referentToInstance.get(parentReferent)
+
+                if (!child) {
+                    console.warn(`Child with referent ${childReferent} does not exist`)
+                    continue;
                 }
 
-                const property = new Property()
-                property.name = prop.propertyName
-                property.typeID = prop.typeID
-                
-                instance.addProperty(property)
-                switch (property.typeID) {
-                    case DataType.Referent:
-                        {
-                            const referenced = referentToInstance.get(prop.values[i] as number)
-                            instance.setProperty(property.name, referenced)
-                            break
-                        }
-                    default:
-                        {
-                            instance.setProperty(property.name, prop.values[i])
-                            break
-                        }
+                if (!parent && parentReferent !== -1) {
+                    console.warn(`Parent with referent ${parentReferent} does not exist`)
+                    continue;
                 }
 
-                //if (property.typeID == DataType.BrickColor) {
-                //    console.log(instance.GetFullName())
-                //    console.log(property.name)
-                //}
+                if (parentReferent !== -1) {
+                    child.setParent(parent)
+                } else {
+                    child.setParent(this.dataModel)
+                }
             }
+
+            this.treeGenerated = true
+        } else {
+            const xml = new DOMParser().parseFromString(this.xmlString, "text/xml")
+            this.fromXML(xml)
         }
-
-        //hierarchy
-        for (let i = 0; i < this.prnt.instanceCount; i++) {
-            const childReferent = this.prnt.childReferents[i]
-            const parentReferent = this.prnt.parentReferents[i]
-
-            const child = referentToInstance.get(childReferent)
-            const parent = referentToInstance.get(parentReferent)
-
-            if (!child) {
-                console.warn(`Child with referent ${childReferent} does not exist`)
-                continue;
-            }
-
-            if (!parent && parentReferent !== -1) {
-                console.warn(`Parent with referent ${parentReferent} does not exist`)
-                continue;
-            }
-
-            if (parentReferent !== -1) {
-                child.setParent(parent)
-            } else {
-                child.setParent(this.dataModel)
-            }
-        }
-
-        this.treeGenerated = true
         return this.dataModel
     }
 }
@@ -1642,7 +1666,7 @@ export function isAffectedByHumanoid(child: Instance) {
     if (!parent) {
         return false
     }
-    if (BodyPartNameToEnum[child.Property("Name") as string] && child.name !== "Head") { //check if part is one of the parts inside an R6 rig affected by humanoids
+    if (Object.hasOwn(BodyPartNameToEnum, child.Property("Name") as string)) { //check if part is one of the parts inside an R6 rig affected by humanoids
         if (parent) {
             const humanoid = parent.FindFirstChildOfClass("Humanoid")
             if (humanoid) {
@@ -1652,6 +1676,26 @@ export function isAffectedByHumanoid(child: Instance) {
     }
 
     return false
+}
+
+export function hasSameValFloat(instance0: Instance, instance1: Instance, propertyName: string) {
+    return Math.round(instance0.Prop(propertyName) as number * 1000) === Math.round(instance1.Prop(propertyName) as number * 1000)
+}
+
+export function hasSameVal(instance0: Instance, instance1: Instance, propertyName: string) {
+    return instance0.Prop(propertyName) === instance1.Prop(propertyName)
+}
+
+export function isSameColor(color0: Color3, color1: Color3) {
+    return Math.round(color0.R * 1000) === Math.round(color1.R * 1000) && Math.round(color0.G * 1000) === Math.round(color1.G * 1000) && Math.round(color0.B * 1000) === Math.round(color1.B * 1000)
+}
+
+export function isSameVector3(vec0: Vector3, vec1: Vector3) {
+    return Math.round(vec0.X * 1000) === Math.round(vec1.X * 1000) && Math.round(vec0.Y * 1000) === Math.round(vec1.Y * 1000) && Math.round(vec0.Z * 1000) === Math.round(vec1.Z * 1000)
+}
+
+export function isSameFloat(num0: number, num1: number) {
+    return Math.round(num0 * 100) === Math.round(num1 * 100)
 }
 
 

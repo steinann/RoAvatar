@@ -419,3 +419,14 @@ const API = {
 }
 
 export { API, Authentication }
+
+// Extend the Window interface to include the API property
+declare global {
+    interface Window {
+        API: typeof API;
+        APICACHE: typeof CACHE;
+    }
+}
+
+window.API = API
+window.APICACHE = CACHE

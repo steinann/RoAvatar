@@ -4,8 +4,9 @@ import { AuthContext } from "./auth-context"
 import { Instance, RBX } from "../code/rblx/rbx"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import { Outfit } from "../code/avatar/outfit"
-import { addRBX, mount } from "../code/render/legacy-renderer"
+import { mount, addInstance } from "../code/render/renderer"
 import { MaterialDesc } from "../code/render/materialDesc"
+import { MeshDesc } from "../code/render/meshDesc"
 
 export default function Test(): React.JSX.Element {
     const auth = useContext(AuthContext)
@@ -48,16 +49,61 @@ export default function Test(): React.JSX.Element {
                                             console.log(result)
                                             console.log(rig)
                                             console.log("Adding rbx to 3d view")
-                                            addRBX(rigRBX)
+                                            //addRBX(rigRBX)
+                                            addInstance(rig, auth)
 
+                                            const meshDesc = new MeshDesc()
                                             const material = new MaterialDesc()
-                                            const upperTorso = rig.FindFirstChild("UpperTorso")
+                                            const upperTorso = rig.FindFirstChild("Head")
                                             if (upperTorso) {
                                                 material.fromInstance(upperTorso)
                                                 console.log("THIS IS THE UPPERTORSO MATERIAL")
                                                 console.log(material)
-                                                console.log(material.compileTexture("color"))
+                                                material.compileTexture("color").then(threeTexture => {
+                                                    //document.body.appendChild(threeTexture?.image)
+                                                    console.log(rigRBX)
+                                                    console.log(threeTexture)
+                                                })
+
+                                                meshDesc.fromInstance(upperTorso)
+                                                console.log(meshDesc)
                                             }
+
+                                            setTimeout(() => {
+                                                API.Avatar.GetAvatarDetails(auth, 1704554976).then(result => {
+                                                    if (result instanceof Outfit) {
+                                                        const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
+                                                        humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
+                                                            if (result instanceof Instance) {
+                                                                humanoidDescriptionWrapper2.applyDescription(humanoid, auth).then(result => {
+                                                                    if (result instanceof Instance) {
+                                                                        addInstance(rig, auth)
+                                                                        setInterval(() => {
+                                                                            API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
+                                                                                if (result instanceof Outfit) {
+                                                                                    const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
+                                                                                    humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
+                                                                                        if (result instanceof Instance) {
+                                                                                            humanoidDescriptionWrapper2.applyDescription(humanoid, auth).then(result => {
+                                                                                                if (!(result instanceof Response)) {
+                                                                                                    addInstance(rig, auth)
+                                                                                                    console.log(rig)
+                                                                                                    
+                                                                                                }
+                                                                                            })
+                                                                                        }
+                                                                                    })
+                                                                                }
+                                                                            })
+                                                                        },1000)
+                                                                    }
+                                                                })
+                                                            }
+                                                        })
+                                                    }
+                                                })
+                                            },1200)
+                                            
                                         })
                                         
                                     } else {
