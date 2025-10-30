@@ -1,7 +1,7 @@
 /*
-ISSUES
--- Equipping dynamic head then unequipping results in default face
--- Accessories cannot be unequipped
+ISSUES (++ Probably fixed, -- Not fixed)
+++ Equipping dynamic head then unequipping results in default face
+++ Accessories cannot be unequipped
 -- Face is included in dynamic head (but not rendered)
 */
 
@@ -412,8 +412,6 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 const defaultClothesIndex = Number(outfit.creatorId || outfit.id || 1) % defaultShirtAssetIds.length
 
                 //create default pants
-                console.log(defaultClothesIndex)
-
                 this.instance.setProperty("Pants", BigInt(defaultPantAssetIds[defaultClothesIndex]))
 
                 //create default shirt
@@ -482,9 +480,6 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                             }
 
                                             instance.setProperty("IsLayered", hasWrapLayer)
-
-                                            console.log(dataModel)
-                                            console.log(descendants)
 
                                             resolve(undefined)
                                         } else {
@@ -661,7 +656,10 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
-    async _applyBodyParts(humanoid: Instance, auth: Authentication, toChange = AllBodyParts) {
+    /**
+     * @returns undefined on success
+     */
+    async _applyBodyParts(humanoid: Instance, auth: Authentication, toChange = AllBodyParts): Promise<Response | undefined> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -706,23 +704,15 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                         }
                                     }
                                 } else {
-                                    //TODO: R15 body parts
                                     let R15Folder = dataModel.FindFirstChild("R15ArtistIntent")
                                     if (!R15Folder || R15Folder.GetChildren().length === 0) {
                                         R15Folder = dataModel.FindFirstChild("R15Fixed")
                                     }
 
-                                    if (R15Folder) { //TODO: make this more reliable (is this still a TODO? pretty sure i fixed it...)
+                                    if (R15Folder) {
                                         const children = R15Folder.GetChildren()
                                         for (const child of children) {
                                             replaceBodyPart(rig, child)
-
-                                            /*
-                                            const rigData = this.createRigData()
-                                            if (rigData) {
-                                                BuildJoints(rigData)
-                                            }
-                                            */
                                         }
                                     }
                                 }
@@ -795,6 +785,9 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
+    /**
+     * @returns undefined on success
+     */
     async _applyClothing(humanoid: Instance, auth: Authentication, toChange: ClothingDiffType[] = ["Shirt", "Pants", "GraphicTShirt"]): Promise<undefined | Response> {
         const rig = humanoid.parent
         if (!rig) {
@@ -811,9 +804,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(rbx => {
                         if (this.cancelApply) resolve(undefined)
                         if (rbx instanceof RBX) {
-                            console.log(rbx)
                             const dataModel = rbx.generateTree()
-                            console.log(dataModel)
                             const asset = dataModel.GetChildren()[0]
                             if (asset) {
                                 const assetClassName = asset.className
@@ -822,7 +813,6 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                     originalAsset.Destroy()
                                 }
 
-                                console.log(`Replaced ${change}`)
                                 asset.setParent(rig)
                             }
                             resolve(undefined)
@@ -856,6 +846,9 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
+    /**
+     * @returns undefined on success
+     */
     async _applyFace(humanoid: Instance, auth: Authentication): Promise<undefined | Response> {
         const rig = humanoid.parent
         if (!rig) {
@@ -912,6 +905,9 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
+    /**
+     * @returns undefined on success
+     */
     async _applyAccessories(humanoid: Instance, auth: Authentication, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
         if (!addedIds || !removedIds) {
             addedIds = this.getAccessoryIds()
@@ -997,7 +993,10 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
-    async _applyAll(humanoid: Instance, auth: Authentication) {
+    /**
+     * @returns undefined on success
+     */
+    async _applyAll(humanoid: Instance, auth: Authentication): Promise<undefined | Response> {
         const promises: Promise<Response | undefined>[] = []
 
         promises.push(this._applyAccessories(humanoid, auth))
@@ -1022,6 +1021,9 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
+    /**
+     * @returns Instance on success
+     */
     async applyDescription(humanoid: Instance, auth: Authentication): Promise<Instance | Response | undefined> {
         if (this.instance.parent?.className === "Humanoid") {
             throw new Error("This HumanoidDescription has already been applied! Create a new one instead")

@@ -372,7 +372,7 @@ export class Instance {
                                     }
                                 
                             } else {
-                                console.warn("Potential memory leak with Motor6D/Weld")
+                                console.warn("Motor6D/Weld is missing parent")
                             }
                         }
 

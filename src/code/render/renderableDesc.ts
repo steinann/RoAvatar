@@ -48,6 +48,9 @@ export class RenderableDesc {
     }
 
     dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mesh?: THREE.Mesh) {
+        if (this.meshDesc) {
+            this.meshDesc.dispose()
+        }
         if (mesh) {
             if (mesh.material) {
                 (mesh.material as THREE.Material).dispose()

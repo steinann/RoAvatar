@@ -161,6 +161,8 @@ export function parseAssetString(str: string) {
         return `https://assetdelivery.roblox.com/v1/asset?id=${str.slice(46)}`
     } else if (str.includes("assetdelivery.roblox.com")) {
         return `https://assetdelivery.roblox.com/v1/asset?id=${idFromStr(str)}`
+    } else if (str.startsWith(".")) { //local file
+        return str
     } else {
         console.warn(`Failed to parse path of ${str}`)
     }

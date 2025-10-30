@@ -732,7 +732,6 @@ function addMesh(instance: Instance, cframe: CFrame, meshIDStr: string, newSize 
                             console.log("TARGET PROMISES")
                             console.log(targetPromises)
                             Promise.all(targetPromises).then((bodyDatas) => {
-                                console.log("THE TARGETS WE WERE PROMISED ARE HERE")
                                 for (const bodyData of bodyDatas) {
                                     const bodyMesh = bodyData[1]
                                     const bodyPart = bodyData[2]

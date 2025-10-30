@@ -2,6 +2,9 @@ import * as THREE from 'three'
 import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
 import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
+import type { FileMesh } from '../rblx/mesh'
+
+//const CACHE_cage = new Map<Instance, Promise<[MeshDesc, FileMesh]>>()
 
 function arrIsSame<T>(arr0: T[], arr1: T[]) {
     if (arr0.length !== arr1.length) {
@@ -41,6 +44,7 @@ export class MeshDesc {
     size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
     mesh?: string
+    hasSkinning: boolean = false
 
     deformationReference?: string
     referenceOrigin: CFrame = new CFrame()
@@ -49,6 +53,13 @@ export class MeshDesc {
 
     targetCages?: string[]
     targetOrigins?: CFrame[]
+
+    //result data
+    instance?: Instance
+
+    dispose() {
+        this.instance = undefined
+    }
 
     isSame(other: MeshDesc) {
         const singularTrue = this.size.isSame(other.size) &&
@@ -146,6 +157,8 @@ export class MeshDesc {
         //skinning
         /*let meshSkinning = mesh.skinning
         if (meshSkinning && meshSkinning.skinnings.length > 0) { //TODO: proper subset support
+            this.hasSkinning = true
+
             //bone weight and indices
             const skinIndices = []
             const skinWeights = []
@@ -239,6 +252,8 @@ export class MeshDesc {
         if (!RenderedClassTypes.includes(child.className)) {
             return
         }
+
+        this.instance = child
 
         switch (child.className) {
             case "Part": {

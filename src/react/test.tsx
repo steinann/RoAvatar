@@ -3,10 +3,10 @@ import { API } from "../code/api"
 import { AuthContext } from "./auth-context"
 import { Instance, RBX } from "../code/rblx/rbx"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
-import { Outfit } from "../code/avatar/outfit"
+//import { Outfit } from "../code/avatar/outfit"
 import { mount } from "../code/render/renderer"
-import { MaterialDesc } from "../code/render/materialDesc"
-import { MeshDesc } from "../code/render/meshDesc"
+//import { MaterialDesc } from "../code/render/materialDesc"
+//import { MeshDesc } from "../code/render/meshDesc"
 
 export default function Test(): React.JSX.Element {
     const auth = useContext(AuthContext)
@@ -19,6 +19,34 @@ export default function Test(): React.JSX.Element {
             const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
             console.log(hrpWrapper)
 
+            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined, auth).then(result => {
+                if (result instanceof RBX) {
+                    const dataModel = result.generateTree()
+                    const rig = dataModel.GetChildren()[0]
+                    const humanoid = rig?.FindFirstChildOfClass("Humanoid")
+                    if (humanoid) {
+                        API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined, auth).then(result => {
+                            if (result instanceof RBX) {
+                                const hrp2 = result.generateTree().GetChildren()[0]
+                                const hrpWrapper2 = new HumanoidDescriptionWrapper(hrp2)
+                                console.log("Starting to apply description (berry av)...")
+                                hrpWrapper2.applyDescription(humanoid, auth).then(result => {
+                                    console.log("Applied description (berry av!")
+                                    console.log(result)
+                                    console.log(rig)
+                                })
+                            }
+                        })
+                        
+                    } else {
+                        throw rig
+                    }
+                } else {
+                    throw result
+                }
+            })
+
+            /*
             API.Asset.GetRBX("../assets/HumanoidDescriptionExample.rbxm", undefined, auth).then(result => {
                 if (result instanceof RBX) {
                     const humanoidDescription = result.generateTree()
@@ -120,7 +148,7 @@ export default function Test(): React.JSX.Element {
                                 }
                             })
 
-                            /*console.log("lets compare itself with itself!")
+                            console.log("lets compare itself with itself!")
                             console.log(humanoidDescriptionWrapper.compare(humanoidDescriptionWrapper))
 
                             API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined, auth).then(result => {
@@ -131,33 +159,6 @@ export default function Test(): React.JSX.Element {
                                     console.log(humanoidDescriptionWrapper.compare(hrpWrapper2))
                                 }
                             })
-
-                            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined, auth).then(result => {
-                                if (result instanceof RBX) {
-                                    const dataModel = result.generateTree()
-                                    const rig = dataModel.GetChildren()[0]
-                                    const humanoid = rig?.FindFirstChildOfClass("Humanoid")
-                                    if (humanoid) {
-                                        API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined, auth).then(result => {
-                                            if (result instanceof RBX) {
-                                                const hrp2 = result.generateTree().GetChildren()[0]
-                                                const hrpWrapper2 = new HumanoidDescriptionWrapper(hrp2)
-                                                console.log("Starting to apply description (berry av)...")
-                                                hrpWrapper2.applyDescription(humanoid, auth).then(result => {
-                                                    console.log("Applied description (berry av!")
-                                                    console.log(result)
-                                                    console.log(rig)
-                                                })
-                                            }
-                                        })
-                                        
-                                    } else {
-                                        throw rig
-                                    }
-                                } else {
-                                    throw result
-                                }
-                            })*/
                         } else {
                             throw result
                         }
@@ -165,9 +166,9 @@ export default function Test(): React.JSX.Element {
                 } else {
                     throw result
                 }
-            })
+            })*/
 
-            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined, auth).then(result => {
+            /*API.Asset.GetRBX("../assets/RigR15.rbxm", undefined, auth).then(result => {
                 if (result instanceof RBX) {
                     const dataModel = result.generateTree()
                     console.log("RigR15")
@@ -181,7 +182,7 @@ export default function Test(): React.JSX.Element {
                     console.log("RigR6")
                     console.log(dataModel)
                 }
-            })
+            })*/
         }
     }, [auth])
 
