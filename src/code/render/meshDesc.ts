@@ -2,7 +2,6 @@ import * as THREE from 'three'
 import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
 import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
-import type { FileMesh } from '../rblx/mesh'
 
 //const CACHE_cage = new Map<Instance, Promise<[MeshDesc, FileMesh]>>()
 
