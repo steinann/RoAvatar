@@ -4,7 +4,7 @@ import { AuthContext } from "./auth-context"
 import { Instance, RBX } from "../code/rblx/rbx"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import { Outfit } from "../code/avatar/outfit"
-import { mount, addInstance } from "../code/render/renderer"
+import { mount } from "../code/render/renderer"
 import { MaterialDesc } from "../code/render/materialDesc"
 import { MeshDesc } from "../code/render/meshDesc"
 
@@ -50,7 +50,7 @@ export default function Test(): React.JSX.Element {
                                             console.log(rig)
                                             console.log("Adding rbx to 3d view")
                                             //addRBX(rigRBX)
-                                            addInstance(rig, auth)
+                                            //addInstance(rig, auth)
 
                                             const meshDesc = new MeshDesc()
                                             const material = new MaterialDesc()
@@ -70,23 +70,29 @@ export default function Test(): React.JSX.Element {
                                             }
 
                                             setTimeout(() => {
-                                                API.Avatar.GetAvatarDetails(auth, 1704554976).then(result => {
+                                                API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
                                                     if (result instanceof Outfit) {
                                                         const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                                                         humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
                                                             if (result instanceof Instance) {
                                                                 humanoidDescriptionWrapper2.applyDescription(humanoid, auth).then(result => {
                                                                     if (result instanceof Instance) {
-                                                                        addInstance(rig, auth)
-                                                                        setInterval(() => {
+                                                                        //addInstance(rig, auth)
+                                                                        setTimeout(() => {
                                                                             API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
                                                                                 if (result instanceof Outfit) {
+                                                                                    for (const asset of result.assets) {
+                                                                                        if (asset.assetType.name.endsWith("Accessory")) {
+                                                                                            result.removeAsset(asset.id)
+                                                                                            break
+                                                                                        }
+                                                                                    }
                                                                                     const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                                                                                     humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
                                                                                         if (result instanceof Instance) {
                                                                                             humanoidDescriptionWrapper2.applyDescription(humanoid, auth).then(result => {
                                                                                                 if (!(result instanceof Response)) {
-                                                                                                    addInstance(rig, auth)
+                                                                                                    //addInstance(rig, auth)
                                                                                                     console.log(rig)
                                                                                                     
                                                                                                 }
@@ -114,7 +120,7 @@ export default function Test(): React.JSX.Element {
                                 }
                             })
 
-                            console.log("lets compare itself with itself!")
+                            /*console.log("lets compare itself with itself!")
                             console.log(humanoidDescriptionWrapper.compare(humanoidDescriptionWrapper))
 
                             API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined, auth).then(result => {
@@ -151,7 +157,7 @@ export default function Test(): React.JSX.Element {
                                 } else {
                                     throw result
                                 }
-                            })
+                            })*/
                         } else {
                             throw result
                         }

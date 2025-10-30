@@ -2,6 +2,7 @@
 ISSUES
 -- Equipping dynamic head then unequipping results in default face
 -- Accessories cannot be unequipped
+-- Face is included in dynamic head (but not rendered)
 */
 
 import { API, Authentication } from "../../api";
@@ -876,11 +877,11 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                         if (oldFace) {
                             oldFace.Destroy()
                         }
-                        if (!head.FindFirstChildOfClass("FaceControls")) { //TODO: find out how roblox avoids adding faces to dynamic heads
+                        //if (!head.FindFirstChildOfClass("FaceControls")) { //TODO: find out how roblox avoids adding faces to dynamic heads
                             face.setParent(head)
-                        } else {
-                            face.Destroy()
-                        }
+                        //} else {
+                        //    face.Destroy()
+                        //}
                     }
                 }
             } else {
@@ -897,6 +898,18 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
 
         return undefined
+    }
+
+    _inheritAccessoryReferences(originalW: HumanoidDescriptionWrapper) {
+        for (const accessoryDesc of originalW.getAccessoryDescriptions()) {
+            for (const newAccessoryDesc of this.getAccessoryDescriptions()) {
+                if (accessoryDesc.Prop("AssetId") === newAccessoryDesc.Prop("AssetId")) {
+                    if (accessoryDesc.Prop("Instance")) {
+                        newAccessoryDesc.setProperty("Instance", accessoryDesc.Prop("Instance"))
+                    }
+                }
+            }
+        }
     }
 
     async _applyAccessories(humanoid: Instance, auth: Authentication, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
@@ -1028,6 +1041,8 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             const miniPromises: Promise<undefined | Response>[] = []
 
             //accessories
+            this._inheritAccessoryReferences(originalDescriptionW)
+
             if (diffs.includes("accessory")) {
                 miniPromises.push(this._applyAccessories(humanoid, auth, originalDescriptionW, addedAccessories, removedAccessories))
             }

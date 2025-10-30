@@ -949,11 +949,11 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 			if (childFace) {
 				childFace.Destroy()
 			}
-			if (!child.FindFirstChildOfClass("FaceControls")) {
+			//if (!child.FindFirstChildOfClass("FaceControls")) {
 				face.setParent(child)
-			} else {
-				face.Destroy()
-			}
+			//} else {
+			//	face.Destroy()
+			//}
 		}
 
 		oldBodyPart.Destroy()
