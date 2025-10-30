@@ -39,6 +39,26 @@ function arrIsSameCF(arr0: CFrame[], arr1: CFrame[]) {
     return true
 }
 
+function arrIsSameVector3(arr0: Vector3[], arr1: Vector3[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (const element of arr0) {
+        let found = false
+        for (const element1 of arr1) {
+            if (element.isSame(element1)) {
+                found = true
+            }
+        }
+        if (!found) {
+            return found
+        }
+    }
+
+    return true
+}
+
 export class MeshDesc {
     size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
@@ -52,6 +72,7 @@ export class MeshDesc {
 
     targetCages?: string[]
     targetOrigins?: CFrame[]
+    targetSizes?: Vector3[]
 
     //result data
     instance?: Instance
@@ -81,6 +102,10 @@ export class MeshDesc {
             return false
         }
 
+        if ((!this.targetSizes && other.targetSizes) || (this.targetSizes && !other.targetSizes)) {
+            return false
+        }
+
         if (this.targetCages && other.targetCages) {
             if (!arrIsSame(this.targetCages, other.targetCages)) {
                 return false
@@ -89,6 +114,12 @@ export class MeshDesc {
 
         if (this.targetOrigins && other.targetOrigins) {
             if (!arrIsSameCF(this.targetOrigins, other.targetOrigins)) {
+                return false
+            }
+        }
+
+        if (this.targetSizes && other.targetSizes) {
+            if (!arrIsSameVector3(this.targetSizes, other.targetSizes)) {
                 return false
             }
         }

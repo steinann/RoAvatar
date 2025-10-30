@@ -827,7 +827,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     className = "ShirtGraphic"
                 }
 
-                const originalAsset = rig.FindFirstChildOfClass(change)
+                const originalAsset = rig.FindFirstChildOfClass(className)
                 if (originalAsset) {
                     originalAsset.Destroy()
                 }
