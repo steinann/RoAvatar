@@ -4,7 +4,7 @@ import { AuthContext } from "./auth-context"
 import { Instance, RBX } from "../code/rblx/rbx"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 //import { Outfit } from "../code/avatar/outfit"
-import { mount } from "../code/render/renderer"
+import { mount, addInstance } from "../code/render/renderer"
 //import { MaterialDesc } from "../code/render/materialDesc"
 //import { MeshDesc } from "../code/render/meshDesc"
 
@@ -34,6 +34,7 @@ export default function Test(): React.JSX.Element {
                                     console.log("Applied description (berry av!")
                                     console.log(result)
                                     console.log(rig)
+                                    addInstance(rig, auth)
                                 })
                             }
                         })
