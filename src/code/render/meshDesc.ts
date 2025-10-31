@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
+import { AllBodyParts, BodyPartEnumToNames, BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
 import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
 
@@ -348,6 +348,34 @@ export class MeshDesc {
                 this.size = child.Property("Size") as Vector3
                 this.scaleIsRelative = true
                 
+                //humanoid layered clothing
+                if (isAffectedByHumanoid(child) && child.parent) {
+                    const rig = child.parent
+
+                    //wrap layer
+                    const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+
+                    if (wrapLayer) {
+                        this.deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
+                        this.referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
+                        this.deformationCage = wrapLayer.Prop("CageMeshId") as string
+                        //this.cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+                    }
+
+                    //wrap targets
+                    for (const bodyPartEnum of AllBodyParts) {
+                        for (const bodyPartName of BodyPartEnumToNames[bodyPartEnum]) {
+                            const bodyPart = rig.FindFirstChild(bodyPartName)
+                            if (bodyPart) {
+                                const bodyPartWrapTarget = bodyPart.FindFirstChildOfClass("WrapTarget")
+                                if (bodyPartWrapTarget) {
+                                    
+                                }
+                            }
+                        }
+                    }
+                }
+
                 break
             }
         }
