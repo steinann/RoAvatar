@@ -984,6 +984,25 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         const values = await Promise.all(promises)
         if (this.cancelApply) return undefined
 
+        //update order for layered clothing
+        if (avatarType === AvatarType.R15) {
+            for (const accessory of rig.GetChildren()) {
+                if (accessory.className === "Accessory") {
+                    const handle = accessory.FindFirstChildOfClass("MeshPart")
+                    if (handle) {
+                        const wrapLayer = handle.FindFirstChildOfClass("WrapLayer")
+                        if (wrapLayer) {
+                            for (const accessoryDesc of this.getAccessoryDescriptions()) {
+                                if (accessoryDesc.Prop("Instance") === accessory) {
+                                    wrapLayer.setProperty("Order", accessoryDesc.Prop("Order"))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         for (const value of values) {
             if (value) {
                 return value

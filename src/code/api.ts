@@ -393,7 +393,7 @@ const API = {
                 }
             }
         },
-        GetMesh: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
+        GetMesh: async function(url: string, headers?: HeadersInit, auth?: Authentication, readOnly: boolean = false) {
             const fetchStr = parseAssetString(url) || url
 
             let cacheStr = fetchStr
@@ -403,7 +403,11 @@ const API = {
 
             const cachedMesh = CACHE.Mesh.get(cacheStr)
             if (cachedMesh) {
-                return cachedMesh.clone()
+                if (readOnly) {
+                    return cachedMesh
+                } else {
+                    return cachedMesh.clone()
+                }
             } else {
                 const response = await this.GetAssetBuffer(fetchStr, headers, auth)
                 if (response instanceof ArrayBuffer) {

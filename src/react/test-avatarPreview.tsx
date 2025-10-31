@@ -46,6 +46,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                     if (humanoid) {
                                         console.log("Starting to apply description...")
                                         humanoidDescriptionWrapper.applyDescription(humanoid, auth).then(() => {
+                                            addInstance(rig, auth)
                                             setTimeout(() => {
                                                 API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
                                                     if (result instanceof Outfit) {

@@ -3,6 +3,7 @@
 import SimpleView from "../lib/simple-view"
 import { clonePrimitiveArray } from "../misc/misc"
 import { hashVec2, hashVec3 } from "./mesh-deform"
+import { Vector3 } from "./rbx"
 
 export type Vec4 = [number,number,number,number]
 export type Vec3 = [number,number,number]
@@ -19,7 +20,7 @@ const LodType: {[K in LodType]: number} = {
     "ZeuxMeshOptimizer": 3,
 }
 
-class FileMeshVertex {
+export class FileMeshVertex {
     position: Vec3 //Vector3<float>
     normal: Vec3 //Vector3<float>
     uv: Vec2 //Vector2<float>
@@ -90,7 +91,7 @@ class COREMESH {
 
     removeDuplicateVertices(distance = 0.0001): number {
         const toRemove = []
-        const posToI = new Map()
+        const posToI = new Map<number,number>() //posHash: vertIndex
 
         for (let i = 0; i < this.verts.length; i++) {
             const vert = this.verts[i]
@@ -110,6 +111,13 @@ class COREMESH {
                         face.c = otherI
                     }
                 }
+
+                //merge normals
+                const otherVert = this.verts[otherI]
+                const totalNormal = new Vector3().fromVec3(otherVert.normal).add(new Vector3().fromVec3(vert.normal))
+                const resultNormal = totalNormal.normalize()
+                otherVert.normal = resultNormal.toVec3()
+
                 //schedule vertex for removal
                 toRemove.push(vert)
             } else {

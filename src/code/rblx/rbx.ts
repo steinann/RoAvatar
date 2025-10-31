@@ -70,6 +70,18 @@ export class Vector3 {
         this.Z = Z
     }
 
+    fromVec3(vec3: Vec3) {
+        this.X = vec3[0]
+        this.Y = vec3[1]
+        this.Z = vec3[2]
+
+        return this
+    }
+
+    toVec3(): Vec3 {
+        return [this.X, this.Y, this.Z]
+    }
+
     multiply(vec3: Vector3) {
         return new Vector3(this.X * vec3.X, this.Y * vec3.Y, this.Z * vec3.Z)
     }
@@ -88,6 +100,11 @@ export class Vector3 {
 
     magnitude() {
         return Math.sqrt(this.X*this.X + this.Y*this.Y + this.Z*this.Z)
+    }
+
+    normalize() {
+        const magnitude = this.magnitude()
+        return this.divide(new Vector3(magnitude, magnitude, magnitude))
     }
 
     clone() {

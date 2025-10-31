@@ -41,6 +41,15 @@ export class RenderableDesc {
     fromInstance(child: Instance) {
         if (child.HasProperty("CFrame")) {
             this.cframe = child.Prop("CFrame") as CFrame
+
+            if (child.FindFirstChildOfClass("WrapLayer")) {
+                if (child.parent && child.parent.parent) {
+                    const hrp = child.parent.parent.FindFirstChild("HumanoidRootPart")
+                    if (hrp) {
+                        this.cframe = hrp.Prop("CFrame") as CFrame
+                    }
+                }
+            }
         }
 
         this.meshDesc.fromInstance(child)

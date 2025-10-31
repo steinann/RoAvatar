@@ -160,7 +160,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
             oldDesc.fromRenderableDesc(newDesc)
             oldDesc.updateResult()
         } else {
-            //console.log(`Generating ${instance.Prop("Name")}`)
+            console.log(`Generating ${instance.Prop("Name")}`)
 
             renderables.set(instance, newDesc)
             newDesc.compileResult(renderer, scene, auth).then(result => {

@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { API, parseAssetString } from '../api';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { RBX, type CFrame, type Color3uint8, type Instance, type Vector3 } from '../rblx/rbx';
-import { FileMesh, type Vec3 } from '../rblx/mesh';
+import { FileMesh, FileMeshVertex, type Vec3 } from '../rblx/mesh';
 import { getUVtoVertMap, hashVec2 } from '../rblx/mesh-deform';
 
 const lookAwayVector = [-0.406, 0.406, -0.819]
@@ -632,7 +632,7 @@ function addMesh(instance: Instance, cframe: CFrame, meshIDStr: string, newSize 
                                 return [v0[0] * v1[0], v0[1] * v1[1], v0[2] * v1[2]]
                             }
 
-                            function add(v0: number[], v1: number[]) {
+                            function add(v0: number[], v1: number[]): Vec3 {
                                 return [v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2]]
                             }
                             
@@ -765,18 +765,26 @@ function addMesh(instance: Instance, cframe: CFrame, meshIDStr: string, newSize 
                                             refVerts = []
                                         }
 
+                                        const oldPositionMap = new Map<FileMeshVertex,Vec3>()
+                                        const offsetMap = new Map<FileMeshVertex,Vec3>()
+
                                         for (const refVert of refVerts) {
-                                            if (!refVert.oldPosition) {
-                                                refVert.oldPosition = [refVert.position[0],refVert.position[1],refVert.position[2]]
+                                            let oldPos = oldPositionMap.get(refVert)
+                                            if (!oldPos) {
+                                                oldPos = [refVert.position[0],refVert.position[1],refVert.position[2]]
+                                                oldPositionMap.set(refVert, oldPos)
                                             }
-                                            const newPosition = [(bodyVert.position[0] * bodySize[0] + bodyPos[0]), (bodyVert.position[1] * bodySize[1] + bodyPos[1]), (bodyVert.position[2] * bodySize[2] + bodyPos[2])]
+                                            const newPosition: Vec3 = [(bodyVert.position[0] * bodySize[0] + bodyPos[0]), (bodyVert.position[1] * bodySize[1] + bodyPos[1]), (bodyVert.position[2] * bodySize[2] + bodyPos[2])]
                                             if (refVert) {
                                                 refVert.position = newPosition
-                                                if (!refVert.offset) {
-                                                    refVert.offset = [0,0,0]
+
+                                                let offset = offsetMap.get(refVert)
+                                                if (!offset) {
+                                                    offset = [0,0,0]
+                                                    offsetMap.set(refVert, offset)
                                                 }
-                                                refVert.offset = add(refVert.offset, minus(newPosition, refVert.oldPosition))
-                                                refVert.moved = true
+                                                offsetMap.set(refVert, add(offset, minus(newPosition, oldPos)))
+                                                //refVert.moved = true
                                             }
                                         }
                                     }

@@ -960,3 +960,37 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 	}
 	child.setParent(rig)
 }
+
+function calculateMotor6Doffset(motor: Instance) {
+	const C0 = motor.Prop("C0") as CFrame
+	const C1 = motor.Prop("C1") as CFrame
+	const transform = new CFrame()
+
+	const offset1 = C1.multiply(transform).inverse()
+	const finalCF = C0.multiply(offset1)
+
+	return finalCF
+}
+
+export function traverseRigCFrame(instance: Instance) {
+	const motors: Instance[] = []
+
+	let lastMotor6D = instance.FindFirstChildOfClass("Motor6D")
+	while (lastMotor6D) {
+		motors.push(lastMotor6D)
+		const ogLastMotor6D = lastMotor6D
+		lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Motor6D")
+		if (!lastMotor6D) {
+			lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Weld")
+		}
+	}
+
+	motors.reverse()
+
+	let finalCF = new CFrame()
+	for (const motor of motors) {
+		finalCF = finalCF.multiply(calculateMotor6Doffset(motor))
+	}
+
+	return finalCF
+}

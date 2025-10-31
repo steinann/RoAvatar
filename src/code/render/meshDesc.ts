@@ -2,10 +2,27 @@ import * as THREE from 'three'
 import { AllBodyParts, BodyPartEnumToNames, BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
 import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
+import { traverseRigCFrame } from '../rblx/scale'
+import { FileMesh } from '../rblx/mesh'
+import { deformReferenceToBaseBodyParts, layerClothing, offsetMesh, offsetMeshWithRotation, scaleMesh } from '../rblx/mesh-deform'
 
 //const CACHE_cage = new Map<Instance, Promise<[MeshDesc, FileMesh]>>()
 
-function arrIsSame<T>(arr0: T[], arr1: T[]) {
+function arrIsSameOrder<T>(arr0: T[], arr1: T[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (let i = 0; i < arr0.length; i++) {
+        if (arr0[i] !== arr1[i]) {
+            return false
+        }
+    }
+
+    return true
+}
+
+/*function arrIsSame<T>(arr0: T[], arr1: T[]) {
     if (arr0.length !== arr1.length) {
         return false
     }
@@ -17,7 +34,7 @@ function arrIsSame<T>(arr0: T[], arr1: T[]) {
     }
 
     return true
-}
+}*/
 
 function arrIsSameCF(arr0: CFrame[], arr1: CFrame[]) {
     if (arr0.length !== arr1.length) {
@@ -59,20 +76,128 @@ function arrIsSameVector3(arr0: Vector3[], arr1: Vector3[]) {
     return true
 }
 
+function arrIsSameWrapLayer(arr0: WrapLayerDesc[], arr1: WrapLayerDesc[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (const element of arr0) {
+        let found = false
+        for (const element1 of arr1) {
+            if (element.isSame(element1)) {
+                found = true
+            }
+        }
+        if (!found) {
+            return found
+        }
+    }
+
+    return true
+}
+
+function fileMeshToTHREEGeometry(mesh: FileMesh) {
+    const geometry = new THREE.BufferGeometry()
+
+    //position
+    const verts = new Float32Array(mesh.coreMesh.verts.length * 3)
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        verts[i * 3 + 0] = mesh.coreMesh.verts[i].position[0]
+        verts[i * 3 + 1] = mesh.coreMesh.verts[i].position[1]
+        verts[i * 3 + 2] = mesh.coreMesh.verts[i].position[2]
+    }
+    geometry.setAttribute("position", new THREE.BufferAttribute(verts, 3))
+
+    //normal
+    const normals = new Float32Array(mesh.coreMesh.verts.length * 3)
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        normals[i * 3 + 0] = mesh.coreMesh.verts[i].normal[0]
+        normals[i * 3 + 1] = mesh.coreMesh.verts[i].normal[1]
+        normals[i * 3 + 2] = mesh.coreMesh.verts[i].normal[2]
+    }
+    geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3))
+
+    //uv
+    const uvs = new Float32Array(mesh.coreMesh.verts.length * 2)
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        uvs[i * 2 + 0] = mesh.coreMesh.verts[i].uv[0]
+        uvs[i * 2 + 1] = 1 - mesh.coreMesh.verts[i].uv[1]
+    }
+    geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2))
+
+    //faces
+    let facesEnd = mesh.coreMesh.faces.length
+    let facesStart = 0
+    if (mesh.lods) {
+        if (mesh.lods.lodOffsets.length > 2) {
+            facesStart = mesh.lods.lodOffsets[0]
+            facesEnd = mesh.lods.lodOffsets[1]
+        }
+    }
+
+    //indices
+    const indices = new Uint16Array((facesEnd - facesStart) * 3)
+    for (let i = facesStart; i < facesEnd; i++) {
+        indices[i * 3 + 0] = mesh.coreMesh.faces[i].a
+        indices[i * 3 + 1] = mesh.coreMesh.faces[i].b
+        indices[i * 3 + 2] = mesh.coreMesh.faces[i].c
+    }
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+
+    return geometry
+}
+
+async function promiseForMesh(url: string, auth: Authentication, readOnly: boolean = false): Promise<[string, Response | FileMesh]> {
+    return new Promise((resolve) => {
+        API.Asset.GetMesh(url, undefined, auth, readOnly).then(result => {
+            resolve([url, result])
+        })
+    })
+}
+
+class WrapLayerDesc {
+    reference: string
+    referenceOrigin: CFrame
+    cage: string
+    cageOrigin: CFrame
+
+    //temporary, order of array is used instead
+    order?: number
+
+    isSame(other: WrapLayerDesc) {
+        return this.reference === other.reference &&
+                this.referenceOrigin.isSame(other.referenceOrigin) &&
+                this.cage === other.cage &&
+                this.cageOrigin.isSame(other.cageOrigin)
+    }
+
+    constructor(reference: string, referenceOrigin: CFrame, cage: string, cageOrigin: CFrame) {
+        this.reference = reference
+        this.referenceOrigin = referenceOrigin
+        this.cage = cage
+        this.cageOrigin = cageOrigin
+    }
+}
+
 export class MeshDesc {
     size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
     mesh?: string
     hasSkinning: boolean = false
 
-    deformationReference?: string
-    referenceOrigin: CFrame = new CFrame()
-    deformationCage?: string
-    cageOrigin: CFrame = new CFrame()
+    //adjustment
+    adjustPosition = new Vector3(0,0,0)
+    adjustRotation = new Vector3(0,0,0)
+    adjustScale = new Vector3(1,1,1)
+
+    //layering
+    layerDesc?: WrapLayerDesc
 
     targetCages?: string[]
-    targetOrigins?: CFrame[]
+    targetCFrames?: CFrame[]
     targetSizes?: Vector3[]
+
+    enclosedLayers?: WrapLayerDesc[]
 
     //result data
     instance?: Instance
@@ -85,20 +210,23 @@ export class MeshDesc {
         const singularTrue = this.size.isSame(other.size) &&
             this.scaleIsRelative === other.scaleIsRelative &&
             this.mesh === other.mesh &&
-            this.deformationReference === other.deformationReference &&
-            this.referenceOrigin.isSame(other.referenceOrigin) &&
-            this.deformationCage === other.deformationCage &&
-            this.cageOrigin.isSame(other.cageOrigin)
+            this.adjustPosition.isSame(other.adjustPosition) &&
+            this.adjustRotation.isSame(other.adjustRotation) &&
+            this.adjustScale.isSame(other.adjustScale)
         
         if (!singularTrue) {
             return singularTrue
+        }
+
+        if ((this.layerDesc && !other.layerDesc) || (!this.layerDesc && other.layerDesc)) {
+            return false
         }
 
         if ((!this.targetCages && other.targetCages) || (this.targetCages && !other.targetCages)) {
             return false
         }
 
-        if ((!this.targetOrigins && other.targetOrigins) || (this.targetOrigins && !other.targetOrigins)) {
+        if ((!this.targetCFrames && other.targetCFrames) || (this.targetCFrames && !other.targetCFrames)) {
             return false
         }
 
@@ -106,20 +234,36 @@ export class MeshDesc {
             return false
         }
 
-        if (this.targetCages && other.targetCages) {
-            if (!arrIsSame(this.targetCages, other.targetCages)) {
+        if ((!this.enclosedLayers && other.enclosedLayers) || (this.enclosedLayers && !other.enclosedLayers)) {
+            return false
+        }
+
+        if (this.layerDesc && other.layerDesc) {
+            if (!this.layerDesc.isSame(other.layerDesc)) {
                 return false
             }
         }
 
-        if (this.targetOrigins && other.targetOrigins) {
-            if (!arrIsSameCF(this.targetOrigins, other.targetOrigins)) {
+        if (this.targetCages && other.targetCages) {
+            if (!arrIsSameOrder(this.targetCages, other.targetCages)) {
+                return false
+            }
+        }
+
+        if (this.targetCFrames && other.targetCFrames) {
+            if (!arrIsSameCF(this.targetCFrames, other.targetCFrames)) {
                 return false
             }
         }
 
         if (this.targetSizes && other.targetSizes) {
             if (!arrIsSameVector3(this.targetSizes, other.targetSizes)) {
+                return false
+            }
+        }
+
+        if (this.enclosedLayers && other.enclosedLayers) {
+            if (!arrIsSameWrapLayer(this.enclosedLayers, other.enclosedLayers)) {
                 return false
             }
         }
@@ -132,148 +276,107 @@ export class MeshDesc {
             return undefined
         }
 
-        const mesh = await API.Asset.GetMesh(this.mesh, undefined, auth)
+        const meshToLoad = this.mesh
+
+        const mesh = await API.Asset.GetMesh(meshToLoad, undefined, auth)
         if (mesh instanceof Response) {
             return mesh
         }
 
-        const geometry = new THREE.BufferGeometry()
+        //layered clothing
+        if (this.layerDesc && this.targetCages && this.targetCFrames && this.targetSizes && this.enclosedLayers) {
+            //load meshes
+            const meshMap = new Map<string,FileMesh>()
 
-        //position
-        const verts = new Float32Array(mesh.coreMesh.verts.length * 3)
-        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-            verts[i * 3 + 0] = mesh.coreMesh.verts[i].position[0]
-            verts[i * 3 + 1] = mesh.coreMesh.verts[i].position[1]
-            verts[i * 3 + 2] = mesh.coreMesh.verts[i].position[2]
-        }
-        geometry.setAttribute("position", new THREE.BufferAttribute(verts, 3))
-
-        //normal
-        const normals = new Float32Array(mesh.coreMesh.verts.length * 3)
-        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-            normals[i * 3 + 0] = mesh.coreMesh.verts[i].normal[0]
-            normals[i * 3 + 1] = mesh.coreMesh.verts[i].normal[1]
-            normals[i * 3 + 2] = mesh.coreMesh.verts[i].normal[2]
-        }
-        geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3))
-
-        //uv
-        const uvs = new Float32Array(mesh.coreMesh.verts.length * 2)
-        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-            uvs[i * 2 + 0] = mesh.coreMesh.verts[i].uv[0]
-            uvs[i * 2 + 1] = 1 - mesh.coreMesh.verts[i].uv[1]
-        }
-        geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2))
-
-        //faces
-        let facesEnd = mesh.coreMesh.faces.length
-        let facesStart = 0
-        if (mesh.lods) {
-            if (mesh.lods.lodOffsets.length > 2) {
-                facesStart = mesh.lods.lodOffsets[0]
-                facesEnd = mesh.lods.lodOffsets[1]
+            const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
+            
+            meshPromises.push(promiseForMesh(this.layerDesc.cage, auth, true))
+            meshPromises.push(promiseForMesh(this.layerDesc.reference, auth))
+            for (const targetCage of this.targetCages) {
+                meshPromises.push(promiseForMesh(targetCage, auth, true))
             }
-        }
-
-        //indices
-        const indices = new Uint16Array((facesEnd - facesStart) * 3)
-        for (let i = facesStart; i < facesEnd; i++) {
-            indices[i * 3 + 0] = mesh.coreMesh.faces[i].a
-            indices[i * 3 + 1] = mesh.coreMesh.faces[i].b
-            indices[i * 3 + 2] = mesh.coreMesh.faces[i].c
-        }
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-
-        //skinning
-        /*let meshSkinning = mesh.skinning
-        if (meshSkinning && meshSkinning.skinnings.length > 0) { //TODO: proper subset support
-            this.hasSkinning = true
-
-            //bone weight and indices
-            const skinIndices = []
-            const skinWeights = []
-            for (let subset of meshSkinning.subsets) {
-                for (let i = subset.vertsBegin; i < subset.vertsBegin + subset.vertsLength; i++) {
-                    let skinning = meshSkinning.skinnings[i]
-                    for (let weight of skinning.boneWeights) {
-                        skinWeights.push(weight / 255)
-                    }
-                    for (let index of skinning.subsetIndices) {
-                        skinIndices.push(subset.boneIndices[index])
-                    }
-                }
-            }
-            geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
-            geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeights, 4))
-
-            //skeleton
-            let threeBones = []
-
-            //bone creation
-            for (let i = 0; i < meshSkinning.bones.length; i++) {
-                let bone = meshSkinning.bones[i]
-
-                let threeBone = new THREE.Bone()
-                threeBone.name = meshSkinning.nameTable[i]
-                threeBone.position.set(bone.position[0], bone.position[1], bone.position[2])
-                //TODO: rotation matrix
-                threeBones.push(threeBone)
+            for (const enclosedLayer of this.enclosedLayers) {
+                meshPromises.push(promiseForMesh(enclosedLayer.cage, auth))
+                meshPromises.push(promiseForMesh(enclosedLayer.reference, auth))
             }
 
-            //bone hierarchy
-            for (let i = 0; i < meshSkinning.bones.length; i++) {
-                let bone = meshSkinning.bones[i]
-
-                scene.add(threeBones[i])
-                if (bone.parentIndex !== 65535) {
-                    //threeBones[bone.parentIndex].add(threeBones[i])
-                    
-                    //let parentPos = threeBones[bone.parentIndex].position
-                    //let parentCF = new CFrame(parentPos.x, parentPos.y, parentPos.x)
-                    //let childPos = threeBones[i].position
-                    //let childCF = new CFrame(childPos.x, childPos.y, childPos.z)
-
-                    //let newCF = parentCF.inverse().multiply(childCF)
-                    //let newPos = newCF.Position
-                    //threeBones[i].position.set(newPos[0], newPos[1], newPos[2])
-                }
-            }
-
-            const skeleton = new THREE.Skeleton(threeBones)
-
-            threeMesh = new THREE.SkinnedMesh()
-            threeMesh.castShadow = true
-            threeMesh.receiveShadow = true
-
-            instanceToMesh.set(instance, threeMesh)
-
-            //threeMesh.add(threeBones[0])
-            for (let bone of threeBones) {
-                if (bone !== threeBones[0]) {
-                    threeBones[0].add(bone)
+            const values = await Promise.all(meshPromises)
+            for (const [url, mesh] of values) {
+                if (mesh instanceof FileMesh) {
+                    meshMap.set(url, mesh)
                 } else {
-                    threeMesh.add(bone)
+                    return mesh
                 }
             }
-            threeMesh.bind(skeleton)
 
-            meshMaterial.skinning = true
+            const ref_mesh = meshMap.get(this.layerDesc.reference)
+            if (!ref_mesh) {
+                throw new Error("not possible")
+            }
 
-            const helper = new THREE.SkeletonHelper( threeBones[0] );
-            scene.add(helper)
-        }*/
+            //create destination cage
+            const dist_mesh = ref_mesh.clone()
+            if (!dist_mesh) {
+                throw new Error("this.layerDesc.reference is missing! That shouldn't be possible...")
+            }
+
+            //deform to body
+            const targetCages: FileMesh[] = []
+            for (const targetCageUrl of this.targetCages) {
+                const targetCage = meshMap.get(targetCageUrl)
+                if (!targetCage) {
+                    throw new Error("targetCage is missing! not possible...")
+                }
+                targetCages.push(targetCage)
+            }
+
+            deformReferenceToBaseBodyParts(dist_mesh, targetCages, this.targetSizes, this.targetCFrames)
+
+            //offset ref_mesh
+            offsetMesh(ref_mesh, this.layerDesc.referenceOrigin)
+
+            //deform based on layers under TODO: fix this, i mean it works but its terrible, try compressing inner layers
+            /*
+            for (const enclosedLayer of this.enclosedLayers) {
+                const cage = meshMap.get(enclosedLayer.cage)
+                const reference = meshMap.get(enclosedLayer.reference)
+
+                if (!cage || !reference) {
+                    throw new Error("this isnt possible, shut up typescript")
+                }
+
+                offsetMesh(reference, enclosedLayer.referenceOrigin)
+                offsetMesh(cage, enclosedLayer.cageOrigin)
+
+                offsetRefMeshLikeInnerAndOuter(dist_mesh, reference, cage)
+            }
+            */
+
+            //layer the clothing
+            await layerClothing(mesh, ref_mesh, dist_mesh)
+        } else { //TODO: make it so this doesnt require mesh regeneration, not fast enough!
+            //apply size
+            if (!this.scaleIsRelative) {
+                scaleMesh(mesh, this.size)
+            } else {
+                const oldSize = mesh.size
+                scaleMesh(mesh, this.size.divide(new Vector3().fromVec3(oldSize)))
+            }
+
+            //apply adjustment
+            scaleMesh(mesh, this.adjustScale)
+            const offsetCF = new CFrame()
+            offsetCF.Position = this.adjustPosition.toVec3()
+            offsetCF.Orientation = this.adjustRotation.toVec3()
+            offsetMeshWithRotation(mesh, offsetCF)
+        }
+
+        const geometry = fileMeshToTHREEGeometry(mesh)
 
         //create and add mesh to scene
         const threeMesh = new THREE.Mesh(geometry)
         threeMesh.castShadow = true
         threeMesh.geometry = geometry
-
-        if (!this.scaleIsRelative) {
-            threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
-        } else {
-            const oldSize = mesh.size
-            threeMesh.scale.set(this.size.X / oldSize[0], this.size.Y / oldSize[1], this.size.Z / oldSize[2])
-        }
 
         return threeMesh
     }
@@ -348,31 +451,99 @@ export class MeshDesc {
                 this.size = child.Property("Size") as Vector3
                 this.scaleIsRelative = true
                 
+                //accessory specific
+                const accessory = child.parent
+                if (accessory && accessory.className === "Accessory" && accessory.parent) {
+                    const rig = accessory.parent
+                    const humanoid = rig.FindFirstChildOfClass("Humanoid")
+                    if (humanoid) {
+                        const humanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
+                        if (humanoidDescription) {
+                            const accessoryDescriptions = humanoidDescription.GetChildren()
+                            for (const accessoryDesc of accessoryDescriptions) {
+                                if (accessoryDesc.className === "AccessoryDescription" && accessoryDesc.Prop("Instance") === accessory) {
+                                    this.adjustPosition = accessoryDesc.Prop("Position") as Vector3
+                                    this.adjustRotation = accessoryDesc.Prop("Rotation") as Vector3
+                                    this.adjustScale = accessoryDesc.Prop("Scale") as Vector3
+                                }
+                            }
+                        }
+                    }
+                }
+
                 //humanoid layered clothing
-                if (isAffectedByHumanoid(child) && child.parent) {
-                    const rig = child.parent
+                if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {
+                    const rig = child.parent.parent
 
                     //wrap layer
                     const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
 
                     if (wrapLayer) {
-                        this.deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
-                        this.referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
-                        this.deformationCage = wrapLayer.Prop("CageMeshId") as string
-                        //this.cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
-                    }
+                        this.scaleIsRelative = false
+                        this.size = new Vector3(1,1,1)
 
-                    //wrap targets
-                    for (const bodyPartEnum of AllBodyParts) {
-                        for (const bodyPartName of BodyPartEnumToNames[bodyPartEnum]) {
-                            const bodyPart = rig.FindFirstChild(bodyPartName)
-                            if (bodyPart) {
-                                const bodyPartWrapTarget = bodyPart.FindFirstChildOfClass("WrapTarget")
-                                if (bodyPartWrapTarget) {
-                                    
+                        const selfLayerOrder = wrapLayer.Prop("Order") as number
+
+                        const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
+                        const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
+                        const deformationCage = wrapLayer.Prop("CageMeshId") as string
+                        const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+
+                        this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+
+                        this.targetCages = []
+                        this.targetCFrames = []
+                        this.targetSizes = []
+
+                        //wrap targets
+                        for (const bodyPartEnum of AllBodyParts) {
+                            for (const bodyPartName of BodyPartEnumToNames[bodyPartEnum]) {
+                                const bodyPart = rig.FindFirstChild(bodyPartName)
+                                if (bodyPart) {
+                                    const bodyPartWrapTarget = bodyPart.FindFirstChildOfClass("WrapTarget")
+                                    if (bodyPartWrapTarget) {
+                                        const bodyPartCage = bodyPartWrapTarget.Prop("CageMeshId") as string
+
+                                        const bodyPartCageOrigin = bodyPartWrapTarget.Prop("CageOrigin") as CFrame
+                                        const bodyPartCFrame = traverseRigCFrame(bodyPart)
+                                        const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
+
+                                        const bodyPartSize = bodyPart.Prop("Size") as Vector3
+
+                                        this.targetCages.push(bodyPartCage)
+                                        this.targetCFrames.push(bodyPartTargetCFrame)
+                                        this.targetSizes.push(bodyPartSize)
+                                    }
                                 }
                             }
                         }
+
+                        //underneath wrap layers
+                        const underneathLayers: WrapLayerDesc[] = []
+
+                        for (const accessory of rig.GetChildren()) {
+                            if (accessory.className === "Accessory") {
+                                const handle = accessory.FindFirstChildOfClass("MeshPart")
+                                if (handle) {
+                                    const wrapLayer = handle.FindFirstChildOfClass("WrapLayer")
+                                    if (wrapLayer) {
+                                        const layerOrder = wrapLayer.Prop("Order") as number
+                                        if (layerOrder < selfLayerOrder) {
+                                            const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
+                                            const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
+                                            const deformationCage = wrapLayer.Prop("CageMeshId") as string
+                                            const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+
+                                            const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+                                            underneathLayer.order = layerOrder
+                                            underneathLayers.push(underneathLayer)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        this.enclosedLayers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
                     }
                 }
 
