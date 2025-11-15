@@ -4,7 +4,8 @@ import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
 import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
-import { deformReferenceToBaseBodyParts, layerClothing, offsetMesh, offsetMeshWithRotation, scaleMesh } from '../rblx/mesh-deform'
+import { deformReferenceToBaseBodyParts, layerClothingChunked, offsetMesh } from '../rblx/mesh-deform'
+import { BoneNameToIndex } from './renderer'
 
 //const CACHE_cage = new Map<Instance, Promise<[MeshDesc, FileMesh]>>()
 
@@ -96,7 +97,7 @@ function arrIsSameWrapLayer(arr0: WrapLayerDesc[], arr1: WrapLayerDesc[]) {
     return true
 }
 
-function fileMeshToTHREEGeometry(mesh: FileMesh) {
+function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
     const geometry = new THREE.BufferGeometry()
 
     //position
@@ -143,6 +144,28 @@ function fileMeshToTHREEGeometry(mesh: FileMesh) {
         indices[i * 3 + 2] = mesh.coreMesh.faces[i].c
     }
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+
+    //skinning
+    const meshSkinning = mesh.skinning
+    if (meshSkinning && meshSkinning.subsets.length > 0 && canIncludeSkinning) {
+        console.log(meshSkinning)
+        //bone weight and indices
+        const skinIndices = []
+        const skinWeights = []
+        for (const subset of meshSkinning.subsets) {
+            for (let i = subset.vertsBegin; i < subset.vertsBegin + subset.vertsLength; i++) {
+                const skinning = meshSkinning.skinnings[i]
+                for (const weight of skinning.boneWeights) {
+                    skinWeights.push(weight / 255)
+                }
+                for (const index of skinning.subsetIndices) {
+                    skinIndices.push(BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[index]]])
+                }
+            }
+        }
+        geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
+        geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeights, 4))
+    }
 
     return geometry
 }
@@ -271,7 +294,7 @@ export class MeshDesc {
         return true
     }
 
-    async compileMesh(auth: Authentication): Promise<THREE.Mesh | Response | undefined> {
+    async compileMesh(auth: Authentication): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
         if (!this.mesh) {
             return undefined
         }
@@ -353,30 +376,33 @@ export class MeshDesc {
             */
 
             //layer the clothing
-            await layerClothing(mesh, ref_mesh, dist_mesh)
-        } else { //TODO: make it so this doesnt require mesh regeneration, not fast enough!
-            //apply size
-            if (!this.scaleIsRelative) {
-                scaleMesh(mesh, this.size)
-            } else {
-                const oldSize = mesh.size
-                scaleMesh(mesh, this.size.divide(new Vector3().fromVec3(oldSize)))
-            }
-
-            //apply adjustment
-            scaleMesh(mesh, this.adjustScale)
-            const offsetCF = new CFrame()
-            offsetCF.Position = this.adjustPosition.toVec3()
-            offsetCF.Orientation = this.adjustRotation.toVec3()
-            offsetMeshWithRotation(mesh, offsetCF)
+            layerClothingChunked(mesh, ref_mesh, dist_mesh)
         }
 
-        const geometry = fileMeshToTHREEGeometry(mesh)
+        let canIncludeSkinning = true
+        if (this.instance?.Prop("Name") === "Head") {
+            canIncludeSkinning = false
+        }
+
+        const geometry = fileMeshToTHREEGeometry(mesh, canIncludeSkinning)
 
         //create and add mesh to scene
-        const threeMesh = new THREE.Mesh(geometry)
+        let threeMesh = undefined
+
+        if (geometry.attributes.skinWeight) {
+            threeMesh = new THREE.SkinnedMesh(geometry)
+        } else {
+            threeMesh = new THREE.Mesh(geometry)
+        }
         threeMesh.castShadow = true
         threeMesh.geometry = geometry
+
+        if (!this.scaleIsRelative) {
+            threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
+        } else {
+            const oldSize = mesh.size
+            threeMesh.scale.set(this.size.X / oldSize[0], this.size.Y / oldSize[1], this.size.Z / oldSize[2])
+        }
 
         return threeMesh
     }
@@ -450,26 +476,6 @@ export class MeshDesc {
                 this.mesh = meshIdStr
                 this.size = child.Property("Size") as Vector3
                 this.scaleIsRelative = true
-                
-                //accessory specific
-                const accessory = child.parent
-                if (accessory && accessory.className === "Accessory" && accessory.parent) {
-                    const rig = accessory.parent
-                    const humanoid = rig.FindFirstChildOfClass("Humanoid")
-                    if (humanoid) {
-                        const humanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
-                        if (humanoidDescription) {
-                            const accessoryDescriptions = humanoidDescription.GetChildren()
-                            for (const accessoryDesc of accessoryDescriptions) {
-                                if (accessoryDesc.className === "AccessoryDescription" && accessoryDesc.Prop("Instance") === accessory) {
-                                    this.adjustPosition = accessoryDesc.Prop("Position") as Vector3
-                                    this.adjustRotation = accessoryDesc.Prop("Rotation") as Vector3
-                                    this.adjustScale = accessoryDesc.Prop("Scale") as Vector3
-                                }
-                            }
-                        }
-                    }
-                }
 
                 //humanoid layered clothing
                 if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {

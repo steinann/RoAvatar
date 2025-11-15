@@ -961,10 +961,13 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 	child.setParent(rig)
 }
 
-function calculateMotor6Doffset(motor: Instance) {
+export function calculateMotor6Doffset(motor: Instance, includeTransform = false) {
 	const C0 = motor.Prop("C0") as CFrame
 	const C1 = motor.Prop("C1") as CFrame
-	const transform = new CFrame()
+	let transform = new CFrame()
+	if (includeTransform) {
+		transform = motor.Prop("Transform") as CFrame
+	}
 
 	const offset1 = C1.multiply(transform).inverse()
 	const finalCF = C0.multiply(offset1)

@@ -115,6 +115,30 @@ function easeInOutBounce(x: number) {
     : (1 + easeOutBounce(2 * x - 1)) / 2;
 }
 
+//table for motor names in case motors arent available
+const PartToMotorName: {[K in string]: string} = {
+    "Head": "Neck",
+
+    "UpperTorso": "Waist",
+    "LowerTorso": "Root",
+
+    "RightFoot": "RightAnkle",
+    "RightLowerLeg": "RightKnee",
+    "RightUpperLeg": "RightHip",
+
+    "LeftFoot": "LeftAnkle",
+    "LeftLowerLeg": "LeftKnee",
+    "LeftUpperLeg": "LeftHip",
+
+    "RightHand": "RightWrist",
+    "RightLowerArm": "RightElbow",
+    "RightUpperArm": "RightShoulder",
+
+    "LeftHand": "LeftWrist",
+    "LeftLowerArm": "LeftElbow",
+    "LeftUpperArm": "LeftShoulder",
+}
+
 //map for easing function
 const EasingFunctionMap = {
     [EasingDirection.In]: {
@@ -287,9 +311,9 @@ class AnimationTrack {
         return undefined
     }
 
-    findKeyframeGroup(motor: Instance) {
+    findKeyframeGroup(motorName: string, motorParentName: string) {
         for (const group of this.keyframeGroups) {
-            if (motor.parent && group.motorParent === motor.parent.Prop("Name") && group.motorName === motor.Prop("Name")) {
+            if (group.motorParent === motorParentName && group.motorName === motorName) {
                 return group
             }
         }
@@ -297,25 +321,25 @@ class AnimationTrack {
         return undefined
     }
 
-    addPartKeyframe(motor: Instance, keyframe: PartKeyframe) {
-        if (!motor || !keyframe || !motor.parent) {
+    addPartKeyframe(motorName: string, motorParentName: string, keyframe: PartKeyframe) {
+        if (!keyframe) {
             return
         }
 
-        let group = this.findKeyframeGroup(motor)
+        let group = this.findKeyframeGroup(motorName, motorParentName)
         if (!group) {
             group = new PartKeyframeGroup()
-            group.motorParent = motor.parent.Prop("Name") as string
-            group.motorName = motor.Prop("Name") as string
+            group.motorParent = motorParentName
+            group.motorName = motorName
             this.keyframeGroups.push(group)
         }
 
         group.keyframes.push(keyframe)
     }
 
-    createPartKeyframe(keyframe: Instance, pose: Instance): [Instance, PartKeyframe] | [undefined, undefined] {
+    createPartKeyframe(keyframe: Instance, pose: Instance): [string, string, PartKeyframe] | [undefined, undefined, undefined] {
         if (!pose.parent || !this.rig) {
-            return [undefined, undefined]
+            return [undefined, undefined, undefined]
         }
 
         const part0Name = pose.parent.Prop("Name") as string
@@ -324,11 +348,22 @@ class AnimationTrack {
         const part0 = this.rig.FindFirstChild(part0Name)
         const part1 = this.rig.FindFirstChild(part1Name)
 
-        let motor = undefined
         let partKeyframe = undefined
 
+        let motorName = undefined
+        let motorParentName = undefined
+
         if (part0 && part1) {
-            motor = this.findMotor6D(part0, part1)
+            const motor = this.findMotor6D(part0, part1)
+            if (motor) {
+                motorName = motor.Prop("Name") as string
+                if (motor.parent) {
+                    motorParentName = motor.parent.Prop("Name") as string
+                }
+            } else { //attempt saving by using predefined table
+                motorName = PartToMotorName[part1.Prop("Name") as string]
+                motorParentName = part1.Prop("Name") as string
+            }
 
             const time = keyframe.Prop("Time") as number
             const cf = pose.Prop("CFrame") as CFrame
@@ -341,14 +376,15 @@ class AnimationTrack {
             }
         } else {
             console.warn(`Missing either part0 or part1 with names: ${part0Name} ${part1Name}`)
-            return [undefined, undefined]
+            return [undefined, undefined, undefined]
         }
 
-        if (!motor || !partKeyframe) {
-            return [undefined, undefined]
+        if (!motorName || !motorParentName || !partKeyframe) {
+            console.warn(`Missing either motor or partKeyFrame for parts: ${part0Name} ${part1Name}`)
+            return [undefined, undefined, undefined]
         }
 
-        return [motor, partKeyframe]
+        return [motorName, motorParentName, partKeyframe]
     }
 
     addKeyframe(keyframe: Instance) {
@@ -363,9 +399,9 @@ class AnimationTrack {
                     validChildren.push(child)
 
                     if (child.Prop("Weight") as number >= 0.999) {//if this is actually a keyframe that affects the current part
-                        const [motor, partKeyframe] = this.createPartKeyframe(keyframe, child)
-                        if (motor && partKeyframe) {
-                            this.addPartKeyframe(motor, partKeyframe)
+                        const [motorName, motorParentName, partKeyframe] = this.createPartKeyframe(keyframe, child)
+                        if (motorName && motorParentName && partKeyframe) {
+                            this.addPartKeyframe(motorName, motorParentName, partKeyframe)
                         }
                     }
                 } else {
@@ -433,11 +469,14 @@ class AnimationTrack {
     }
 
     renderPose() {
+        //console.log("-- rendering pose")
         const time = this.timePosition
 
         for (const group of this.keyframeGroups) {
             const motor = this.getNamedMotor(group.motorName, group.motorParent)
             if (motor) {
+                //console.log(group.motorParent, "updating")
+
                 const lowerKeyframe = group.getLowerKeyframe(time)
                 const higherKeyframe = group.getHigherKeyframe(time)
 

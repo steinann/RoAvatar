@@ -289,7 +289,11 @@ export class Property {
     }
 }
 
+let lastInstanceId = 0
+
 export class Instance {
+    _id: number
+
     name?: string //USED TO MAKE VIEWING EASIER
     className: string
     _properties = new Map<string,Property>()
@@ -308,6 +312,9 @@ export class Instance {
     AncestryChanged = new Event()
 
     constructor(className: string) {
+        this._id = lastInstanceId
+        lastInstanceId++
+
         if (!className) {
             throw new Error("Instance was not provided a className")
         }
@@ -490,6 +497,10 @@ export class Instance {
                 }
                 break
         }
+    }
+
+    get id(): string {
+        return "0x" + this._id.toString(16).toUpperCase()
     }
 
     addConnectionReference(connection: Connection) {

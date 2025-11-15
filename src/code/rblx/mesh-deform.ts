@@ -18,6 +18,14 @@ function magnitude(v: Vec3): number {
     return calculateMagnitude3D(v[0],v[1],v[2])
 }
 
+function floor(v0: Vec3): Vec3 {
+    return [Math.floor(v0[0]), Math.floor(v0[1]), Math.floor(v0[2])]
+}
+
+function divide(v0: Vec3, v1: Vec3): Vec3 {
+    return [v0[0] / v1[0], v0[1] / v1[1], v0[2] / v1[2]]
+}
+
 function multiply(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] * v1[0], v0[1] * v1[1], v0[2] * v1[2]]
 }
@@ -28,6 +36,18 @@ function add(v0: Vec3, v1: Vec3): Vec3 {
 
 function minus(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]]
+}
+
+function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
+    return [
+        Math.min(Math.max(lower[0], v0[0]), higher[0]),
+        Math.min(Math.max(lower[1], v0[1]), higher[1]),
+        Math.min(Math.max(lower[2], v0[2]), higher[2])
+    ]
+}
+
+function distance(v0: Vec3, v1: Vec3): number {
+    return magnitude(minus(v1, v0))
 }
 
 function gaussian_rbf(v0: Vec3, v1: Vec3,sigma = 0.04) {
@@ -135,12 +155,143 @@ export function getOffsetMap(inner: FileMesh, outer: FileMesh) {
     return offsetMap
 }
 
+export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
+    const offsetArray = new Array(inner.coreMesh.verts.length)
+    const outerVertHashMap = getUVtoVertMap(outer)
+    for (let i = 0; i < inner.coreMesh.verts.length; i++) {
+        const vert = inner.coreMesh.verts[i]
+        const vertHash = hashVec2(vert.uv[0], vert.uv[1])
+        const outerVerts = outerVertHashMap.get(vertHash)
+        if (outerVerts) {
+            const outerVert = outerVerts[0]
+            if (outerVert) {
+                const offset = minus(outerVert.position, vert.position)
+                offsetArray[i] = offset
+            } else {
+                offsetArray[i] = [0,0,0]
+            }
+        } else {
+            offsetArray[i] = [0,0,0]
+        }
+    }
+
+    return offsetArray
+}
+
 async function Wait(time: number) {
     return new Promise(resolve => {
         setTimeout(() => {
             resolve(time)
         }, time*1000)
     })
+}
+
+type MeshChunk = {
+    pos: Vec3,
+    indices: number[],
+}
+
+type WeightChunk = {
+    meshChunk: MeshChunk,
+    weights: number[]
+}
+
+/*
+function toChunkPos(v0: Vec3, size: Vec3, widthSplit: number, heightSplit: number, depthSplit: number, lowerBound: Vec3, higherBound: Vec3): Vec3 {
+    const offsetV0 = add(v0, multiply(size, [0.5, 0.5, 0.5]))
+    console.log(offsetV0)
+    const normalizedV0 = divide(offsetV0, size)
+    console.log(normalizedV0)
+    const sizedV0 = multiply(normalizedV0, [widthSplit, heightSplit, depthSplit])
+    console.log(sizedV0)
+    const clampedV0 = clamp(sizedV0, lowerBound, higherBound)
+    console.log(clampedV0)
+    return clampedV0
+}
+*/
+
+export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) {
+    const sigma = ref_mesh.size[2] / 0.838 * 0.04
+    
+    //create base chunks
+    const widthSplit = 14
+    const heightSplit = 16
+    const depthSplit = 1
+
+    const lowerBound: Vec3 = [0,0,0]
+    const higherBound: Vec3 = [widthSplit - 1, heightSplit - 1, depthSplit - 1]
+
+    const baseChunks: MeshChunk[] = new Array(widthSplit * heightSplit * depthSplit)
+    let i = 0;
+    for (let x = 0; x < widthSplit; x++) {
+        for (let y = 0; y < heightSplit; y++) {
+            for (let z = 0; z < depthSplit; z++) {
+                const baseChunk: MeshChunk = {
+                    pos: [x,y,z],
+                    indices: [],
+                }
+
+                baseChunks[i] = baseChunk
+                i++
+            }
+        }
+    }
+    
+    /*
+    const vert = ref_mesh.coreMesh.verts[2]
+    const chunkPos = clamp(floor(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound)    
+
+    console.log(vert.position, ref_mesh.size)
+    console.log(chunkPos)
+    console.log("---")
+    console.log(toChunkPos(vert.position, ref_mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound))
+    */
+
+    for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
+        const vert = ref_mesh.coreMesh.verts[i]
+        const chunkPos = clamp(minus(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit]), [0.5,0.5,0.5]), lowerBound, higherBound)
+
+        for (let j = 0; j < baseChunks.length; j++) {
+            const baseChunk = baseChunks[j]
+            if (distance(baseChunk.pos, chunkPos) <= Math.sqrt(3)) {
+                baseChunk.indices.push(i)
+            }
+        }
+    }
+
+    //calculate weights
+    const weightChunks: WeightChunk[] = new Array(mesh.coreMesh.verts.length)
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+        const chunkPos = clamp(floor(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound)
+        const [x,y,z] = chunkPos
+
+        const baseChunk = baseChunks[x * (heightSplit * depthSplit) + y * depthSplit + z]
+        const weights = []
+        let weightSum = 0
+
+        for (const index of baseChunk.indices) {
+            const weight = gaussian_rbf(vert.position, ref_mesh.coreMesh.verts[index].position, sigma)
+            weightSum += weight
+            weights.push(weight)
+        }
+
+        if (weightSum !== 0) {
+            for (let i = 0; i < weights.length; i++) {
+                weights[i] /= weightSum
+            }
+        }
+
+        const weightChunk = {
+            meshChunk: baseChunk,
+            weights: weights,
+        }
+
+        weightChunks[i] = weightChunk
+    }
+
+    return weightChunks
 }
 
 /**THIS FUNCTION IS SO EXPENSIVE IT NEEDS TO BE ASYNC SO JS DOESNT CRASH; TODO: OPTIMIZE!!!
@@ -180,6 +331,8 @@ export async function createWeightsForMesh(mesh: FileMesh, ref_mesh: FileMesh) {
 
 //TODO: use new algorithm that accounts for normals
 export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
+
     const offsetMap = getOffsetMap(ref_mesh, dist_mesh)
     const allWeights = await createWeightsForMesh(mesh, ref_mesh)
 
@@ -202,4 +355,37 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
 
         vert.position = add(vert.position, totalOffset)
     }
+    console.timeEnd("total")
+}
+
+//TODO: use new algorithm that accounts for normals
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
+
+    console.time("offsetArray")
+    const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
+    console.timeEnd("offsetArray")
+    console.time("weights")
+    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    console.timeEnd("weights")
+
+    console.time("offset")
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        let totalOffset: Vec3 = [0,0,0]
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+            
+            totalOffset = add(totalOffset, multiply(offsetArray[index], [weight,weight,weight]))
+        }
+
+        vert.position = add(vert.position, totalOffset)
+    }
+    console.timeEnd("offset")
+
+    console.timeEnd("total")
 }

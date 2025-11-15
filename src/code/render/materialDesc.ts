@@ -325,7 +325,7 @@ export class MaterialDesc {
         return textures
     }
 
-    async compileTexture(textureType: TextureType): Promise<THREE.Texture | undefined> {
+    async compileTexture(textureType: TextureType): Promise<[THREE.Texture, boolean] | undefined> {
         if (textureType === "color") {
             const colorTextures = await this.loadColorTextures()
 
@@ -411,10 +411,26 @@ export class MaterialDesc {
                 }
             }
 
+            //set transparent to false if color layer has no transparent pixels
+            const imageData = ctx.getImageData(0,0, canvas.width, canvas.height)
+            const data = imageData.data
+            
+            let hasTransparency = false
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i] < 255) {
+                    hasTransparency = true
+                    break
+                }
+            }
+
+            if (!this.transparent) {
+                hasTransparency = false
+            }
+
             //document.body.appendChild(canvas)
 
             texture.needsUpdate = true
-            return texture
+            return [texture, hasTransparency]
         } else {
             let textureUrl: string | undefined = undefined
 
@@ -433,7 +449,7 @@ export class MaterialDesc {
                     texture.wrapS = THREE.RepeatWrapping
                     texture.wrapT = THREE.RepeatWrapping
                     texture.needsUpdate = true
-                    return texture
+                    return [texture, false]
                 }
             }
         }
@@ -447,7 +463,28 @@ export class MaterialDesc {
         const roughnessTexturePromise = this.compileTexture("roughness")
         const metalnessTexturePromise = this.compileTexture("metalness")
 
-        const [colorTexture, normalTexture, roughnessTexture, metalnessTexture] = await Promise.all([colorTexturePromise, normalTexturePromise, roughnessTexturePromise, metalnessTexturePromise])
+        const [colorTextureInfo, normalTextureInfo, roughnessTextureInfo, metalnessTextureInfo] = await Promise.all([colorTexturePromise, normalTexturePromise, roughnessTexturePromise, metalnessTexturePromise])
+
+        let colorTexture = undefined
+        let normalTexture = undefined
+        let roughnessTexture = undefined
+        let metalnessTexture = undefined
+
+        let hasTransparency = this.transparent
+
+        if (colorTextureInfo) {
+            colorTexture = colorTextureInfo[0]
+            hasTransparency = colorTextureInfo[1]
+        }
+        if (normalTextureInfo) {
+            normalTexture = normalTextureInfo[0]
+        }
+        if (roughnessTextureInfo) {
+            roughnessTexture = roughnessTextureInfo[0]
+        }
+        if (metalnessTextureInfo) {
+            metalnessTexture = metalnessTextureInfo[0]
+        }
 
         let material = undefined
 
@@ -457,7 +494,7 @@ export class MaterialDesc {
                 normalMap: normalTexture,
                 roughnessMap: roughnessTexture,
                 metalnessMap: metalnessTexture,
-                transparent: this.transparent,
+                transparent: hasTransparency,
                 opacity: 1 - this.transparency,
                 side: this.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
                 visible: this.visible,
@@ -467,7 +504,7 @@ export class MaterialDesc {
                 map: colorTexture,
                 specular: new THREE.Color(1 / 102, 1 / 102, 1 / 102),
                 shininess: 9,
-                transparent: this.transparent,
+                transparent: hasTransparency,
                 opacity: 1 - this.transparency,
                 side: this.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
                 visible: this.visible,
@@ -619,10 +656,14 @@ export class MaterialDesc {
                 }
 
                 //part color
-                if (affectedByHumanoid || (meshPartTexture.length < 1 || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay))) {
-                    const partColor = (child.Prop("Color") as Color3uint8).toColor3()
-                    const colorLayer = new ColorLayer(partColor)
-                    this.layers.push(colorLayer)
+                if (!(surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency)) {
+                    if (affectedByHumanoid || (meshPartTexture.length < 1 || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay))) {
+                        const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                        const colorLayer = new ColorLayer(partColor)
+                        this.layers.push(colorLayer)
+                    } else {
+                        this.transparent = true
+                    }
                 }
 
                 //surface appearance

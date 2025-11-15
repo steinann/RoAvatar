@@ -6,6 +6,7 @@ import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescriptio
 //import { Outfit } from "../code/avatar/outfit"
 import { addInstance, mount } from "../code/render/renderer"
 import { Outfit } from "../code/avatar/outfit"
+import { AnimationTrack } from "../code/rblx/animation"
 //import { MaterialDesc } from "../code/render/materialDesc"
 //import { MeshDesc } from "../code/render/meshDesc"
 
@@ -42,6 +43,97 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                 if (result instanceof RBX) {
                                     const dataModel = result.generateTree()
                                     const rig = dataModel.GetChildren()[0]
+                                    
+                                    let currentAnimationIndex = 0
+
+                                    const animationIds = [
+                                        507766388, //idle long
+                                        913376220, //run
+                                        507772104, //dance
+                                    ]
+
+                                    //animationIds = stillPoseAnimationIds
+                                    const animationTracks: AnimationTrack[] = []
+
+                                    const animationPromises = []
+
+                                    for (const id of animationIds) {
+                                        animationPromises.push(new Promise<void>((resolve) => {
+                                            API.Asset.GetAssetBuffer("https://assetdelivery.roblox.com/v1/asset?id=" + id).then(buffer => {
+                                                if (buffer instanceof ArrayBuffer) {
+                                                    const rbx = new RBX()
+                                                    rbx.fromBuffer(buffer)
+                                                    console.log(rbx.generateTree())
+
+                                                    const animationTrack = new AnimationTrack()
+                                                    animationTrack.loadAnimation(rig, rbx.dataModel.GetChildren()[0])
+                                                    animationTrack.looped = true
+                                                    animationTracks.push(animationTrack)
+                                                    
+                                                    console.log(animationTrack)
+
+                                                    resolve()
+                                                }
+                                            })
+                                        }))
+                                    }
+
+                                    let animationTotalTime = 5
+                                    const animationTransitionTime = 0.5
+
+                                    Promise.all(animationPromises).then(() => {
+                                        function updateTrack(startTime: number, lastAnimationSwitch: number) {
+                                            const nextAnimationIndex = (currentAnimationIndex + 1) % animationIds.length
+
+                                            const animationTrack = animationTracks[currentAnimationIndex]
+                                            const nextAnimationTrack = animationTracks[nextAnimationIndex]
+
+                                            const newTime = performance.now() / 1000
+
+                                            const playedTime = newTime - lastAnimationSwitch
+                                            const firstHalfTime = animationTotalTime - animationTransitionTime
+
+                                            nextAnimationTrack.weight = Math.max(0, playedTime - firstHalfTime) / animationTransitionTime
+                                            animationTrack.weight = 1 - nextAnimationTrack.weight
+                                            nextAnimationTrack.weight *= 1
+                                            animationTrack.weight *= 1
+                                            
+                                            //console.log("----")
+                                            //console.log(animationTrack.weight)
+                                            animationTrack.resetMotorTransforms()
+                                            animationTrack.setTime((newTime - startTime))
+                                            nextAnimationTrack.setTime((newTime - startTime))
+
+                                            //recalculate motor6ds
+                                            for (const child of rig.GetDescendants()) {
+                                                if (child.className === "Motor6D") {
+                                                    child.setProperty("Transform", child.Prop("Transform"))
+                                                } else if (child.className === "Weld") {
+                                                    child.setProperty("C0", child.Prop("C0"))
+                                                }
+                                            }
+
+                                            if (newTime - lastAnimationSwitch > animationTotalTime) {
+                                                currentAnimationIndex++
+                                                currentAnimationIndex = currentAnimationIndex % animationIds.length
+                                                animationTotalTime = 5 + Math.random() * 5
+                                                lastAnimationSwitch = performance.now() / 1000
+                                            }
+
+                                            if (auth) {
+                                                addInstance(rig, auth)
+                                            }
+
+                                            setTimeout(() => {
+                                                updateTrack(startTime, lastAnimationSwitch)
+                                            }, 1000 / 60 - 1)
+                                        }
+
+                                        const lastAnimationSwitch = performance.now() / 1000
+                                        animationTotalTime = animationTracks[currentAnimationIndex].length
+                                        updateTrack(performance.now() / 1000, lastAnimationSwitch)
+                                    })
+
                                     const humanoid = rig?.FindFirstChildOfClass("Humanoid")
                                     if (humanoid) {
                                         console.log("Starting to apply description...")
@@ -73,7 +165,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                                                                     })
                                                                                 }
                                                                             })
-                                                                        },500)
+                                                                        },2000)
                                                                     }
                                                                 })
                                                             }

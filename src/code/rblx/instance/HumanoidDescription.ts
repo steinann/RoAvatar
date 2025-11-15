@@ -758,9 +758,51 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                             const rigSource = dataModel.GetChildren()[0]
                             if (rigSource) {
                                 for (const bodyPartName of BodyPartEnumToNames[bodyPart]) {
-                                    const bodyPartPart = rigSource.FindFirstChild(bodyPartName)
-                                    if (bodyPartPart) {
-                                        replaceBodyPart(rig, bodyPartPart)
+                                    if (avatarType === AvatarType.R15) {
+                                        const bodyPartPart = rigSource.FindFirstChild(bodyPartName)
+                                        if (bodyPartPart) {
+                                            replaceBodyPart(rig, bodyPartPart)
+                                        }
+                                    } else if (avatarType === AvatarType.R6) {
+                                        if (bodyPart !== BodyPart.Head) {
+                                            let replacementCharacterMesh = undefined
+
+                                            for (const newCharacterMesh of rigSource.GetChildren()) {
+                                                if (newCharacterMesh.className === "CharacterMesh") {
+                                                    if (newCharacterMesh.Prop("BodyPart") === bodyPart) {
+                                                        replacementCharacterMesh = newCharacterMesh
+                                                    }
+                                                }
+                                            }
+
+                                            for (const oldCharacterMesh of rig.GetChildren()) {
+                                                if (oldCharacterMesh.className === "CharacterMesh") {
+                                                    if (oldCharacterMesh.Prop("BodyPart") === bodyPart) {
+                                                        oldCharacterMesh.Destroy()
+                                                    }
+                                                }
+                                            }
+
+                                            if (replacementCharacterMesh) {
+                                                replacementCharacterMesh.setParent(rig)
+                                            }
+                                        } else {
+                                            const head = rigSource.FindFirstChild("Head")
+                                            if (head) {
+                                                const originalHead = rig.FindFirstChild("Head")
+                                                if (originalHead) {
+                                                    const originalHeadMesh = originalHead.FindFirstChildOfClass("SpecialMesh")
+                                                    if (originalHeadMesh) {
+                                                        originalHeadMesh.Destroy()
+                                                    }
+
+                                                    const headMesh = head.FindFirstChildOfClass("SpecialMesh")
+                                                    if (headMesh) {
+                                                        headMesh.setParent(originalHead)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
