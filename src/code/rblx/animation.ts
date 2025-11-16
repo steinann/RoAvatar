@@ -378,6 +378,7 @@ class FloatCurve {
             }
 
             key.value = view.readFloat32()
+
             if (hasLeftTangent) {
                 key.leftTangent = view.readFloat32()
             } else {

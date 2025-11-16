@@ -421,6 +421,18 @@ const API = {
                 }
             }
         }
+    },
+    "Users": {
+        GetUserInfo: async function(auth: Authentication) {
+            const response = await RBLXGet("https://users.roblox.com/v1/users/authenticated", auth)
+            
+            if (response.status == 200) {
+                return await response.json() as {id: number, name: string, displayName: string}
+            } else {
+                console.warn("Failed to get user info: GetUserInfo(auth)")
+                return undefined
+            }
+        }
     }
 }
 

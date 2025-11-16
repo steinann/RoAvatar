@@ -29,7 +29,10 @@ renderer.domElement.setAttribute("style","width: 420px; height: 420; border-radi
 
 renderer.domElement.setAttribute("id","OutfitInfo-outfit-image-3d")
 
-scene.background = new THREE.Color( 0x2C2E31 );
+//const backgroundColor = new THREE.Color( 0x2C2E31 )
+//const backgroundColor = new THREE.Color( 0x191a1f )
+const backgroundColor = new THREE.Color( 0x2a2a2d )
+scene.background = backgroundColor;
 
 const lightingType: string = "WellLit" //"Thumbnail" | "WellLit"
 
@@ -110,7 +113,7 @@ shadowPlane.position.set(0,0,0)
 shadowPlane.receiveShadow = true;
 scene.add( shadowPlane );
 
-const planeSolidColorMaterial = new THREE.MeshBasicMaterial({color: 0x2c2e31})
+const planeSolidColorMaterial = new THREE.MeshBasicMaterial({color: backgroundColor})
 const plane = new THREE.Mesh( planeGeometry, planeSolidColorMaterial );
 plane.rotation.set(rad(-90),0,0)
 plane.position.set(0,0,0)

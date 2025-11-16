@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect } from "react"
 import { API } from "../code/api"
-import { AuthContext } from "./auth-context"
+import { AuthContext } from "./context/auth-context"
 import { Instance, RBX } from "../code/rblx/rbx"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 //import { Outfit } from "../code/avatar/outfit"

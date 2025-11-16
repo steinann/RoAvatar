@@ -7,4 +7,5 @@ let iframe = document.createElement("iframe")
 iframe.src = chrome.runtime.getURL("/index.html")
 iframe.style.width = "100%"
 iframe.style.aspectRatio = "16/9"
+iframe.style.borderStyle = "hidden"
 contentElement.appendChild(iframe)

@@ -301,7 +301,7 @@ export class Outfit {
         this.creationDate = Date.now()
     }
 
-    toJson(removeNotOwnedAssets: boolean) {
+    toJson(removeNotOwnedAssets: boolean = false) {
         const outfitJson: OutfitJson = {
             "scale": this.scale.toJson(),
             "playerAvatarType": this.playerAvatarType,

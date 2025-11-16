@@ -143,6 +143,7 @@ export class RenderableDesc {
             this.isSkinned = true
         }
         threeMesh.material = threeMaterial
+        threeMesh.receiveShadow = true
         threeMaterial.needsUpdate = true
 
         this.result = threeMesh
