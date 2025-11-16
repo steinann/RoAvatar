@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CFrame, Instance } from '../rblx/rbx';
 import { deg, lerp, rad } from '../misc/misc';
 import type { Vec3 } from '../rblx/mesh';
+import SimpleView from '../lib/simple-view';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -31,6 +32,34 @@ const PoseEasingStyle: {[K in PoseEasingStyleName]: number} = {
     "Bounce": 4,
     "CubicV2": 5,
 }
+
+type KeyInterpolationModeName = "Constant" | "Linear" | "Cubic"
+const KeyInterpolationMode: {[K in KeyInterpolationModeName]: number} = {
+    "Constant": 0,
+    "Linear": 1,
+    "Cubic": 2,
+}
+
+type RotationOrderName = "XYZ" | "XZY" | "YZX" | "YXZ" | "ZXY" | "ZYX"
+const RotationOrder: {[K in RotationOrderName]: number} = {
+    "XYZ": 0,
+    "XZY": 1,
+    "YZX": 2,
+    "YXZ": 3,
+    "ZXY": 4,
+    "ZYX": 5,
+}
+
+const RotationOrderToRotationOrderName: {[K in number]: RotationOrderName} = {
+    0: "XYZ",
+    1: "XZY",
+    2: "YZX",
+    3: "YXZ",
+    4: "ZXY",
+    5: "ZYX",
+}
+
+type AnimationTrackType = "Sequence" | "Curve"
 
 //FUNCTIONS FOR EASING (https://easings.net/)
 //linear
@@ -177,6 +206,38 @@ function getEasingFunction(easingDirection: number, easingStyle: number) {
     return func
 }
 
+//Cubic Hermite spline
+function h00(t: number) {
+    return 2*Math.pow(t,3) - 3*Math.pow(t,2) + 1
+}
+
+function h10(t: number) {
+    return Math.pow(t,3) - 2*Math.pow(t,2) + t
+}
+
+function h01(t: number) {
+    return -2*Math.pow(t,3) + 3*Math.pow(t,2)
+}
+
+function h11(t: number) {
+    return Math.pow(t,3) - Math.pow(t,2)
+}
+
+/**
+ * Cubic Hermite Spline
+ * @param t time
+ * @param p0 startValue
+ * @param p1 endValue
+ * @param m0 startTangent
+ * @param m1 endTangent
+ * @param xk startTime
+ * @param xk1 endTime
+ * @returns 
+ */
+function p(t: number, p0: number, p1: number, m0: number, m1:number, xk: number, xk1: number) {
+    return h00(t)*p0 + h10(t)*(xk1-xk)*m0 + h01(t)*p1+h11(t)*(xk1-xk)*m1
+}
+
 /*function animPriorityToNum(animationPriority: number) { //larger number has larger priority, unlike the enums
     if (animationPriority === 1000) {
         return -1
@@ -263,9 +324,165 @@ class PartKeyframeGroup {
     }
 }
 
+class FloatCurveKey {
+    time: number = 0
+    value: number = 0
+    interpolation: number = KeyInterpolationMode.Cubic
+
+    leftTangent?: number = undefined
+    rightTangent?: number = undefined
+}
+
+class FloatCurve {
+    keys: FloatCurveKey[] = []
+    maxTime: number = 0
+
+    fromBuffer(arrayBuffer: ArrayBuffer) {
+        /*
+        struct FloatCurve {
+            uint32 unk0 (always 20 00 00 00)
+            uint32 length (amount of keys)
+            keys[length] {
+                uint8 keyInterpolationMode (same as enum)
+                uint8 hasLeftAndRightTangent (bit 0 (+1) = left tangent, bit 1 (+2) = right tangent)
+                float value
+                float leftTangent
+                float rightTangent
+            }
+            uint32 unk1 (always 10 00 00 00)
+            uint16 length (amount of keys)
+            uint8 unk2 (maybe length is 24 bit, but thats a bit weird...)
+            uint32 times[length] (num / 65536 / 9,375 = time as float!)
+        }
+        */
+
+        const view = new SimpleView(arrayBuffer)
+        view.readUint32()
+        const length = view.readUint32()
+
+        for (let i = 0; i < length; i++) {
+            const key = new FloatCurveKey()
+
+            key.interpolation = view.readUint8()
+
+            let hasLeftAndRightTangent = view.readUint8()
+            let hasRightTangent = false
+            let hasLeftTangent = false
+            if (hasLeftAndRightTangent - 2 >= 0) {
+                hasRightTangent = true
+                hasLeftAndRightTangent -= 2
+            }
+            if (hasLeftAndRightTangent - 1 >= 0) {
+                hasLeftTangent = true
+                hasLeftAndRightTangent -= 1
+            }
+
+            key.value = view.readFloat32()
+            if (hasLeftTangent) {
+                key.leftTangent = view.readFloat32()
+            } else {
+                view.readFloat32()
+            }
+            if (hasRightTangent) {
+                key.rightTangent = view.readFloat32()
+            } else {
+                view.readFloat32()
+            }
+
+            this.keys.push(key)
+        }
+
+        view.readUint32()
+        view.readUint16()
+        view.readUint8()
+
+        for (let i = 0; i < length; i++) {
+            this.keys[i].time = view.readUint32() / 65536 / 9.375
+            if (this.keys[i].time > this.maxTime) {
+                this.maxTime = this.keys[i].time
+            }
+        }
+
+        return this
+    }
+
+    getLowerKey(time: number) {
+        let resultKey = null
+
+        for (const key of this.keys) {
+            if (key.time <= time) {
+                if (resultKey && resultKey.time > key.time) {
+                    continue
+                }
+                resultKey = key
+            }
+        }
+
+        return resultKey
+    }
+
+    getHigherKey(time: number) {
+        let resultKey = null
+
+        for (const key of this.keys) {
+            if (key.time > time) {
+                if (resultKey && resultKey.time < key.time) {
+                    continue
+                }
+                resultKey = key
+            }
+        }
+
+        return resultKey
+    }
+}
+
+type FloatCurve3 = [FloatCurve, FloatCurve, FloatCurve]
+
+class PartCurve {
+    motorParent = "LowerTorso"
+    motorName = "Root"
+
+    position?: FloatCurve3
+    rotationOrder: number = RotationOrder.XYZ
+    rotation?: FloatCurve3
+}
+
+function mapNum(x: number, in_min: number, in_max: number, out_min: number, out_max: number): number {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+}
+
+function getCurveValue(time: number, lowerKey: FloatCurveKey, higherKey: FloatCurveKey) {
+    const lowerX = lowerKey
+    const higherX = higherKey
+
+    const keyframeTime = mapNum(time, lowerX.time, higherX.time, 0, 1)
+
+    if (lowerX.interpolation === KeyInterpolationMode.Constant) {
+        return lowerX.value
+    } else if (lowerX.interpolation === KeyInterpolationMode.Linear) {
+        return (higherX.value - lowerX.value) * keyframeTime + lowerX.value
+    } else if (lowerX.interpolation === KeyInterpolationMode.Cubic) {
+        const p0 = lowerX.value
+        const p1 = higherX.value
+
+        const m0 = lowerX.rightTangent || 0
+        const m1 = higherX.leftTangent || 0
+
+        const xk = lowerX.time
+        const xk1 = higherX.time
+
+        return p(mapNum(time, lowerX.time, higherX.time, 0, 1), p0, p1, m0, m1, xk, xk1)
+    }
+
+    throw new Error(`Invalid interpolation type: ${lowerX.interpolation}`)
+}
+
 class AnimationTrack {
     //data
-    keyframeGroups: PartKeyframeGroup[] = [] //one group per motor6D
+    trackType: AnimationTrackType = "Sequence"
+    keyframeGroups: PartKeyframeGroup[] = [] //one group per motor6D, only if trackType = "Sequence"
+    partCurves: PartCurve[] = [] //only if trackType = "Curve"
     
     //playing info
     isPlaying = false
@@ -419,36 +636,117 @@ class AnimationTrack {
     }
 
     loadAnimation(rig: Instance, animation: Instance) {
-        if (animation.className !== "KeyframeSequence") {
-            throw new Error("Animation is not a KeyframeSequence")
-        }
+        if (animation.className === "KeyframeSequence") {
+            //set animation details
+            this.trackType = "Sequence"
+            this.looped = animation.Prop("Loop") as boolean
+            this.priority = animation.Prop("Priority") as number
+            this.length = 0
+            this.rig = rig
 
-        //set animation details
-        this.looped = animation.Prop("Loop") as boolean
-        this.priority = animation.Prop("Priority") as number
-        this.length = 0
-        this.rig = rig
+            //sort keyframes based on time
+            const keyframeInstances: Instance[] = []
 
-        //sort keyframes based on time
-        const keyframeInstances: Instance[] = []
-
-        const animationChildren = animation.GetChildren()
-        for (const child of animationChildren) {
-            if (child.className === "Keyframe") {
-                if (child.GetChildren().length > 0) {
-                    this.length = Math.max(this.length, child.Prop("Time") as number)
-                    keyframeInstances.push(child)
+            const animationChildren = animation.GetChildren()
+            for (const child of animationChildren) {
+                if (child.className === "Keyframe") {
+                    if (child.GetChildren().length > 0) {
+                        this.length = Math.max(this.length, child.Prop("Time") as number)
+                        keyframeInstances.push(child)
+                    }
                 }
             }
-        }
 
-        keyframeInstances.sort((a, b) => {
-            return a.Prop("Time") as number - (b.Prop("Time") as number)
-        })
+            keyframeInstances.sort((a, b) => {
+                return a.Prop("Time") as number - (b.Prop("Time") as number)
+            })
 
-        //add keyframes
-        for (const child of keyframeInstances) {
-            this.addKeyframe(child)
+            //add keyframes
+            for (const child of keyframeInstances) {
+                this.addKeyframe(child)
+            }
+        } else if (animation.className === "CurveAnimation") {
+            //set animation details
+            this.trackType = "Curve"
+            this.looped = animation.Prop("Loop") as boolean
+            this.priority = animation.Prop("Priority") as number
+            this.length = 0
+            this.rig = rig
+
+            
+            /*for (const child of animation.GetDescendants()) {
+                if (child.className === "FloatCurve" && child.Prop("Name") === "Y") {
+                    const dataStr = child.Prop("ValuesAndTimes") as ArrayBuffer
+                    console.log(child.GetFullName())
+                    console.log(dataStr)
+                    console.log(dataStr.byteLength)
+                    throw "sigma"
+                }
+            }*/
+            
+
+            for (const child of animation.GetDescendants()) {
+                if (child.className === "Folder") {
+                    const motorParent = child.Prop("Name") as string
+                    const motor = PartToMotorName[motorParent]
+                    if (motor) {
+                        const partCurve = new PartCurve()
+                        partCurve.motorName = motor
+                        partCurve.motorParent = motorParent
+                        
+                        const positionCurve = child.FindFirstChild("Position")
+                        const rotationCurve = child.FindFirstChild("Rotation")
+
+                        if (positionCurve) {
+                            const positionCurveX = positionCurve.FindFirstChild("X")
+                            const positionCurveY = positionCurve.FindFirstChild("Y")
+                            const positionCurveZ = positionCurve.FindFirstChild("Z")
+
+                            if (positionCurveX && positionCurveX.HasProperty("ValuesAndTimes") &&
+                                positionCurveY && positionCurveY.HasProperty("ValuesAndTimes") &&
+                                positionCurveZ && positionCurveZ.HasProperty("ValuesAndTimes")) {
+                                const floatCurveBufferX = positionCurveX.Prop("ValuesAndTimes") as ArrayBuffer
+                                const floatCurveBufferY = positionCurveY.Prop("ValuesAndTimes") as ArrayBuffer
+                                const floatCurveBufferZ = positionCurveZ.Prop("ValuesAndTimes") as ArrayBuffer
+
+                                const floatCurveX = new FloatCurve().fromBuffer(floatCurveBufferX)
+                                const floatCurveY = new FloatCurve().fromBuffer(floatCurveBufferY)
+                                const floatCurveZ = new FloatCurve().fromBuffer(floatCurveBufferZ)
+
+                                this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
+
+                                partCurve.position = [floatCurveX, floatCurveY, floatCurveZ]
+                            }
+                        }
+
+                        if (rotationCurve) {
+                            const rotationCurveX = rotationCurve.FindFirstChild("X")
+                            const rotationCurveY = rotationCurve.FindFirstChild("Y")
+                            const rotationCurveZ = rotationCurve.FindFirstChild("Z")
+
+                            if (rotationCurveX && rotationCurveX.HasProperty("ValuesAndTimes") &&
+                                rotationCurveY && rotationCurveY.HasProperty("ValuesAndTimes") &&
+                                rotationCurveZ && rotationCurveZ.HasProperty("ValuesAndTimes")) {
+                                const floatCurveBufferX = rotationCurveX.Prop("ValuesAndTimes") as ArrayBuffer
+                                const floatCurveBufferY = rotationCurveY.Prop("ValuesAndTimes") as ArrayBuffer
+                                const floatCurveBufferZ = rotationCurveZ.Prop("ValuesAndTimes") as ArrayBuffer
+
+                                const floatCurveX = new FloatCurve().fromBuffer(floatCurveBufferX)
+                                const floatCurveY = new FloatCurve().fromBuffer(floatCurveBufferY)
+                                const floatCurveZ = new FloatCurve().fromBuffer(floatCurveBufferZ)
+
+                                this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
+
+                                partCurve.rotation = [floatCurveX, floatCurveY, floatCurveZ]
+                            }
+                        }
+
+                        this.partCurves.push(partCurve)
+                    }
+                }
+            }
+        } else {
+            throw new Error(`Unknown animation className: ${animation.className}`)
         }
 
         return this
@@ -472,27 +770,73 @@ class AnimationTrack {
         //console.log("-- rendering pose")
         const time = this.timePosition
 
-        for (const group of this.keyframeGroups) {
-            const motor = this.getNamedMotor(group.motorName, group.motorParent)
-            if (motor) {
-                //console.log(group.motorParent, "updating")
+        if (this.trackType === "Sequence") {
+            for (const group of this.keyframeGroups) {
+                const motor = this.getNamedMotor(group.motorName, group.motorParent)
+                if (motor) {
+                    //console.log(group.motorParent, "updating")
 
-                const lowerKeyframe = group.getLowerKeyframe(time)
-                const higherKeyframe = group.getHigherKeyframe(time)
+                    const lowerKeyframe = group.getLowerKeyframe(time)
+                    const higherKeyframe = group.getHigherKeyframe(time)
 
-                if (lowerKeyframe && higherKeyframe) {
-                    const higherTime = higherKeyframe.time - lowerKeyframe.time
-                    const fromLowerTime = time - lowerKeyframe.time
-                    const keyframeTime = fromLowerTime / higherTime
+                    if (lowerKeyframe && higherKeyframe) {
+                        const higherTime = higherKeyframe.time - lowerKeyframe.time
+                        const fromLowerTime = time - lowerKeyframe.time
+                        const keyframeTime = fromLowerTime / higherTime
 
-                    const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
+                        const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
+
+                        const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                        const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
+                        motor.setProperty("Transform", transformCF)
+                    } else if (lowerKeyframe) {
+                        const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                        const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
+                        motor.setProperty("Transform", transformCF)
+                    }
+                }
+            }
+        } else if (this.trackType === "Curve") {
+            for (const partCurve of this.partCurves) {
+                const motor = this.getNamedMotor(partCurve.motorName, partCurve.motorParent)
+                if (motor) {
+                    const cf = new CFrame()
+
+                    if (partCurve.position) {
+                        const lowerX = partCurve.position[0].getLowerKey(time)
+                        const higherX = partCurve.position[0].getHigherKey(time)
+                        if (lowerX && higherX) cf.Position[0] = getCurveValue(time, lowerX, higherX)
+
+                        const lowerY = partCurve.position[1].getLowerKey(time)
+                        const higherY = partCurve.position[1].getHigherKey(time)
+                        if (lowerY && higherY) cf.Position[1] = getCurveValue(time, lowerY, higherY)
+
+                        const lowerZ = partCurve.position[2].getLowerKey(time)
+                        const higherZ = partCurve.position[2].getHigherKey(time)
+                        if (lowerZ && higherZ) cf.Position[2] = getCurveValue(time, lowerZ, higherZ)
+                    }
+
+                    if (partCurve.rotation) {
+                        const euler = new THREE.Euler(0,0,0, RotationOrderToRotationOrderName[partCurve.rotationOrder])
+
+                        const lowerX = partCurve.rotation[0].getLowerKey(time)
+                        const higherX = partCurve.rotation[0].getHigherKey(time)
+                        if (lowerX && higherX) euler.x = getCurveValue(time, lowerX, higherX)
+
+                        const lowerY = partCurve.rotation[1].getLowerKey(time)
+                        const higherY = partCurve.rotation[1].getHigherKey(time)
+                        if (lowerY && higherY) euler.y = getCurveValue(time, lowerY, higherY)
+
+                        const lowerZ = partCurve.rotation[2].getLowerKey(time)
+                        const higherZ = partCurve.rotation[2].getHigherKey(time)
+                        if (lowerZ && higherZ) euler.z = getCurveValue(time, lowerZ, higherZ)
+
+                        const newEuler = euler.reorder("YXZ")
+                        cf.Orientation = [deg(newEuler.x), deg(newEuler.y), deg(newEuler.z)]
+                    }
 
                     const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
-                    const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
-                    motor.setProperty("Transform", transformCF)
-                } else if (lowerKeyframe) {
-                    const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
-                    const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
+                    const transformCF = lerpCFrame(oldTransformCF, (cf).inverse(), this.weight)
                     motor.setProperty("Transform", transformCF)
                 }
             }

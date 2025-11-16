@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { rad } from '../misc/misc';
+import { download, rad, saveByteArray } from '../misc/misc';
 import { RenderableDesc } from './renderableDesc';
 import { CFrame, type Connection, type Instance } from '../rblx/rbx';
 import type { Authentication } from '../api';
 import { RenderedClassTypes } from '../rblx/constant';
 import { calculateMotor6Doffset, traverseRigCFrame } from '../rblx/scale';
+import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 
 const isRenderingMesh = new Map<Instance,boolean>()
 const renderables = new Map<Instance,RenderableDesc>()
@@ -479,6 +480,27 @@ export function getRendererCamera() {
 export function getRendererControls() {
     return controls
 }
+
+export function exportScene() {
+    const exporter = new GLTFExporter()
+    exporter.parse(scene, (gltf) => {
+        if (gltf instanceof ArrayBuffer) {
+            saveByteArray([gltf], "scene.glb")
+        } else {
+            download("scene.gltf",JSON.stringify(gltf))
+        }
+    }, (error) => {
+        throw error
+    })
+}
+
+// Extend the Window interface to include the API property
+declare global {
+    interface Window {
+        RendererExportScene: typeof exportScene;
+    }
+}
+window.RendererExportScene = exportScene
 
 export function mount( container: HTMLDivElement ) {
     if (container) {

@@ -336,6 +336,7 @@ export class MeshDesc {
             if (!ref_mesh) {
                 throw new Error("not possible")
             }
+            ref_mesh.coreMesh.removeDuplicateVertices(0.01)
 
             //create destination cage
             const dist_mesh = ref_mesh.clone()

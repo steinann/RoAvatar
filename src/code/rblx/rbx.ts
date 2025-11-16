@@ -1024,7 +1024,14 @@ export class RBX {
                 {
                     let totalRead = 0
                     while (totalRead < valuesLength) {
-                        prop.values.push(chunkView.readUtf8String())
+                        if (prop.propertyName === "ValuesAndTimes") {
+                            const length = chunkView.readUint32()
+                            prop.values.push(chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1))
+                            chunkView.viewOffset += length
+                            //prop.values.push(chunkView.buffer)
+                        } else {
+                            prop.values.push(chunkView.readUtf8String())
+                        }
                         totalRead++
                     }
                     break

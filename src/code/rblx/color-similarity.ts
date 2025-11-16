@@ -60,10 +60,10 @@ function rgb_to_Lab(c: ColorRGB) {
 }
 
 export function delta_CIEDE2000(c1: ColorRGB, c2: ColorRGB) { //Source: https://github.com/Roblox/avatar/blob/main/InGameAvatarEditor/src/ServerScriptService/AvatarEditorInGameSetup/AvatarEditorInGame/Modules/AvatarExperience/AvatarEditor/Utils.lua#L184
-    console.log(c1)
+    //console.log(c1)
     const lab1 = rgb_to_Lab(c1)
 	const lab2 = rgb_to_Lab(c2)
-    console.log(lab1)
+    //console.log(lab1)
 
 	const k_L = 1.0 // lightness
 	const k_C = 1.0 // chroma

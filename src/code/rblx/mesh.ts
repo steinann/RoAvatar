@@ -332,11 +332,12 @@ export class FileMesh {
     lods!: LODS //LODS
     skinning!: SKINNING //SKINNING
 
+    _bounds?: [Vec3,Vec3]
     _size?: Vec3 = undefined
 
-    get size() {
-        if (!this._size) {
-            //max mesh size is 2048 i think? so this should be enough
+    get bounds(): [Vec3,Vec3] {
+        if (!this._bounds) {
+        //max mesh size is 2048 i think? so this should be enough
             let minX = 999999
             let maxX = -999999
 
@@ -360,6 +361,17 @@ export class FileMesh {
                     maxZ = Math.max(maxZ, pos[2])
                 }
             }
+
+            this._bounds = [[minX, minY, minZ], [maxX, maxY, maxZ]]
+        }
+
+        return this._bounds
+    }
+
+    get size() {
+        if (!this._size) {
+            //max mesh size is 2048 i think? so this should be enough
+            const [[minX, minY, minZ], [maxX, maxY, maxZ]] = this.bounds
 
             this._size = [maxX - minX, maxY - minY, maxZ - minZ]
         }

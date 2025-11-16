@@ -16,6 +16,17 @@ export default function Test_AvatarPreview(): React.JSX.Element {
 
     useEffect(() => {
         console.log("running")
+        let idToUse = 126448532
+
+        const urlParams = new URLSearchParams(window.location.search)
+        const id = urlParams.get("id")
+        //const userId = urlParams.get("userId")
+        //const outfitId = urlParams.get("outfitId")
+        if (id) {
+            idToUse = Number(id)
+        }
+
+
         if (auth) {
             const hrp = new Instance("HumanoidDescription")
             const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
@@ -32,7 +43,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                 }
             })
 
-            API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
+            API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
                 if (result instanceof Outfit) {
                     const humanoidDescriptionWrapper = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                     console.log(humanoidDescriptionWrapper.instance.Prop("Face"))
@@ -46,10 +57,17 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                     
                                     let currentAnimationIndex = 0
 
-                                    const animationIds = [
+                                    /*const animationIds = [
                                         507766388, //idle long
                                         913376220, //run
                                         507772104, //dance
+                                    ]*/
+                                    const animationIds = [
+                                        "https://assetdelivery.roblox.com/v1/asset?id=" + 139130639469681, //Hugo / What you want
+                                        "https://assetdelivery.roblox.com/v1/asset?id=" + 134948629272782, //Animation / Hakari dance
+                                        "https://assetdelivery.roblox.com/v1/asset?id=" + 100114227897992, //Die lit (funnydance) / Bring it around
+                                        //"../assets/testAnim5.rbxm",
+                                        //"../assets/armSwingCurveAnim.rbxm",
                                     ]
 
                                     //animationIds = stillPoseAnimationIds
@@ -59,13 +77,14 @@ export default function Test_AvatarPreview(): React.JSX.Element {
 
                                     for (const id of animationIds) {
                                         animationPromises.push(new Promise<void>((resolve) => {
-                                            API.Asset.GetAssetBuffer("https://assetdelivery.roblox.com/v1/asset?id=" + id).then(buffer => {
+                                            API.Asset.GetAssetBuffer(id).then(buffer => {
                                                 if (buffer instanceof ArrayBuffer) {
                                                     const rbx = new RBX()
                                                     rbx.fromBuffer(buffer)
                                                     console.log(rbx.generateTree())
 
                                                     const animationTrack = new AnimationTrack()
+                                                    console.log(id)
                                                     animationTrack.loadAnimation(rig, rbx.dataModel.GetChildren()[0])
                                                     animationTrack.looped = true
                                                     animationTracks.push(animationTrack)
@@ -140,7 +159,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                         humanoidDescriptionWrapper.applyDescription(humanoid, auth).then(() => {
                                             addInstance(rig, auth)
                                             setTimeout(() => {
-                                                API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
+                                                API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
                                                     if (result instanceof Outfit) {
                                                         const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                                                         humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
@@ -149,7 +168,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                                                     if (result instanceof Instance) {
                                                                         //addInstance(rig, auth)
                                                                         setInterval(() => {
-                                                                            API.Avatar.GetAvatarDetails(auth, 126448532).then(result => {
+                                                                            API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
                                                                                 if (result instanceof Outfit) {
                                                                                     const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                                                                                     humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {

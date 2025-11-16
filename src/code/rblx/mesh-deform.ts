@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "./rbx"
 
@@ -81,6 +82,7 @@ export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, 
             for (const refVert of refVerts) {
                 const offsetVec3 = targetCFrame.Position
                 refVert.position = [vert.position[0] * targetSize.X + offsetVec3[0], vert.position[1] * targetSize.Y + offsetVec3[1], vert.position[2] * targetSize.Z + offsetVec3[2]]
+                refVert.normal = vert.normal
             }
         }
     }
@@ -156,7 +158,7 @@ export function getOffsetMap(inner: FileMesh, outer: FileMesh) {
 }
 
 export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
-    const offsetArray = new Array(inner.coreMesh.verts.length)
+    const offsetArray: ([Vec3, THREE.Quaternion, number] | undefined)[] = new Array(inner.coreMesh.verts.length)
     const outerVertHashMap = getUVtoVertMap(outer)
     for (let i = 0; i < inner.coreMesh.verts.length; i++) {
         const vert = inner.coreMesh.verts[i]
@@ -166,12 +168,16 @@ export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
             const outerVert = outerVerts[0]
             if (outerVert) {
                 const offset = minus(outerVert.position, vert.position)
-                offsetArray[i] = offset
+                const innerNormal = new THREE.Vector3(vert.normal[0], vert.normal[1], vert.normal[2])
+                const outerNormal = new THREE.Vector3(outerVert.normal[0], outerVert.normal[1], outerVert.normal[2])
+                const quat = new THREE.Quaternion().setFromUnitVectors(innerNormal, outerNormal)
+
+                offsetArray[i] = [offset, quat, outerNormal.length() / innerNormal.length()]
             } else {
-                offsetArray[i] = [0,0,0]
+                offsetArray[i] = undefined
             }
         } else {
-            offsetArray[i] = [0,0,0]
+            offsetArray[i] = undefined
         }
     }
 
@@ -196,19 +202,19 @@ type WeightChunk = {
     weights: number[]
 }
 
-/*
+
 function toChunkPos(v0: Vec3, size: Vec3, widthSplit: number, heightSplit: number, depthSplit: number, lowerBound: Vec3, higherBound: Vec3): Vec3 {
     const offsetV0 = add(v0, multiply(size, [0.5, 0.5, 0.5]))
-    console.log(offsetV0)
+    //console.log(offsetV0)
     const normalizedV0 = divide(offsetV0, size)
-    console.log(normalizedV0)
+    //console.log(normalizedV0)
     const sizedV0 = multiply(normalizedV0, [widthSplit, heightSplit, depthSplit])
-    console.log(sizedV0)
+    //console.log(sizedV0)
     const clampedV0 = clamp(sizedV0, lowerBound, higherBound)
-    console.log(clampedV0)
+    //console.log(clampedV0)
     return clampedV0
 }
-*/
+
 
 export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) {
     const sigma = ref_mesh.size[2] / 0.838 * 0.04
@@ -236,6 +242,26 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
             }
         }
     }
+
+    let [meshLowerBound, meshHigherBound] = mesh.bounds
+    meshLowerBound = toChunkPos(meshLowerBound, mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound)
+    meshHigherBound = toChunkPos(meshHigherBound, mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound)
+    /*meshLowerBound[0] -= 1
+    meshLowerBound[1] -= 1
+    meshLowerBound[2] -= 1
+    meshHigherBound[0] += 1
+    meshHigherBound[1] += 1
+    meshHigherBound[2] += 1*/
+
+    const usedBaseChunks: MeshChunk[] = []
+    for (let i = 0; i < baseChunks.length; i++) {
+        const baseChunk = baseChunks[i]
+        if (baseChunk.pos[0] >= meshLowerBound[0] && baseChunk.pos[1] >= meshLowerBound[1] && baseChunk.pos[2] >= meshLowerBound[2] &&
+            baseChunk.pos[0] <= meshHigherBound[0] && baseChunk.pos[1] <= meshHigherBound[1] && baseChunk.pos[2] <= meshHigherBound[2]
+        ) {
+            usedBaseChunks.push(baseChunk)
+        }
+    }
     
     /*
     const vert = ref_mesh.coreMesh.verts[2]
@@ -251,8 +277,8 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
         const vert = ref_mesh.coreMesh.verts[i]
         const chunkPos = clamp(minus(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit]), [0.5,0.5,0.5]), lowerBound, higherBound)
 
-        for (let j = 0; j < baseChunks.length; j++) {
-            const baseChunk = baseChunks[j]
+        for (let j = 0; j < usedBaseChunks.length; j++) {
+            const baseChunk = usedBaseChunks[j]
             if (distance(baseChunk.pos, chunkPos) <= Math.sqrt(3)) {
                 baseChunk.indices.push(i)
             }
@@ -359,6 +385,7 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
 }
 
 //TODO: use new algorithm that accounts for normals
+
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
     console.time("total")
 
@@ -370,17 +397,23 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
     console.timeEnd("weights")
 
     console.time("offset")
+
     for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
         const vert = mesh.coreMesh.verts[i]
 
         let totalOffset: Vec3 = [0,0,0]
+        
         const weights = allWeights[i]
 
         for (let j = 0; j < weights.meshChunk.indices.length; j++) {
             const weight = weights.weights[j]
             const index = weights.meshChunk.indices[j]
             
-            totalOffset = add(totalOffset, multiply(offsetArray[index], [weight,weight,weight]))
+            const offsetInfo = offsetArray[index]
+            if (offsetInfo) {
+                const [offset] = offsetInfo
+                totalOffset = add(totalOffset, multiply(offset, [weight,weight,weight]))
+            }
         }
 
         vert.position = add(vert.position, totalOffset)
@@ -389,3 +422,57 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
     console.timeEnd("total")
 }
+
+
+//Experimental algorithm that uses normals (it didnt work well, im not sure why)
+/*
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
+
+    console.time("offsetArray")
+    const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
+    console.timeEnd("offsetArray")
+    console.time("weights")
+    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    console.timeEnd("weights")
+
+    console.time("offset")
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        let originalPosition: Vec3 = [0,0,0]
+        let totalOffset: Vec3 = [0,0,0]
+        let totalNormalOffset: Vec3 = [0,0,0]
+        
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+            
+            const offsetInfo = offsetArray[index]
+            if (offsetInfo) {
+                const [offset, quat, scale] = offsetInfo
+
+                //innercage -> outercage offset
+                originalPosition = add(originalPosition, multiply(add(ref_mesh.coreMesh.verts[index].position,offset), [weight,weight,weight]))
+                totalOffset = add(totalOffset, multiply(offset, [weight,weight,weight]))
+
+                //innercage -> mesh offset (rotated)
+                const toRotateOffset = minus(vert.position, ref_mesh.coreMesh.verts[index].position)
+                const rotatedOffsetTHREE = new THREE.Vector3(toRotateOffset[0], toRotateOffset[1], toRotateOffset[2]).applyQuaternion(quat)
+                const rotatedOffset: Vec3 = [rotatedOffsetTHREE.x * scale, rotatedOffsetTHREE.y * scale, rotatedOffsetTHREE.z * scale]
+                totalNormalOffset = add(totalNormalOffset, multiply(rotatedOffset, [weight, weight, weight]))
+            }
+        }
+
+        vert.position = originalPosition
+        //vert.position = add(vert.position, totalOffset)
+        vert.position = add(vert.position, totalNormalOffset)
+    }
+    console.timeEnd("offset")
+
+    console.timeEnd("total")
+}
+*/
