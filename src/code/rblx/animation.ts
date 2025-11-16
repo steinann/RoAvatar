@@ -206,7 +206,7 @@ function getEasingFunction(easingDirection: number, easingStyle: number) {
     return func
 }
 
-//Cubic Hermite spline
+//Cubic Hermite spline helper functions
 function h00(t: number) {
     return 2*Math.pow(t,3) - 3*Math.pow(t,2) + 1
 }
@@ -605,6 +605,63 @@ class AnimationTrack {
         return [motorName, motorParentName, partKeyframe]
     }
 
+    createPartCurve(motor: string, motorParent: string, child: Instance) {
+        const partCurve = new PartCurve()
+        partCurve.motorName = motor
+        partCurve.motorParent = motorParent
+        
+        const positionCurve = child.FindFirstChild("Position")
+        const rotationCurve = child.FindFirstChild("Rotation")
+
+        if (positionCurve) {
+            const positionCurveX = positionCurve.FindFirstChild("X")
+            const positionCurveY = positionCurve.FindFirstChild("Y")
+            const positionCurveZ = positionCurve.FindFirstChild("Z")
+
+            if (positionCurveX && positionCurveX.HasProperty("ValuesAndTimes") &&
+                positionCurveY && positionCurveY.HasProperty("ValuesAndTimes") &&
+                positionCurveZ && positionCurveZ.HasProperty("ValuesAndTimes")
+            ) {
+                const floatCurveBufferX = positionCurveX.Prop("ValuesAndTimes") as ArrayBuffer
+                const floatCurveBufferY = positionCurveY.Prop("ValuesAndTimes") as ArrayBuffer
+                const floatCurveBufferZ = positionCurveZ.Prop("ValuesAndTimes") as ArrayBuffer
+
+                const floatCurveX = new FloatCurve().fromBuffer(floatCurveBufferX)
+                const floatCurveY = new FloatCurve().fromBuffer(floatCurveBufferY)
+                const floatCurveZ = new FloatCurve().fromBuffer(floatCurveBufferZ)
+
+                this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
+
+                partCurve.position = [floatCurveX, floatCurveY, floatCurveZ]
+            }
+        }
+
+        if (rotationCurve) {
+            const rotationCurveX = rotationCurve.FindFirstChild("X")
+            const rotationCurveY = rotationCurve.FindFirstChild("Y")
+            const rotationCurveZ = rotationCurve.FindFirstChild("Z")
+
+            if (rotationCurveX && rotationCurveX.HasProperty("ValuesAndTimes") &&
+                rotationCurveY && rotationCurveY.HasProperty("ValuesAndTimes") &&
+                rotationCurveZ && rotationCurveZ.HasProperty("ValuesAndTimes")
+            ) {
+                const floatCurveBufferX = rotationCurveX.Prop("ValuesAndTimes") as ArrayBuffer
+                const floatCurveBufferY = rotationCurveY.Prop("ValuesAndTimes") as ArrayBuffer
+                const floatCurveBufferZ = rotationCurveZ.Prop("ValuesAndTimes") as ArrayBuffer
+
+                const floatCurveX = new FloatCurve().fromBuffer(floatCurveBufferX)
+                const floatCurveY = new FloatCurve().fromBuffer(floatCurveBufferY)
+                const floatCurveZ = new FloatCurve().fromBuffer(floatCurveBufferZ)
+
+                this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
+
+                partCurve.rotation = [floatCurveX, floatCurveY, floatCurveZ]
+            }
+        }
+
+        return partCurve
+    }
+
     addKeyframe(keyframe: Instance) {
         //traverse keyframe tree
         let children = keyframe.GetChildren()
@@ -674,73 +731,12 @@ class AnimationTrack {
             this.length = 0
             this.rig = rig
 
-            
-            /*for (const child of animation.GetDescendants()) {
-                if (child.className === "FloatCurve" && child.Prop("Name") === "Y") {
-                    const dataStr = child.Prop("ValuesAndTimes") as ArrayBuffer
-                    console.log(child.GetFullName())
-                    console.log(dataStr)
-                    console.log(dataStr.byteLength)
-                    throw "sigma"
-                }
-            }*/
-            
-
             for (const child of animation.GetDescendants()) {
                 if (child.className === "Folder") {
                     const motorParent = child.Prop("Name") as string
                     const motor = PartToMotorName[motorParent]
                     if (motor) {
-                        const partCurve = new PartCurve()
-                        partCurve.motorName = motor
-                        partCurve.motorParent = motorParent
-                        
-                        const positionCurve = child.FindFirstChild("Position")
-                        const rotationCurve = child.FindFirstChild("Rotation")
-
-                        if (positionCurve) {
-                            const positionCurveX = positionCurve.FindFirstChild("X")
-                            const positionCurveY = positionCurve.FindFirstChild("Y")
-                            const positionCurveZ = positionCurve.FindFirstChild("Z")
-
-                            if (positionCurveX && positionCurveX.HasProperty("ValuesAndTimes") &&
-                                positionCurveY && positionCurveY.HasProperty("ValuesAndTimes") &&
-                                positionCurveZ && positionCurveZ.HasProperty("ValuesAndTimes")) {
-                                const floatCurveBufferX = positionCurveX.Prop("ValuesAndTimes") as ArrayBuffer
-                                const floatCurveBufferY = positionCurveY.Prop("ValuesAndTimes") as ArrayBuffer
-                                const floatCurveBufferZ = positionCurveZ.Prop("ValuesAndTimes") as ArrayBuffer
-
-                                const floatCurveX = new FloatCurve().fromBuffer(floatCurveBufferX)
-                                const floatCurveY = new FloatCurve().fromBuffer(floatCurveBufferY)
-                                const floatCurveZ = new FloatCurve().fromBuffer(floatCurveBufferZ)
-
-                                this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
-
-                                partCurve.position = [floatCurveX, floatCurveY, floatCurveZ]
-                            }
-                        }
-
-                        if (rotationCurve) {
-                            const rotationCurveX = rotationCurve.FindFirstChild("X")
-                            const rotationCurveY = rotationCurve.FindFirstChild("Y")
-                            const rotationCurveZ = rotationCurve.FindFirstChild("Z")
-
-                            if (rotationCurveX && rotationCurveX.HasProperty("ValuesAndTimes") &&
-                                rotationCurveY && rotationCurveY.HasProperty("ValuesAndTimes") &&
-                                rotationCurveZ && rotationCurveZ.HasProperty("ValuesAndTimes")) {
-                                const floatCurveBufferX = rotationCurveX.Prop("ValuesAndTimes") as ArrayBuffer
-                                const floatCurveBufferY = rotationCurveY.Prop("ValuesAndTimes") as ArrayBuffer
-                                const floatCurveBufferZ = rotationCurveZ.Prop("ValuesAndTimes") as ArrayBuffer
-
-                                const floatCurveX = new FloatCurve().fromBuffer(floatCurveBufferX)
-                                const floatCurveY = new FloatCurve().fromBuffer(floatCurveBufferY)
-                                const floatCurveZ = new FloatCurve().fromBuffer(floatCurveBufferZ)
-
-                                this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
-
-                                partCurve.rotation = [floatCurveX, floatCurveY, floatCurveZ]
-                            }
-                        }
+                        const partCurve = this.createPartCurve(motor, motorParent, child)
 
                         this.partCurves.push(partCurve)
                     }
