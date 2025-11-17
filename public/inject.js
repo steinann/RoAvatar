@@ -9,3 +9,4 @@ iframe.style.width = "100%"
 iframe.style.aspectRatio = "16/9"
 iframe.style.borderStyle = "hidden"
 contentElement.appendChild(iframe)
+document.getElementsByTagName("body")[0].style.overflow = "hidden"

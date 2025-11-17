@@ -20,7 +20,7 @@ type AssetJson = {
     meta?: AssetMetaJson,
 }
 
-const AssetTypes = [
+export const AssetTypes = [
     "",
     "Image",
     "TShirt",
@@ -103,6 +103,45 @@ const AssetTypes = [
     "DynamicHead",
 ]
 
+export const AssetTypeNameToId = new Map<string,number>()
+for (let i = 0; i < AssetTypes.length; i++) {
+    const name = AssetTypes[i]
+    AssetTypeNameToId.set(name, i)
+}
+
+export const ActualBundleTypes = [ //names used by Roblox
+    "",
+    "Avatar", //traditional bundle
+    "DynamicHead",
+    "Avatar", //outfit
+    "Shoes",
+    "Avatar", //animation pack
+]
+
+export const BundleTypes = [
+    "",
+    "Character",
+    "DynamicHead",
+    "Outfit",
+    "Shoes",
+    "AnimationPack"
+]
+
+type ItemType = "Asset" | "Bundle"
+export class ItemInfo {
+    itemType: ItemType
+    type: string
+    id: number
+    name: string
+    
+    constructor(itemType: ItemType, type: string, id: number, name: string) {
+        this.itemType = itemType
+        this.type = type
+        this.id = id
+        this.name = name
+    }
+}
+
 class AssetType {
     _id: number //67
     name: string //JacketAccessory
@@ -110,6 +149,14 @@ class AssetType {
     constructor() {
         this._id = 2
         this.name = "TShirt"
+    }
+
+    clone() {
+        const copy = new AssetType()
+        copy.id = this.id
+        copy.name = this.name
+        
+        return copy
     }
 
     toJson() {
@@ -136,6 +183,10 @@ class AssetType {
     }
 }
 
+function cloneVecXYZ(vec: VecXYZ): VecXYZ {
+    return {X: vec.X, Y: vec.Y, Z: vec.Z}
+}
+
 class AssetMeta {
     version: number
     order?: number
@@ -147,6 +198,19 @@ class AssetMeta {
 
     constructor() {
         this.version = 1
+    }
+
+    clone() {
+        const copy = new AssetMeta()
+        copy.version = this.version
+        copy.order = this.order
+        copy.puffiness = this.puffiness
+
+        if (this.position) copy.position = cloneVecXYZ(this.position)
+        if (this.rotation) copy.rotation = cloneVecXYZ(this.rotation)
+        if (this.scale) copy.scale = cloneVecXYZ(this.scale)
+
+        return copy
     }
 
     toJson() {
@@ -192,6 +256,21 @@ class Asset {
 
     //class only
     notOwned?: boolean
+
+    clone() {
+        const copy = new Asset()
+        copy.id = this.id
+        copy.name = this.name
+
+        copy.assetType = this.assetType.clone()
+        copy.currentVersionId = this.currentVersionId
+
+        if (this.meta) copy.meta = this.meta.clone()
+
+        copy.notOwned = this.notOwned
+
+        return copy
+    }
 
     toJson() {
         const toReturn: AssetJson = {

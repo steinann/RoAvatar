@@ -31,7 +31,8 @@ renderer.domElement.setAttribute("id","OutfitInfo-outfit-image-3d")
 
 //const backgroundColor = new THREE.Color( 0x2C2E31 )
 //const backgroundColor = new THREE.Color( 0x191a1f )
-const backgroundColor = new THREE.Color( 0x2a2a2d )
+//const backgroundColor = new THREE.Color( 0x2a2a2d )
+const backgroundColor = new THREE.Color( 0x2b2d33 )
 scene.background = backgroundColor;
 
 const lightingType: string = "WellLit" //"Thumbnail" | "WellLit"

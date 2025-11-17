@@ -7,13 +7,24 @@ import { OutfitContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import BarButton from './react/barButton'
-import Category from './react/category'
+import ItemCategory from './react/category'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
   const [outfit, setOutfit] = useState<Outfit>(new Outfit())
-  const [categoryType, setCategoryType] = useState<string>("Recent")
+
+  const [categorySource, _setCategorySource] = useState<string>("Inventory")
+  const [categoryType, _setCategoryType] = useState<string>("Recent")
+
+  function setCategorySource(categorySource: string) {
+    _setCategorySource(categorySource)
+    _setCategoryType("Recent")
+  }
+
+  function setCategoryType(categoryType: string) {
+    _setCategoryType(categoryType)
+  }
 
   useEffect(() => {
     if (!auth) {
@@ -41,20 +52,20 @@ function App() {
             </div>
             <div className='main-right division-down'>
               <BarCategory className="align-center">
-                <BarButton>Inventory</BarButton>
-                <BarButton>Marketplace</BarButton>
+                <BarButton category='Inventory' currentCategory={categorySource} setCategory={setCategorySource}/>
+                <BarButton category='Marketplace' currentCategory={categorySource} setCategory={setCategorySource}/>
               </BarCategory>
-              <BarCategory>
-                <BarButton onClick={() => {setCategoryType("Recent")}}>Recent</BarButton>
-                <BarButton>Characters</BarButton>
-                <BarButton>Clothing</BarButton>
-                <BarButton>Accessories</BarButton>
-                <BarButton>Head & Body</BarButton>
-                <BarButton>Animations</BarButton>
+              <BarCategory className='width-fill-available'>
+                <BarButton category='Recent' currentCategory={categoryType} setCategory={setCategoryType}/>
+                <BarButton category='Characters' currentCategory={categoryType} setCategory={setCategoryType}/>
+                <BarButton category='Clothing' currentCategory={categoryType} setCategory={setCategoryType}/>
+                <BarButton category='Accessories' currentCategory={categoryType} setCategory={setCategoryType}/>
+                <BarButton category='Head & Body' currentCategory={categoryType} setCategory={setCategoryType}/>
+                <BarButton category='Animations' currentCategory={categoryType} setCategory={setCategoryType}/>
               </BarCategory>
-              <Category categoryType={categoryType} setOutfit={setOutfit}>
+              <ItemCategory categoryType={categoryType} setOutfit={setOutfit}>
 
-              </Category>
+              </ItemCategory>
             </div>
           </div>
         </OutfitContext>

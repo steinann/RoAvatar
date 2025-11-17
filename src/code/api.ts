@@ -173,7 +173,18 @@ const CACHE = {
     "RBX": new Map<string,RBX>(),
     "Mesh": new Map<string,FileMesh>(),
     "Image": new Map<string,HTMLImageElement | undefined>(),
+    "Thumbnails": new Map<string,string | undefined>()
 }
+
+type ThumbnailInfo = {
+    auth: Authentication,
+    type: string,
+    id: number,
+    size: string,
+    resolves: ((url: string | undefined) => void)[],
+    attempt: number,
+}
+let ThumbnailsToBatch: ThumbnailInfo[] = []
 
 const API = {
     "Generic": {
@@ -340,6 +351,22 @@ const API = {
             } else {
                 return response
             }
+        },
+        GetAvatarInventory: async function (auth: Authentication, sortOption: string, pageToken: string | null | undefined) {
+            let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?"
+            let needsAnd = false
+
+            if (pageToken) {
+                requestUrl += `${needsAnd?"&":""}pageToken=${pageToken}`
+                needsAnd = true
+            }
+
+            if (sortOption) {
+                requestUrl += `${needsAnd?"&":""}sortOption=${sortOption}`
+                needsAnd = true
+            }
+
+            return RBLXGet(requestUrl, auth)
         }
     },
     "Asset": {
@@ -433,8 +460,119 @@ const API = {
                 return undefined
             }
         }
+    },
+    "Thumbnails": {
+        GetThumbnail: function(auth: Authentication, type: string, id: number, size: string = "150x150"): Promise<string | undefined> {
+            if (type === "Bundle") {
+                type = "Outfit"
+            }
+
+            const thisThumbnailInfo = {
+                auth: auth,
+                type: type,
+                id: id,
+                size: size,
+                attempt: 0,
+                resolves: [],
+            }
+
+            const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(thisThumbnailInfo))
+            if (cachedThumbnail) {
+                return new Promise(resolve => {
+                    resolve(cachedThumbnail)
+                })
+            }
+            
+            for (const thumbnailInfo of ThumbnailsToBatch) {
+                if (thumbnailInfo.id === id && thumbnailInfo.type === type && thumbnailInfo.size === size) {
+                    return new Promise(resolve => {
+                        thumbnailInfo.resolves.push(resolve)
+                    })
+                }
+            }
+
+            return new Promise(resolve => {
+                ThumbnailsToBatch.push({
+                    auth: auth,
+                    type: type,
+                    id: id,
+                    size: size,
+                    resolves: [resolve],
+                    attempt: 0,
+                })
+            })
+        }
     }
 }
+
+let currentLoadingThumbnails = false
+function requestIdFromThumbnailInfo(thumbnailInfo: ThumbnailInfo) {
+    return thumbnailInfo.id + ":undefined:" + thumbnailInfo.type + ":" + thumbnailInfo.size + ":null:regular"
+}
+
+function PurgeFailedThumbnails() {
+    ThumbnailsToBatch = ThumbnailsToBatch.filter((val) => {
+        const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(val))
+        const shouldPurge = val.attempt > 3 || cachedThumbnail
+        if (shouldPurge && !cachedThumbnail) {
+            CACHE.Thumbnails.set(requestIdFromThumbnailInfo(val), undefined)
+        }
+
+        return val.attempt <= 3 && !CACHE.Thumbnails.get(requestIdFromThumbnailInfo(val))
+    })
+}
+
+function BatchThumbnails() {
+    let auth: Authentication | undefined = undefined
+    const body = []
+    for (const thumbnailInfo of ThumbnailsToBatch) {
+        body.push({
+            "format": null,
+            "requestId": requestIdFromThumbnailInfo(thumbnailInfo),
+            "size": thumbnailInfo.size,
+            "targetId": thumbnailInfo.id,
+            "type": thumbnailInfo.type
+        })
+
+        auth = thumbnailInfo.auth
+
+        thumbnailInfo.attempt++
+    }
+
+    if (body.length > 0 && auth) {
+        currentLoadingThumbnails = true
+        RBLXPost("https://thumbnails.roblox.com/v1/batch", auth, body).then((response) => {
+            if (response.status === 200) {
+                response.json().then(body => {
+                    for (const result of body.data) {
+                        for (const thumbnailInfo of ThumbnailsToBatch) {
+                            if (requestIdFromThumbnailInfo(thumbnailInfo) === result.requestId) {
+                                if (result.state === "Completed") {
+                                    for (const resolve of thumbnailInfo.resolves) {
+                                        CACHE.Thumbnails.set(result.requestId, result.imageUrl)
+                                        resolve(result.imageUrl)
+                                        thumbnailInfo.attempt = 999
+                                    }
+                                } else if (result.state !== "Pending") {
+                                    thumbnailInfo.attempt = 999
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }).finally(() => {
+            PurgeFailedThumbnails()
+            currentLoadingThumbnails = false
+        })
+    }
+}
+
+setInterval(() => {
+    if (!currentLoadingThumbnails) {
+        BatchThumbnails()
+    }
+},10)
 
 export { API, Authentication }
 

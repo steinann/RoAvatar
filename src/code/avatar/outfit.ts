@@ -4,7 +4,7 @@ import { API, type Authentication } from "../api";
 import { BODYCOLOR3 } from "../misc/flags"
 import { download, hexToRgb } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
-import { Asset, AssetMeta, AssetType } from "./asset";
+import { Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes } from "./asset";
 import type { AssetJson } from "./asset"
 import { AvatarType, BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin } from "./constant"
 
@@ -53,6 +53,18 @@ export class Scale {
 
     constructor() {
         this.reset()
+    }
+
+    clone() {
+        const copy = new Scale()
+        copy.height = this.height
+        copy.width = this.width
+        copy.head = this.head
+        copy.depth = this.depth
+        copy.proportion = this.proportion
+        copy.bodyType = this.bodyType
+
+        return copy
     }
 
     reset() {
@@ -108,6 +120,23 @@ export class BodyColor3s {
         this.colorType = "Color3"
 
         this.setAll("FFFFFF")
+    }
+
+    clone() {
+        const copy = new BodyColor3s()
+        copy.colorType = this.colorType
+
+        copy.headColor3 = this.headColor3
+
+        copy.torsoColor3 = this.torsoColor3
+
+        copy.rightArmColor3 = this.rightArmColor3
+        copy.leftArmColor3 = this.leftArmColor3
+        
+        copy.rightLegColor3 = this.rightLegColor3
+        copy.leftLegColor3 = this.leftLegColor3
+
+        return copy
     }
 
     setAll(color: string) {
@@ -183,6 +212,24 @@ export class BodyColors {
         this.colorType = "BrickColor"
 
         this.setAll(1001)
+    }
+
+    clone() {
+        const copy = new BodyColors()
+
+        copy.colorType = this.colorType
+
+        copy.headColorId = this.headColorId
+        
+        copy.torsoColorId = this.torsoColorId
+        
+        copy.rightArmColorId = this.rightArmColorId
+        copy.leftArmColorId = this.leftArmColorId
+        
+        copy.rightLegColorId = this.rightLegColorId
+        copy.leftLegColorId = this.leftLegColorId
+
+        return copy
     }
 
     setAll(colorId: number) {
@@ -299,6 +346,37 @@ export class Outfit {
 
     constructor() {
         this.creationDate = Date.now()
+    }
+
+    clone() {
+        const copy = new Outfit()
+        copy.scale = this.scale.clone()
+        copy.bodyColors = this.bodyColors.clone()
+        copy.playerAvatarType = this.playerAvatarType
+
+        copy.assets = []
+        for (const asset of this.assets) {
+            copy.assets.push(asset.clone())
+        }
+
+        copy.name = this.name
+        copy.id = this.id
+        
+        copy.origin = this.origin
+        copy.creatorId = this.creatorId
+        copy.creationDate = this.creationDate
+        copy.cachedImage = this.cachedImage
+        copy.editable = this.editable
+        if (this.collections) {
+            copy.collections = []
+            for (const collection of this.collections) {
+                copy.collections.push(collection)
+            }
+        } else {
+            copy.collections = undefined
+        }
+
+        return copy
     }
 
     toJson(removeNotOwnedAssets: boolean = false) {
@@ -724,7 +802,33 @@ export class Outfit {
         }
     }
 
-    async addAsset(auth: Authentication, assetId: number): Promise<boolean> {
+    addAsset(id: number, type: string | number, name: string) {
+        let typeId = 0
+        let typeName = ""
+        if (typeof type === "number") {
+            typeId = type
+            typeName = AssetTypes[type]
+        } else {
+            typeName = type
+            typeId = AssetTypeNameToId.get(type) || 0
+        }
+
+        const asset = new Asset()
+        asset.id = id
+        asset.name = name
+
+        asset.assetType = new AssetType()
+        asset.assetType.id = typeId
+        if (LayeredClothingAssetOrder[asset.assetType.id]) {
+            asset.meta = new AssetMeta()
+            asset.meta.order = LayeredClothingAssetOrder[asset.assetType.id]
+        }
+        asset.assetType.name = typeName
+
+        this.assets.push(asset)
+    }
+
+    async addAssetId(auth: Authentication, assetId: number): Promise<boolean> {
         const assetDetailsResponse = await API.Economy.GetAssetDetails(auth, assetId)
 
         if (assetDetailsResponse.status !== 200) {
