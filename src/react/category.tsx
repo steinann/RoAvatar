@@ -30,14 +30,25 @@ function useItems(auth: Authentication | undefined, category: string) {
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
+            console.log("starting items", loadId, nextPageToken)
             API.Avatar.GetAvatarInventory(auth, category, nextPageToken).then(response => {
                 if (loadId !== lastLoadId) return
                 if (response.status === 200) {
                     response.json().then(body => {
                         //console.log(body)
                         const pageToken = body.nextPageToken
-                        setNextPageToken(pageToken)
+                        if (pageToken && pageToken.length > 0) {
+                            setNextPageToken(pageToken)
+                        } else {
+                            setNextPageToken(null)
+                        }
 
+                        console.log("setting items", loadId)
+                        if (nextPageToken !== null) {
+                            console.log(nextPageToken)
+                        } else {
+                            console.log("null")
+                        }
                         const newItems = body.avatarInventoryItems
                         setItems(prev => [...prev, ...newItems])
                     })
@@ -73,7 +84,7 @@ export default function ItemCategory({categoryType, setOutfit}: {categoryType: s
     }, [categoryType])
 
     useEffect(() => {
-        if (items.length <= 0) {
+        if (!hasLoadedAll) {
             loadMore()
         }
     })

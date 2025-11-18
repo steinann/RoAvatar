@@ -20,5 +20,9 @@
             "resources": ["/*"]
         }
     ],
-    "host_permissions": ["https://*.roblox.com/*","https://*.rbxcdn.com/*"]
+    "host_permissions": ["https://*.roblox.com/*","https://*.rbxcdn.com/*"],
+    "background": {
+        "service_worker":"service-worker.js"
+    },
+    "action": {}
 }

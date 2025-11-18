@@ -225,7 +225,7 @@ function h11(t: number) {
 
 /**
  * Cubic Hermite Spline
- * @param t time
+ * @param t time (normalized)
  * @param p0 startValue
  * @param p1 endValue
  * @param m0 startTangent
