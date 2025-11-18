@@ -23,10 +23,10 @@ function useItems(auth: Authentication | undefined, category: string) {
     }, [category])
 
     const loadMore = () => {
+        if (!auth) return
+
         lastLoadId++
         const loadId = lastLoadId
-
-        if (!auth) return
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
@@ -51,9 +51,12 @@ function useItems(auth: Authentication | undefined, category: string) {
                         }
                         const newItems = body.avatarInventoryItems
                         setItems(prev => [...prev, ...newItems])
+                    }).finally(() => {
+                        setIsLoading(false)
                     })
+                } else {
+                    setIsLoading(false)
                 }
-                setIsLoading(false)
             })
         }
     }
