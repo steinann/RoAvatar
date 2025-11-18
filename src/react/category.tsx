@@ -19,11 +19,12 @@ function useItems(auth: Authentication | undefined, category: string) {
             setItems([])
             setNextPageToken("")
             setIsLoading(false)
+            lastLoadId++
         }
     }, [category])
 
     const loadMore = () => {
-        if (!auth) return
+        if (!auth || isLoading) return
 
         lastLoadId++
         const loadId = lastLoadId
