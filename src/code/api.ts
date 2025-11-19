@@ -1,5 +1,6 @@
 import { OutfitOrigin } from "./avatar/constant"
 import { Outfit } from "./avatar/outfit"
+import type { ItemSort } from "./avatar/sorts"
 import { browserCookiesGet } from "./browser"
 import { BODYCOLOR3 } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
@@ -352,7 +353,7 @@ const API = {
                 return response
             }
         },
-        GetAvatarInventory: async function (auth: Authentication, sortOption: string, pageToken: string | null | undefined) {
+        GetAvatarInventory: async function (auth: Authentication, sortOption: string, pageToken: string | null | undefined, itemInfos: ItemSort[] = []) {
             let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?"
             let needsAnd = false
 
@@ -363,6 +364,12 @@ const API = {
 
             if (sortOption) {
                 requestUrl += `${needsAnd?"&":""}sortOption=${sortOption}`
+                needsAnd = true
+            }
+
+            for (let i = 0; i < itemInfos.length; i++) {
+                const itemInfo = itemInfos[i]
+                requestUrl += `${needsAnd?"&":""}itemCategories[${i}].ItemSubType=${itemInfo.subType}&itemCategories[${i}].ItemType=${itemInfo.itemType}`
                 needsAnd = true
             }
 
