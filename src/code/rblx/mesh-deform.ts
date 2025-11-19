@@ -11,35 +11,35 @@ export function hashVec3(x: number,y: number,z: number, distance: number) {
     return Math.floor(x / d) * d * 10000000 + Math.floor(y / d) * d * 10000 + Math.floor(z / d) * d
 }
 
-function calculateMagnitude3D(x: number, y: number, z: number) {
+export function calculateMagnitude3D(x: number, y: number, z: number) {
     return Math.sqrt(x * x + y * y + z * z);
 }
 
-function magnitude(v: Vec3): number {
+export function magnitude(v: Vec3): number {
     return calculateMagnitude3D(v[0],v[1],v[2])
 }
 
-function floor(v0: Vec3): Vec3 {
+export function floor(v0: Vec3): Vec3 {
     return [Math.floor(v0[0]), Math.floor(v0[1]), Math.floor(v0[2])]
 }
 
-function divide(v0: Vec3, v1: Vec3): Vec3 {
+export function divide(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] / v1[0], v0[1] / v1[1], v0[2] / v1[2]]
 }
 
-function multiply(v0: Vec3, v1: Vec3): Vec3 {
+export function multiply(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] * v1[0], v0[1] * v1[1], v0[2] * v1[2]]
 }
 
-function add(v0: Vec3, v1: Vec3): Vec3 {
+export function add(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2]]
 }
 
-function minus(v0: Vec3, v1: Vec3): Vec3 {
+export function minus(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]]
 }
 
-function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
+export function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
     return [
         Math.min(Math.max(lower[0], v0[0]), higher[0]),
         Math.min(Math.max(lower[1], v0[1]), higher[1]),
@@ -47,11 +47,11 @@ function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
     ]
 }
 
-function distance(v0: Vec3, v1: Vec3): number {
+export function distance(v0: Vec3, v1: Vec3): number {
     return magnitude(minus(v1, v0))
 }
 
-function gaussian_rbf(v0: Vec3, v1: Vec3,sigma = 0.04) {
+export function gaussian_rbf(v0: Vec3, v1: Vec3,sigma = 0.04) {
     return Math.exp(-((Math.pow(magnitude(minus(v0,v1)),2))/(2*sigma*sigma)))
 }
 
@@ -82,7 +82,7 @@ export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, 
             for (const refVert of refVerts) {
                 const offsetVec3 = targetCFrame.Position
                 refVert.position = [vert.position[0] * targetSize.X + offsetVec3[0], vert.position[1] * targetSize.Y + offsetVec3[1], vert.position[2] * targetSize.Z + offsetVec3[2]]
-                refVert.normal = vert.normal
+                refVert.normal = [vert.normal[0], vert.normal[1], vert.normal[2]]
             }
         }
     }
@@ -170,6 +170,7 @@ export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
                 const offset = minus(outerVert.position, vert.position)
                 const innerNormal = new THREE.Vector3(vert.normal[0], vert.normal[1], vert.normal[2])
                 const outerNormal = new THREE.Vector3(outerVert.normal[0], outerVert.normal[1], outerVert.normal[2])
+
                 const quat = new THREE.Quaternion().setFromUnitVectors(innerNormal, outerNormal)
 
                 offsetArray[i] = [offset, quat, outerNormal.length() / innerNormal.length()]
@@ -197,7 +198,7 @@ type MeshChunk = {
     indices: number[],
 }
 
-type WeightChunk = {
+export type WeightChunk = {
     meshChunk: MeshChunk,
     weights: number[]
 }
@@ -285,6 +286,34 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
         }
     }
 
+    //calculate weights (using parallel worker, WAY slower after testing, probably because it copies data?)
+    /*console.log(mesh.size)
+    console.log(ref_mesh.size)
+
+    const myWorker = new Worker(new URL("./mesh-deform-weight-worker.ts", import.meta.url), {type: 'module'});
+    myWorker.postMessage({id: 0, mesh, ref_mesh, baseChunks, heightSplit, depthSplit, widthSplit, sigma, lowerBound, higherBound, start_i: 0, end_i: Math.floor(mesh.coreMesh.verts.length)})
+    myWorker.postMessage({id: 1, mesh, ref_mesh, baseChunks, heightSplit, depthSplit, widthSplit, sigma, lowerBound, higherBound, start_i: Math.floor(mesh.coreMesh.verts.length), end_i: mesh.coreMesh.verts.length})
+
+    const [weightChunks0, weightChunks1] = await new Promise<[WeightChunk[], WeightChunk[]]>(resolve => {
+        let weightChunks0: WeightChunk[] | undefined = undefined
+        let weightChunks1: WeightChunk[] | undefined
+
+        myWorker.onmessage = (event) => {
+            const {id, weightChunks}: {id: number, weightChunks: WeightChunk[]} = event.data
+            if (id === 0) {
+                weightChunks0 = weightChunks
+            } else if (id === 1) {
+                weightChunks1 = weightChunks
+            }
+
+            if (weightChunks0 && weightChunks1) {
+                resolve([weightChunks0, weightChunks1])
+            }
+        }
+    })
+    
+    const weightChunks = [...weightChunks0, ...weightChunks1]*/
+
     //calculate weights
     const weightChunks: WeightChunk[] = new Array(mesh.coreMesh.verts.length)
 
@@ -294,13 +323,14 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
         const [x,y,z] = chunkPos
 
         const baseChunk = baseChunks[x * (heightSplit * depthSplit) + y * depthSplit + z]
-        const weights = []
+        const weights = new Array(baseChunk.indices.length)
         let weightSum = 0
 
-        for (const index of baseChunk.indices) {
+        for (let i = 0; i < baseChunk.indices.length; i++) {
+            const index = baseChunk.indices[i]
             const weight = gaussian_rbf(vert.position, ref_mesh.coreMesh.verts[index].position, sigma)
             weightSum += weight
-            weights.push(weight)
+            weights[i] = weight
         }
 
         if (weightSum !== 0) {
@@ -384,8 +414,249 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
     console.timeEnd("total")
 }
 
-//TODO: use new algorithm that accounts for normals
+//discover new algorithm that works better
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
 
+    //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
+    console.time("inflation")
+    for (const vert of dist_mesh.coreMesh.verts) {
+        vert.position = add(vert.position, multiply(vert.normal, [0.05,0.05,0.05]))
+    }
+    console.timeEnd("inflation")
+
+    console.time("offsetArray")
+    const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
+    console.timeEnd("offsetArray")
+    console.time("weights")
+    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    console.timeEnd("weights")
+
+    console.time("offset")
+
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        let totalOffset: Vec3 = [0,0,0]
+        
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+
+            const offsetInfo = offsetArray[index]
+            if (offsetInfo) {
+                const [offset] = offsetInfo
+                totalOffset = add(totalOffset, multiply(offset, [weight,weight,weight]))
+            }
+        }
+
+        vert.position = add(vert.position, totalOffset)
+    }
+    console.timeEnd("offset")
+
+    console.timeEnd("total")
+}
+
+
+//ANOTHER experimental algorithm that didnt work well
+/*
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
+
+    console.time("offsetArray")
+    const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
+    console.timeEnd("offsetArray")
+    console.time("weights")
+    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    console.timeEnd("weights")
+
+    console.time("offset")
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        //ref_mesh -> mesh
+        let totalFromRefOffset: Vec3 = [0,0,0]
+        
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+            const ref_vert = ref_mesh.coreMesh.verts[index]
+
+            const offsetInfo = offsetArray[index]
+
+            if (offsetInfo) {
+                const offset = offsetInfo[0]
+                const quat = offsetInfo[1]
+
+                const toRotateOffset = minus(vert.position, ref_vert.position)
+                const rotatedOffsetTHREE = new THREE.Vector3(toRotateOffset[0], toRotateOffset[1], toRotateOffset[2]).applyQuaternion(quat)
+                const rotatedOffset: Vec3 = multiply([rotatedOffsetTHREE.x, rotatedOffsetTHREE.y, rotatedOffsetTHREE.z], [weight,weight,weight])
+
+                const toAdd = multiply(add(ref_mesh.coreMesh.verts[index].position,offset), [weight,weight,weight])
+                totalFromRefOffset = add(totalFromRefOffset,add(rotatedOffset,toAdd))
+            }
+        }
+
+        vert.position = totalFromRefOffset
+    }
+
+    console.timeEnd("offset")
+
+    console.timeEnd("total")
+}
+*/
+//Experimental algorithm
+/*
+    offset0 = (ref_mesh -> mesh)
+    mesh = (dist_mesh + offset0)
+    also try multiplying offset0 by "weightQuality" (only in bottom)
+
+    this did not work well
+*/
+/*
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
+
+    console.time("offsetArray")
+    const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
+    console.timeEnd("offsetArray")
+    console.time("weights")
+    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    console.timeEnd("weights")
+
+    console.time("offset")
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        //ref_mesh -> mesh
+        let totalFromRefOffset: Vec3 = [0,0,0]
+        
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+            const ref_vert = ref_mesh.coreMesh.verts[index]
+
+            const offsetInfo = offsetArray[index]
+
+            if (offsetInfo) {
+                const quat = offsetInfo[1]
+
+                const toRotateOffset = multiply(minus(vert.position, ref_vert.position), [weight,weight,weight])
+                const rotatedOffsetTHREE = new THREE.Vector3(toRotateOffset[0], toRotateOffset[1], toRotateOffset[2]).applyQuaternion(quat)
+                const rotatedOffset: Vec3 = [rotatedOffsetTHREE.x, rotatedOffsetTHREE.y, rotatedOffsetTHREE.z]
+
+                totalFromRefOffset = add(totalFromRefOffset, rotatedOffset)
+            }
+        }
+
+        //used to get dist_vert from ref_vert
+        let totalOffset: Vec3 = [0,0,0]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+
+            const offsetInfo = offsetArray[index]
+            if (offsetInfo) {
+                const [offset] = offsetInfo
+                const toAdd = multiply(add(ref_mesh.coreMesh.verts[index].position,offset), [weight,weight,weight])
+                totalOffset = add(totalOffset, toAdd)
+            }
+        }
+
+        vert.position = add(totalOffset, totalFromRefOffset)
+    }
+
+    console.timeEnd("offset")
+
+    console.timeEnd("total")
+}
+*/
+/*
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+    console.time("total")
+
+    console.time("offsetArray")
+    const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
+    console.timeEnd("offsetArray")
+    console.time("weights")
+    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    console.timeEnd("weights")
+
+    console.time("offset")
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        //ref_mesh -> mesh
+        let totalFromRefOffset: Vec3 = [0,0,0]
+        
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+            const ref_vert = ref_mesh.coreMesh.verts[index]
+
+            const offsetInfo = offsetArray[index]
+
+            if (offsetInfo) {
+                const quat = offsetInfo[1]
+
+                const toRotateOffset = multiply(minus(vert.position, ref_vert.position), [weight,weight,weight])
+                const rotatedOffsetTHREE = new THREE.Vector3(toRotateOffset[0], toRotateOffset[1], toRotateOffset[2]).applyQuaternion(quat)
+                const rotatedOffset: Vec3 = [rotatedOffsetTHREE.x, rotatedOffsetTHREE.y, rotatedOffsetTHREE.z]
+
+                totalFromRefOffset = add(totalFromRefOffset, rotatedOffset)
+            }
+        }
+
+        //used to get dist_vert from ref_vert
+        let totalX = 0
+        let totalY = 0
+        let totalZ = 0
+        let totalOffset: Vec3 = [0,0,0]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+
+            const offsetInfo = offsetArray[index]
+            if (offsetInfo) {
+                const [offset] = offsetInfo
+                const toAdd = multiply(add(ref_mesh.coreMesh.verts[index].position,offset), [weight,weight,weight])
+                totalX += Math.abs(toAdd[0])
+                totalY += Math.abs(toAdd[1])
+                totalZ += Math.abs(toAdd[2])
+                totalOffset = add(totalOffset, toAdd)
+            }
+        }
+
+        const weightQuality = (Math.abs(totalOffset[0]) / totalX + Math.abs(totalOffset[1]) / totalY + Math.abs(totalOffset[2]) / totalZ) / 3
+
+        const mult = Math.min(Math.max(mapNum(weightQuality, 0.5, 1, 10, 1),1),10)
+        console.log(weightQuality, mult)
+
+        vert.position = add(totalOffset, multiply(totalFromRefOffset,[mult,mult,mult]))
+    }
+
+    console.timeEnd("offset")
+
+    console.timeEnd("total")
+}
+*/
+
+//Experimental algorithm that uses normals to determine weight (also didnt work well)
+/*
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
     console.time("total")
 
@@ -405,29 +676,39 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
         
         const weights = allWeights[i]
 
+        let totalWeight = 0.0001
+
         for (let j = 0; j < weights.meshChunk.indices.length; j++) {
             const weight = weights.weights[j]
             const index = weights.meshChunk.indices[j]
             
             const offsetInfo = offsetArray[index]
             if (offsetInfo) {
-                const [offset] = offsetInfo
-                totalOffset = add(totalOffset, multiply(offset, [weight,weight,weight]))
+                const [offset, quat] = offsetInfo
+                const dot = quat.dot(new THREE.Quaternion())
+                const offsetMultiplier = Math.max(0,mapNum(dot, 0.5, 1,0,1))
+                totalWeight += offsetMultiplier * weight
+                totalOffset = add(totalOffset, multiply(multiply(offset, [weight,weight,weight]),[offsetMultiplier, offsetMultiplier, offsetMultiplier]))
             }
         }
 
-        vert.position = add(vert.position, totalOffset)
+        vert.position = add(vert.position, divide(totalOffset,[totalWeight,totalWeight,totalWeight]))
     }
     console.timeEnd("offset")
 
     console.timeEnd("total")
 }
-
+*/
 
 //Experimental algorithm that uses normals (it didnt work well, im not sure why)
 /*
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
     console.time("total")
+
+    //console.time("normals")
+    //ref_mesh.recalculateNormals()
+    //dist_mesh.recalculateNormals()
+    //console.timeEnd("normals")
 
     console.time("offsetArray")
     const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
@@ -453,7 +734,7 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
             
             const offsetInfo = offsetArray[index]
             if (offsetInfo) {
-                const [offset, quat, scale] = offsetInfo
+                const [offset, quat] = offsetInfo
 
                 //innercage -> outercage offset
                 originalPosition = add(originalPosition, multiply(add(ref_mesh.coreMesh.verts[index].position,offset), [weight,weight,weight]))
@@ -462,7 +743,7 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
                 //innercage -> mesh offset (rotated)
                 const toRotateOffset = minus(vert.position, ref_mesh.coreMesh.verts[index].position)
                 const rotatedOffsetTHREE = new THREE.Vector3(toRotateOffset[0], toRotateOffset[1], toRotateOffset[2]).applyQuaternion(quat)
-                const rotatedOffset: Vec3 = [rotatedOffsetTHREE.x * scale, rotatedOffsetTHREE.y * scale, rotatedOffsetTHREE.z * scale]
+                const rotatedOffset: Vec3 = [rotatedOffsetTHREE.x, rotatedOffsetTHREE.y, rotatedOffsetTHREE.z]
                 totalNormalOffset = add(totalNormalOffset, multiply(rotatedOffset, [weight, weight, weight]))
             }
         }

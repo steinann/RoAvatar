@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CFrame, Instance } from '../rblx/rbx';
-import { deg, lerp, rad } from '../misc/misc';
+import { deg, lerp, mapNum, rad } from '../misc/misc';
 import type { Vec3 } from '../rblx/mesh';
 import SimpleView from '../lib/simple-view';
 
@@ -447,10 +447,6 @@ class PartCurve {
     position?: FloatCurve3
     rotationOrder: number = RotationOrder.XYZ
     rotation?: FloatCurve3
-}
-
-function mapNum(x: number, in_min: number, in_max: number, out_min: number, out_max: number): number {
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 }
 
 function getCurveValue(time: number, lowerKey: FloatCurveKey, higherKey: FloatCurveKey) {

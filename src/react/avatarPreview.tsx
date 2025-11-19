@@ -26,7 +26,9 @@ function setRigTo(newRigType: AvatarType, auth: Authentication) {
 
             API.Asset.GetRBX(`../assets/Rig${currentRigType}.rbxm`, undefined, auth).then(result => {
                 if (result instanceof RBX) {
-                    currentRig = result.generateTree().GetChildren()[0]
+                    const newRig = result.generateTree().GetChildren()[0]
+
+                    currentRig = newRig
                     addInstance(currentRig, auth)
                 } else {
                     //TODO: display error

@@ -2,7 +2,7 @@
 
 import SimpleView from "../lib/simple-view"
 import { clonePrimitiveArray } from "../misc/misc"
-import { hashVec2, hashVec3 } from "./mesh-deform"
+import { add, divide, hashVec2, hashVec3, magnitude, minus } from "./mesh-deform"
 import { Vector3 } from "./rbx"
 
 export type Vec4 = [number,number,number,number]
@@ -402,6 +402,56 @@ export class FileMesh {
         this.coreMesh = new COREMESH()
         this.lods = new LODS()
         this.skinning = new SKINNING()
+    }
+
+    recalculateNormals() {
+        const core = this.coreMesh
+
+        for (const vert of core.verts) {
+            vert.normal = [0,0,0]
+        }
+
+        let faceStart = 0
+        let faceEnd = core.faces.length
+        if (this.lods) {
+            if (this.lods.lodOffsets.length > 1) {
+                faceStart = this.lods.lodOffsets[0]
+                faceEnd = this.lods.lodOffsets[1]
+            }
+        }
+
+        for (let i = faceStart; i < faceEnd; i++) {
+            const face = core.faces[i]
+
+            const p1 = core.verts[face.a].position
+            const p2 = core.verts[face.b].position
+            const p3 = core.verts[face.c].position
+
+            const a = minus(p2, p1)
+            const b = minus(p3, p1)
+
+            const N: Vec3 = [
+                a[1]*b[2] - a[2]*b[1],
+                a[2]*b[0] - a[0]*b[2],
+                a[0]*b[1] - a[1]*b[0],
+            ]
+
+            const magn = magnitude(N)
+
+            const normal = divide(N, [magn,magn,magn])
+            core.verts[face.a].normal = add(core.verts[face.a].normal, normal)
+            core.verts[face.b].normal = add(core.verts[face.b].normal, normal)
+            core.verts[face.c].normal = add(core.verts[face.c].normal, normal)
+        }
+
+        for (const vert of core.verts) {
+            const magn = magnitude(vert.normal)
+            if (magn > 0) {
+                vert.normal = divide(vert.normal, [magn, magn, magn])
+            } else {
+                //console.log(vert)
+            }
+        }
     }
 
     fromBuffer(buffer: ArrayBuffer) {

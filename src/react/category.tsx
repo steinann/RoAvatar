@@ -88,7 +88,7 @@ export default function ItemCategory({categoryType, setOutfit}: {categoryType: s
     }, [categoryType])
 
     useEffect(() => {
-        if (!hasLoadedAll) {
+        if (!hasLoadedAll && items.length <= 0) {
             loadMore()
         }
     })
@@ -121,10 +121,14 @@ export default function ItemCategory({categoryType, setOutfit}: {categoryType: s
     if (auth && itemInfos.length > 0) {
         itemComponents = <>{
             itemInfos.map((item) => (
-                <ItemCard auth={auth} itemInfo={item} onClick={() => {
-                    if (item.itemType === "Asset") {
+                <ItemCard auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={() => {
+                    if (!outfit.containsAsset(item.id) && item.itemType === "Asset") {
                         const newOutfit = outfit.clone(); 
                         newOutfit.addAsset(item.id, item.type, item.name);
+                        setOutfit(newOutfit)
+                    } else if (item.itemType === "Asset") {
+                        const newOutfit = outfit.clone(); 
+                        newOutfit.removeAsset(item.id);
                         setOutfit(newOutfit)
                     }
                 }}/>

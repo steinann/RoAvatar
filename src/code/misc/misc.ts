@@ -14,7 +14,20 @@ function download(filename: string, text: string) {
     document.body.removeChild(element);
 }
 
-const saveByteArray = (function () {
+function saveByteArray(data: BlobPart[] | undefined, name: string) {
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.setAttribute("style","display: none;")
+
+    const blob = new Blob(data, {type: "octet/stream"}),
+    url = window.URL.createObjectURL(blob);
+    a.href = url;
+    a.download = name;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+/*const saveByteArray = (function () {
     const a = document.createElement("a");
     document.body.appendChild(a);
     a.setAttribute("style","display: none;")
@@ -26,7 +39,7 @@ const saveByteArray = (function () {
         a.click();
         window.URL.revokeObjectURL(url);
     };
-}());
+}());*/
 
 function generateUUIDv4(): string {
     // Generate a random UUID (version 4)
@@ -55,6 +68,10 @@ function lerpVec3(a: Vector3, b: Vector3, t: number) {
 
 function specialClamp(value: number, min: number, max: number ) {
     return Math.max( min, Math.min( max, value ) );
+}
+
+function mapNum(x: number, in_min: number, in_max: number, out_min: number, out_max: number): number {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 }
 
 function clonePrimitiveArray<T>(arr: T[]) {
@@ -212,4 +229,4 @@ function hexToColor3(hex: string) {
     return new Color3(rgb?.r, rgb?.g, rgb?.b)
 }
 
-export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }
+export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

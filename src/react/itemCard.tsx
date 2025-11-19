@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ItemInfo } from "../code/avatar/asset";
 import { API, Authentication } from "../code/api";
 
-export default function ItemCard({ auth, itemInfo, onClick }: {auth?: Authentication, itemInfo?: ItemInfo, onClick?: (itemInfo: ItemInfo) => void}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick }: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     useEffect(() => {
@@ -17,12 +17,13 @@ export default function ItemCard({ auth, itemInfo, onClick }: {auth?: Authentica
         }
     }, [auth, imageUrl, itemInfo])
 
-    const cardImage = imageUrl !== "loading" ? (<img src={imageUrl}></img>) : (<div className="item-loading"></div>)
+    const cardImage = imageUrl !== "loading" ? (<img className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 
     if (auth && itemInfo) {
         
         return (<a className="item" href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined}>
-            <button className="item-image" onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
+            <button className={`item-image`} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
+                {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {cardImage}
             </button>
             <span className="item-name roboto-600">{itemInfo.name}</span>
