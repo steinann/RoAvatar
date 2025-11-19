@@ -170,7 +170,7 @@ body {
     display: grid;
     /*grid-template-columns: repeat(auto-fit, minmax(145px, max-content));*/
     grid-auto-rows: min-content;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     justify-content: center;
     width: calc(100% - 30px);
     gap: .6rem 5px;

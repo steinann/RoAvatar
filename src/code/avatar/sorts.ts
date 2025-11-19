@@ -52,7 +52,7 @@ if (HAIR_IS_BODYPART) {
 
 //itemCategories[0].ItemSubType=48&itemCategories[0].ItemType=Asset&itemCategories[1].ItemSubType=50&itemCategories[1].ItemType=Asset&itemCategories[2].ItemSubType=51&itemCategories[2].ItemType=Asset&itemCategories[3].ItemSubType=52&itemCategories[3].ItemType=Asset&itemCategories[4].ItemSubType=53&itemCategories[4].ItemType=Asset&itemCategories[5].ItemSubType=54&itemCategories[5].ItemType=Asset&itemCategories[6].ItemSubType=55&itemCategories[6].ItemType=Asset&itemCategories[7].ItemSubType=61&itemCategories[7].ItemType=Asset
 export const AllAnimationSorts = [
-    new ItemSort(48), new ItemSort(50), new ItemSort(51), new ItemSort(52), new ItemSort(53), new ItemSort(54), new ItemSort(55), new ItemSort(61)
+    new ItemSort(48), new ItemSort(50), new ItemSort(51), new ItemSort(52), new ItemSort(53), new ItemSort(54), new ItemSort(55), //new ItemSort(61)
 ]
 
 //itemCategories[0].ItemSubType=1&itemCategories[0].ItemType=Outfit&itemCategories[1].ItemSubType=5&itemCategories[1].ItemType=Outfit
@@ -77,6 +77,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Creations": new SortInfo([new ItemSort(3, "Outfit")]),
         },
         "Clothing": {
+            "All": new SortInfo(AllClothingSorts),
             "Shirts": new SortInfo([new ItemSort(AssetTypeNameToId.get("Shirt") || 0)]),
             "Pants": new SortInfo([new ItemSort(AssetTypeNameToId.get("Pants") || 0)]),
             "T-Shirts": new SortInfo([new ItemSort(AssetTypeNameToId.get("TShirt") || 0)]),
@@ -86,6 +87,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Shoes": new SortInfo([new ItemSort(AssetTypeNameToId.get("LeftShoeAccessory") || 0), new ItemSort(AssetTypeNameToId.get("RightShoeAccessory") || 0)]),
         },
         "Accessories": {
+            "All": new SortInfo(AllAccessorySorts),
             "Hair": new SortInfo([new ItemSort(41)]),
             "Head": new SortInfo([new ItemSort(AssetTypeNameToId.get("Hat") || 0)]),
             "Face": new SortInfo([new ItemSort(AssetTypeNameToId.get("FaceAccessory") || 0)]),
@@ -109,6 +111,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Right Leg": new SortInfo([new ItemSort(31)]),
         },
         "Animations": {
+            "All Animations": new SortInfo(AllAnimationSorts),
             "Emotes": new SpecialInfo("Emotes"),
             "Idle": new SortInfo([new ItemSort(51)]),
             "Walk": new SortInfo([new ItemSort(55)]),

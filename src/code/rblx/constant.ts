@@ -139,6 +139,29 @@ export const BodyPartEnumToNames: {[K in number]: string[]} = {
     [BodyPart.RightLeg]: ["Right Leg", "RightUpperLeg", "RightLowerLeg", "RightFoot"]
 }
 
+export type AnimationProp = "ClimbAnimation" | "FallAnimation" | "IdleAnimation" | "JumpAnimation" | "MoodAnimation" | "RunAnimation" | "SwimAnimation" | "WalkAnimation"
+export const AllAnimations: AnimationProp[] = [
+    "ClimbAnimation",
+    "FallAnimation",
+    "IdleAnimation",
+    "JumpAnimation",
+    "MoodAnimation",
+    "RunAnimation",
+    "SwimAnimation",
+    "WalkAnimation",
+]
+
+export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]]} = {
+    "ClimbAnimation": ["climb",[["ClimbAnim",507765644n]]],
+    "FallAnimation": ["fall",[["FallAnim",507767968n]]],
+    "IdleAnimation": ["idle",[["Animation1",507766388n],["Animation2",507766666n]]],
+    "JumpAnimation": ["jump",[["JumpAnim",507765000n]]],
+    "MoodAnimation": ["mood",[["Animation1",7715096377n]]],
+    "RunAnimation": ["run",[["RunAnim",913376220n]]],
+    "SwimAnimation": ["swim",[["Swim",913384386n]]],
+    "WalkAnimation": ["walk",[["WalkAnim",913402848n]]]
+}
+
 export const DataType = {
     "String": 0x01,
     "Bool": 0x02,
@@ -162,6 +185,8 @@ export const DataType = {
     "Int64": 0x1b,
 
     "Capabilites": 0x21, //NOT IMPLEMENTED
+
+    "NonSerializable": 9999 //not a real type
 }
 
 export const PropertyTypeInfo = {

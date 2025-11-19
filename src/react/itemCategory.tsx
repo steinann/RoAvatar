@@ -5,10 +5,11 @@ import { Outfit } from "../code/avatar/outfit"
 import { API, Authentication } from "../code/api"
 import ItemCard from "./itemCard"
 import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
+import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
 
 let lastCategory = ""
 let lastLoadId = 0
-function useItems(auth: Authentication | undefined, category: string) {
+function useItems(auth: Authentication | undefined, category: string, subCategory: string) {
     const [nextPageToken, setNextPageToken] = useState<string | null | undefined>("")
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [items, setItems] = useState<AvatarInventoryItem[]>([])
@@ -23,6 +24,14 @@ function useItems(auth: Authentication | undefined, category: string) {
         }
     }, [category])
 
+    const sortInfo = CategoryDictionary.Inventory[category][subCategory]
+    if (sortInfo instanceof SpecialInfo) {
+        throw new Error("ItemCategory does not support special sort types")
+    }
+
+    const sortOption = sortInfo.sortOption
+    const itemInfos = sortInfo.itemCategories
+
     const loadMore = () => {
         if (!auth || isLoading) return
 
@@ -32,7 +41,7 @@ function useItems(auth: Authentication | undefined, category: string) {
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
             console.log("starting items", loadId, nextPageToken)
-            API.Avatar.GetAvatarInventory(auth, category, nextPageToken).then(response => {
+            API.Avatar.GetAvatarInventory(auth, sortOption, nextPageToken, itemInfos).then(response => {
                 if (loadId !== lastLoadId) return
                 if (response.status === 200) {
                     response.json().then(body => {
@@ -73,13 +82,13 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({categoryType, setOutfit}: {categoryType: string, setOutfit: (a: Outfit) => void}): React.JSX.Element {
+export default function ItemCategory({categoryType, subCategoryType, setOutfit}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
     const scrollDivRef: React.RefObject<HTMLDivElement | null> = useRef(null)
-
-    const {items, isLoading, loadMore, hasLoadedAll } = useItems(auth, categoryType === "Recent" ? "recentAdded":"2")
+    
+    const {items, isLoading, loadMore, hasLoadedAll } = useItems(auth, categoryType, subCategoryType)
 
     useEffect(() => {
         if (scrollDivRef.current) {

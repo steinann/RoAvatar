@@ -143,7 +143,7 @@ async function RBLXGet(url: string, auth?: Authentication, headers?: any): Promi
     return RBLXPost(url, auth, body, attempt, "PATCH")
 }*/
 
-function idFromStr(str: string) {
+export function idFromStr(str: string) {
     const numStrs = str.match(/\d+(\.\d+)?/g) || []
     return numStrs.length > 0 ? Number(numStrs[numStrs.length - 1]) : NaN
 }

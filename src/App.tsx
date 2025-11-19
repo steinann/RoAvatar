@@ -9,6 +9,7 @@ import BarCategory from './react/barCategory'
 import BarButton from './react/barButton'
 import ItemCategory from './react/itemCategory'
 import SubCategory from './react/subCategory'
+import { CategoryDictionary } from './code/avatar/sorts'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 function App() {
@@ -27,6 +28,8 @@ function App() {
 
   function setCategoryType(categoryType: string) {
     _setCategoryType(categoryType)
+    const firstSubCategory = Object.keys(CategoryDictionary[categorySource][categoryType])[0]
+    _setSubCategoryType(firstSubCategory)
   }
 
   function setSubCategoryType(subCategoryType: string) {
@@ -71,7 +74,7 @@ function App() {
                 <BarButton category='Animations' currentCategory={categoryType} setCategory={setCategoryType}/>
               </BarCategory>
               <SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>
-              <ItemCategory categoryType={categoryType} setOutfit={setOutfit}>
+              <ItemCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit}>
 
               </ItemCategory>
             </div>

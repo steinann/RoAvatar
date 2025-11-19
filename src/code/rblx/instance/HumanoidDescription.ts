@@ -5,15 +5,17 @@ ISSUES (++ Probably fixed, -- Not fixed)
 -- Face is included in dynamic head (but not rendered)
 */
 
-import { API, Authentication } from "../../api";
+import { API, Authentication, idFromStr } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
+import { AnimationTrack } from "../animation";
 import { delta_CIEDE2000 } from "../color-similarity";
-import { AccessoryType, AllBodyParts, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, HumanoidRigType, NeverLayeredAccessoryTypes } from "../constant";
+import { AccessoryType, AllAnimations, AllBodyParts, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, DefaultAnimations, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
 import { CFrame, Color3, hasSameVal, hasSameValFloat, Instance, isSameColor, isSameVector3, Property, RBX, Vector3 } from "../rbx";
 import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
+import AnimatorWrapper from "./Animator";
 import BodyPartDescriptionWrapper from "./BodyPartDescription";
 import InstanceWrapper from "./InstanceWrapper";
 
@@ -1057,6 +1059,108 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
+    //TODO: CLEAN UP THIS CODE, the comments are not enough!
+    async _applyAnimations(humanoid: Instance, auth: Authentication, toChange: AnimationProp[] = AllAnimations): Promise<undefined | Response> {
+        const animator = humanoid.FindFirstChildOfClass("Animator")
+        if (!animator) {
+            throw new Error("Humanoid is missing an Animator")
+        }
+        
+        const animatorW = new AnimatorWrapper(animator)
+
+        const promises: Promise<undefined | Response>[] = []
+        for (const animationProp of toChange) { //for every animation that should update
+            const id = this.instance.Prop(animationProp) as bigint
+            if (id > 0n) { //if not a default animation
+                promises.push(new Promise((resolve) => {
+                    API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(result => { //get instance with animation ids
+                        if (result instanceof RBX) {
+                            const promises2: Promise<Response | undefined>[] = []
+                            const root = result.generateTree().GetChildren()[0]
+                            for (const anim of root.GetChildren()) { //for every main animation
+                                const animName = anim.Prop("Name") as string
+                                for (const subAnim of anim.GetChildren()) { //for every sub animation
+                                    const subName = subAnim.Prop("Name") as string
+                                    const subAnimIdStr = subAnim.Prop("AnimationId") as string
+                                    if (subAnimIdStr.length > 0) {
+                                        const subAnimId = BigInt(idFromStr(subAnimIdStr))
+                                        promises2.push(new Promise(resolve => {
+                                            API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined, auth).then(result => { //load sub animation
+                                                if (result instanceof RBX) {
+                                                    const animTrackInstance = result.generateTree().GetChildren()[0]
+                                                    if (animTrackInstance && humanoid.parent) {
+                                                        const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                                        (animatorW.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>).set(subAnimId, animTrack);
+                                                        (animatorW.instance.Prop("_NameIdMap") as Map<string,bigint>).set(`${animName}.${subName}`, subAnimId)
+                                                        animatorW.instance.setProperty("_HasLoadedAnimation",true)
+                                                    }
+
+                                                    resolve(undefined)
+                                                } else {
+                                                    resolve(result)
+                                                }
+                                            })
+                                        }))
+                                    }
+                                }
+                            }
+
+                            Promise.all(promises2).then((values2) => { //return result when all subs are finished loading
+                                for (const value2 of values2) {
+                                    if (value2) {
+                                        resolve(value2)
+                                        return
+                                    }
+                                }
+
+                                resolve(undefined)
+                                return
+                            })
+                        } else {
+                            resolve(result)
+                        }
+                    })
+                }))
+            } else { //if a default animation
+                const [animName, subAnims] = DefaultAnimations[animationProp]
+
+                for (const subAnim of subAnims) {
+                    const [subName, subId] = subAnim
+                    promises.push(new Promise((resolve) => {
+                        API.Asset.GetRBX(`rbxassetid://${subId}`, undefined, auth).then(result => { //load sub animations
+                            if (result instanceof RBX) {
+                                const animTrackInstance = result.generateTree().GetChildren()[0]
+                                if (animTrackInstance && humanoid.parent) {
+                                    const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                    (animatorW.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>).set(subId, animTrack);
+                                    (animatorW.instance.Prop("_NameIdMap") as Map<string,bigint>).set(`${animName}.${subName}`, subId)
+                                    animatorW.instance.setProperty("_HasLoadedAnimation",true)
+                                }
+
+                                resolve(undefined)
+                            } else {
+                                resolve(result)
+                            }
+                        })
+                    }))
+                }
+            }
+        }
+
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
+        for (const value of values) {
+            if (value) {
+                return value
+            }
+        }
+
+        return undefined
+    }
+
+    /**
+     * @returns undefined on success
+     */
     async _applyAll(humanoid: Instance, auth: Authentication): Promise<undefined | Response> {
         const promises: Promise<Response | undefined>[] = []
 
@@ -1064,6 +1168,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         promises.push(this._applyClothing(humanoid, auth))
         promises.push(this._applyBodyParts(humanoid, auth))
         promises.push(this._applyFace(humanoid, auth))
+        promises.push(this._applyAnimations(humanoid, auth))
         
         const values = await Promise.all(promises)
         if (this.cancelApply) return undefined
@@ -1141,6 +1246,20 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 }
 
                 miniPromises.push(this._applyBodyParts(humanoid, auth, toChange))
+            }
+
+            //animations
+            const animator = humanoid.FindFirstChildOfClass("Animator")
+            if (diffs.includes("animation") || !animator?.HasProperty("_HasLoadedAnimation") || !animator?.Prop("_HasLoadedAnimation")) {
+                const toChange: AnimationProp[] = []
+
+                for (const animationProp of AllAnimations) {
+                    if (this.instance.Prop(animationProp) !== originalDescriptionW.instance.Prop(animationProp) || !animator?.HasProperty("_HasLoadedAnimation") || !animator?.Prop("_HasLoadedAnimation")) {
+                        toChange.push(animationProp)
+                    }
+                }
+
+                miniPromises.push(this._applyAnimations(humanoid, auth, toChange))
             }
 
             const miniValues = await Promise.all(miniPromises)
