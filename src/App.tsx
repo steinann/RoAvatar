@@ -7,7 +7,8 @@ import { OutfitContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import BarButton from './react/barButton'
-import ItemCategory from './react/category'
+import ItemCategory from './react/itemCategory'
+import SubCategory from './react/subCategory'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 function App() {
@@ -16,14 +17,20 @@ function App() {
 
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
   const [categoryType, _setCategoryType] = useState<string>("Recent")
+  const [subCategoryType, _setSubCategoryType] = useState<string>("Recently Added")
 
   function setCategorySource(categorySource: string) {
     _setCategorySource(categorySource)
     _setCategoryType("Recent")
+    _setSubCategoryType("Recently Added")
   }
 
   function setCategoryType(categoryType: string) {
     _setCategoryType(categoryType)
+  }
+
+  function setSubCategoryType(subCategoryType: string) {
+    _setSubCategoryType(subCategoryType)
   }
 
   useEffect(() => {
@@ -63,6 +70,7 @@ function App() {
                 <BarButton category='Head & Body' currentCategory={categoryType} setCategory={setCategoryType}/>
                 <BarButton category='Animations' currentCategory={categoryType} setCategory={setCategoryType}/>
               </BarCategory>
+              <SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>
               <ItemCategory categoryType={categoryType} setOutfit={setOutfit}>
 
               </ItemCategory>

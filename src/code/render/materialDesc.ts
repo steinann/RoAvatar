@@ -498,6 +498,7 @@ export class MaterialDesc {
                 opacity: 1 - this.transparency,
                 side: this.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
                 visible: this.visible,
+                vertexColors: true,
             })
         } else { //NOT PBR
             material = new THREE.MeshPhongMaterial({
@@ -508,6 +509,7 @@ export class MaterialDesc {
                 opacity: 1 - this.transparency,
                 side: this.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
                 visible: this.visible,
+                vertexColors: true,
             })
         }
 

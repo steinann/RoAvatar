@@ -126,6 +126,16 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
     }
     geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2))
 
+    //colors
+    const colors = new Float32Array(mesh.coreMesh.verts.length * 4)
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        colors[i * 4 + 0] = mesh.coreMesh.verts[i].color[0] / 255
+        colors[i * 4 + 1] = mesh.coreMesh.verts[i].color[1] / 255
+        colors[i * 4 + 2] = mesh.coreMesh.verts[i].color[2] / 255
+        colors[i * 4 + 3] = mesh.coreMesh.verts[i].color[3] / 255
+    }
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 4))
+
     //faces
     let facesEnd = mesh.coreMesh.faces.length
     let facesStart = 0

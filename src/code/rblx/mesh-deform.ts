@@ -420,6 +420,20 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
     //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
     console.time("inflation")
+    /*
+    for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
+        const ref_vert = ref_mesh.coreMesh.verts[i]
+        const dist_vert = dist_mesh.coreMesh.verts[i]
+
+        const xSim = mapNum(ref_vert.normal[0] * dist_vert.normal[0], -1, 1, 1, 0)
+        const ySim = mapNum(ref_vert.normal[1] * dist_vert.normal[1], -1, 1, 1, 0)
+        const zSim = mapNum(ref_vert.normal[2] * dist_vert.normal[2], -1, 1, 1, 0)
+
+        dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.05, 0.05, 0.05]))
+        dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.5 * xSim,0.5 * ySim,0.5 * zSim]))
+    }
+    */
+
     for (const vert of dist_mesh.coreMesh.verts) {
         vert.position = add(vert.position, multiply(vert.normal, [0.05,0.05,0.05]))
     }
