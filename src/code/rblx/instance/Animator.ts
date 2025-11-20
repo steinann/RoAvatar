@@ -26,8 +26,20 @@ export default class AnimatorWrapper extends InstanceWrapper {
         if (id) {
             const track = trackMap.get(id)
             if (track) {
-                track.renderPose()
+                //track.renderPose()
                 track.setTime(track.timePosition + addTime)
+
+                const rig = track.rig
+                if (rig) {
+                    //Recalculate motor6Ds, this is neccessary do to a BUG: that needs TODO: be fixed
+                    for (const child of rig.GetDescendants()) {
+                        if (child.className === "Motor6D") {
+                            child.setProperty("Transform", child.Prop("Transform"))
+                        } else if (child.className === "Weld") {
+                            child.setProperty("C0", child.Prop("C0"))
+                        }
+                    }
+                }
             }
         } else {
             //console.log(currentAnimName, nameIdMap)

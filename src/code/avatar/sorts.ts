@@ -64,17 +64,17 @@ export const AllCharacterSorts = [
 export const CategoryDictionary: { [K in string]: { [K in string]: { [K in string]: SortInfo | SpecialInfo } } } = {
     "Inventory": {
         "Recent": {
-            "Recently Added": new SortInfo([], "recentAdded"),
-            "Recently Worn": new SortInfo([], "2"),
+            "All": new SortInfo([], "recentAdded"),
+            "Recent Worn": new SortInfo([], "2"),
             "Accessories": new SortInfo(AllAccessorySorts, "recentEquipped"),
             "Clothing": new SortInfo(AllClothingSorts, "recentEquipped"),
-            "Body Parts": new SortInfo(AllBodyPartsSorts, "recentEquipped"),
+            "Body": new SortInfo(AllBodyPartsSorts, "recentEquipped"),
             "Animations": new SortInfo(AllAnimationSorts, "recentEquipped"),
             "Characters": new SortInfo([new ItemSort(1, "Outfit")], "recentEquipped"),
         },
         "Characters": {
-            "Purchased": new SortInfo(AllCharacterSorts),
             "Creations": new SortInfo([new ItemSort(3, "Outfit")]),
+            "Purchased": new SortInfo(AllCharacterSorts),
         },
         "Clothing": {
             "All": new SortInfo(AllClothingSorts),
@@ -98,12 +98,14 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Waist": new SortInfo([new ItemSort(AssetTypeNameToId.get("WaistAccessory") || 0)]),
             "Gear": new SortInfo([new ItemSort(AssetTypeNameToId.get("Gear") || 0)]),
         },
-        "Head & Body": {
-            "Skin Color": new SpecialInfo("Skin Color"),
-            "Scale": new SpecialInfo("Scale"),
+        "Head": {
             "Dynamic Heads": new SortInfo([new ItemSort(2, "Outfit")]),
             "Heads": new SortInfo([new ItemSort(17)]),
             "Faces": new SortInfo([new ItemSort(18)]),
+        },
+        "Body": {
+            "Skin Color": new SpecialInfo("Skin Color"),
+            "Scale": new SpecialInfo("Scale"),
             "Torso": new SortInfo([new ItemSort(27)]),
             "Left Arm": new SortInfo([new ItemSort(29)]),
             "Right Arm": new SortInfo([new ItemSort(28)]),

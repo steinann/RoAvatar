@@ -579,6 +579,11 @@ class AnimationTrack {
                 motorParentName = part1.Prop("Name") as string
             }
 
+            if (!keyframe.HasProperty("Time")) {
+                console.warn(`Invalid animation keyframe, missing property Time`, keyframe)
+                return [undefined, undefined, undefined]
+            }
+
             const time = keyframe.Prop("Time") as number
             const cf = pose.Prop("CFrame") as CFrame
             partKeyframe = new PartKeyframe(time, cf)
@@ -705,6 +710,10 @@ class AnimationTrack {
             for (const child of animationChildren) {
                 if (child.className === "Keyframe") {
                     if (child.GetChildren().length > 0) {
+                        if (!child.HasProperty("Time")) {
+                            console.warn("Invalid animation, keyframe is missing property Time", child)
+                            return this
+                        }
                         this.length = Math.max(this.length, child.Prop("Time") as number)
                         keyframeInstances.push(child)
                     }

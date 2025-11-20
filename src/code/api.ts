@@ -374,6 +374,28 @@ const API = {
             }
 
             return RBLXGet(requestUrl, auth)
+        },
+        GetOutfitDetails: async function(auth: Authentication, outfitId: number, userId: number): Promise<Response | Outfit> {
+            let requestUrl = "https://avatar.roblox.com/v1/outfits/"
+
+            if (BODYCOLOR3) {
+                requestUrl = "https://avatar.roblox.com/v3/outfits/"
+            }
+
+            const response = await RBLXGet(requestUrl + outfitId + "/details", auth)
+
+            if (response.status == 200) {
+                const responseJson = await response.json()
+
+                const outfit = new Outfit()
+                outfit.fromJson(responseJson)
+                outfit.origin = OutfitOrigin.WebOutfit
+                outfit.creatorId = userId
+
+                return outfit
+            } else {
+                return response
+            }
         }
     },
     "Asset": {

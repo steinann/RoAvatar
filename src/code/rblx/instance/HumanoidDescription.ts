@@ -11,7 +11,7 @@ import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { delta_CIEDE2000 } from "../color-similarity";
-import { AccessoryType, AllAnimations, AllBodyParts, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, DefaultAnimations, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
+import { AccessoryType, AllAnimations, AllBodyParts, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, DefaultAnimations, DefaultAnimationsR6, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
 import { CFrame, Color3, hasSameVal, hasSameValFloat, Instance, isSameColor, isSameVector3, Property, RBX, Vector3 } from "../rbx";
 import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
@@ -1066,12 +1066,14 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             throw new Error("Humanoid is missing an Animator")
         }
         
+        const avatarType = humanoid.Prop("RigType") === HumanoidRigType.R15 ? AvatarType.R15 : AvatarType.R6
+
         const animatorW = new AnimatorWrapper(animator)
 
         const promises: Promise<undefined | Response>[] = []
         for (const animationProp of toChange) { //for every animation that should update
             const id = this.instance.Prop(animationProp) as bigint
-            if (id > 0n) { //if not a default animation
+            if (id > 0n && avatarType === AvatarType.R15) { //if not a default animation
                 promises.push(new Promise((resolve) => {
                     API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(result => { //get instance with animation ids
                         if (result instanceof RBX) {
@@ -1122,7 +1124,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     })
                 }))
             } else { //if a default animation
-                const [animName, subAnims] = DefaultAnimations[animationProp]
+                const [animName, subAnims] = avatarType === AvatarType.R15 ? DefaultAnimations[animationProp] : DefaultAnimationsR6[animationProp]
 
                 for (const subAnim of subAnims) {
                     const [subName, subId] = subAnim

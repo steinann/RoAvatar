@@ -4,10 +4,12 @@ import { OutfitContext } from "./context/outfit-context"
 import { Outfit } from "../code/avatar/outfit"
 import { API, Authentication } from "../code/api"
 import ItemCard from "./itemCard"
-import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
+import { AssetTypes, BundleTypes, ItemInfo, ToRemoveBeforeBundleType } from "../code/avatar/asset"
 import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
+import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant"
 
 let lastCategory = ""
+let lastSubCategory = ""
 let lastLoadId = 0
 function useItems(auth: Authentication | undefined, category: string, subCategory: string) {
     const [nextPageToken, setNextPageToken] = useState<string | null | undefined>("")
@@ -15,14 +17,15 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
     const [items, setItems] = useState<AvatarInventoryItem[]>([])
 
     useEffect(() => {
-        if (category !== lastCategory) {
+        if (category !== lastCategory || subCategory !== lastSubCategory) {
             lastCategory = category
+            lastSubCategory = subCategory
             setItems([])
             setNextPageToken("")
             setIsLoading(false)
             lastLoadId++
         }
-    }, [category])
+    }, [category, subCategory])
 
     const sortInfo = CategoryDictionary.Inventory[category][subCategory]
     if (sortInfo instanceof SpecialInfo) {
@@ -82,19 +85,19 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({categoryType, subCategoryType, setOutfit}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void}): React.JSX.Element {
+export default function ItemCategory({categoryType, subCategoryType, setOutfit, setAnimName}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
     const scrollDivRef: React.RefObject<HTMLDivElement | null> = useRef(null)
-    
+
     const {items, isLoading, loadMore, hasLoadedAll } = useItems(auth, categoryType, subCategoryType)
 
     useEffect(() => {
         if (scrollDivRef.current) {
             scrollDivRef.current.scrollTo(0,0)
         }
-    }, [categoryType])
+    }, [categoryType, subCategoryType])
 
     useEffect(() => {
         if (!hasLoadedAll && items.length <= 0) {
@@ -105,7 +108,7 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit}:
     function onScroll() {
         if (scrollDivRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
-            if (scrollTop + clientHeight >= scrollHeight - 150) {
+            if (scrollTop + clientHeight >= scrollHeight - 200) {
                 loadMore()
             }
         }
@@ -134,11 +137,50 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit}:
                     if (!outfit.containsAsset(item.id) && item.itemType === "Asset") {
                         const newOutfit = outfit.clone(); 
                         newOutfit.addAsset(item.id, item.type, item.name);
+                        if (item.type.endsWith("Animation")) {
+                            const entry = DefaultAnimations[item.type as AnimationProp]
+                            const mainName = entry[0]
+                            const subArr = entry[1]
+                            const sub0 = subArr[0]
+                            if (sub0) {
+                                const sub0Name = sub0[0]
+                                setAnimName(`${mainName}.${sub0Name}`)
+                            }
+                        } else {
+                            setAnimName(`idle.Animation1`)
+                        }
                         setOutfit(newOutfit)
                     } else if (item.itemType === "Asset") {
                         const newOutfit = outfit.clone(); 
                         newOutfit.removeAsset(item.id);
                         setOutfit(newOutfit)
+                    } else if (item.itemType === "Bundle" && (item.type === "Outfit" || item.type === "Character")) {
+                        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+                            if (result instanceof Outfit) {
+                                if (item.type === "Character") {
+                                    result.bodyColors = outfit.bodyColors.clone()
+                                }
+
+                                setOutfit(result)
+                            }
+                        })
+                    } else if (item.itemType === "Bundle" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack")) {
+                        const newOutfit = outfit.clone()
+
+                        const toRemove = ToRemoveBeforeBundleType[item.type]
+                        for (const type of toRemove) {
+                            newOutfit.removeAssetType(type)
+                        }
+
+                        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+                            if (result instanceof Outfit) {
+                                for (const asset of result.assets) {
+                                    newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                                }
+
+                                setOutfit(newOutfit)
+                            }
+                        })
                     }
                 }}/>
             ))

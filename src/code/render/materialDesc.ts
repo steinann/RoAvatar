@@ -575,6 +575,8 @@ export class MaterialDesc {
                                 const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                                 const partcolorLayer = new ColorLayer(partColor)
                                 this.layers.push(partcolorLayer)
+                            } else {
+                                this.transparent = true
                             }
                             const colorLayer = new TextureLayer()
                             colorLayer.color = specialMesh.Property("TextureId") as string

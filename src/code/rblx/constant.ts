@@ -162,6 +162,17 @@ export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]
     "WalkAnimation": ["walk",[["WalkAnim",913402848n]]]
 }
 
+export const DefaultAnimationsR6: typeof DefaultAnimations = {
+    "ClimbAnimation": ["climb",[["ClimbAnim",180436334n]]],
+    "FallAnimation": ["fall",[["FallAnim",180436148n]]],
+    "IdleAnimation": ["idle",[["Animation1",180435571n],["Animation2",180435792n]]],
+    "JumpAnimation": ["jump",[["JumpAnim",125750702n]]],
+    "MoodAnimation": ["mood",[]],
+    "RunAnimation": ["run",[["RunAnim",180426354n]]],
+    "SwimAnimation": ["swim",[]],
+    "WalkAnimation": ["walk",[["WalkAnim",180426354n]]]
+}
+
 export const DataType = {
     "String": 0x01,
     "Bool": 0x02,

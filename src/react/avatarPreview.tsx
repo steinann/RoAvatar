@@ -103,7 +103,7 @@ function updatePreview(outfit: Outfit, auth: Authentication) {
 
 let animationInterval: number | undefined = undefined
 
-export default function AvatarPreview({ setOutfit }: { setOutfit :(a: Outfit) => void}): React.JSX.Element {
+export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: Outfit) => void, animName: string}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const containerRef = useCallback(mount, [])
@@ -129,6 +129,19 @@ export default function AvatarPreview({ setOutfit }: { setOutfit :(a: Outfit) =>
             }
         }
     }, [auth, outfit, setOutfit])
+
+    useEffect(() => {
+        if (currentRig) {
+            const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
+            if (humanoid) {
+                const animator = humanoid.FindFirstChildOfClass("Animator")
+                if (animator) {
+                    const animatorW = new AnimatorWrapper(animator)
+                    animatorW.playAnimation(animName)
+                }
+            }
+        }
+    }, [animName])
 
     useEffect(() => {
         if (animationInterval) {

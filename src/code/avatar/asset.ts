@@ -103,6 +103,48 @@ export const AssetTypes = [
     "DynamicHead",
 ]
 
+export const MaxOneOfAssetTypes = [
+    "TShirt",
+    "Shirt",
+    "Pants",
+    "Head",
+    "Face",
+    "Gear",
+    "Torso",
+    "RightArm",
+    "LeftArm",
+    "LeftLeg",
+    "RightLeg",
+    "ClimbAnimation",
+    "DeathAnimation",
+    "FallAnimation",
+    "IdleAnimation",
+    "JumpAnimation",
+    "RunAnimation",
+    "SwimAnimation",
+    "WalkAnimation",
+    "PoseAnimation",
+    "MoodAnimation",
+    "DynamicHead",
+]
+
+export const ToRemoveBeforeBundleType = {
+    "DynamicHead": ["MoodAnimation", "DynamicHead", "EyebrowAccessory", "EyelashAccessory", "Head"],
+    "Shoes": ["LeftShoeAccessory", "RightShoeAccessory"],
+    "AnimationPack": [
+        "ClimbAnimation",
+        "DeathAnimation",
+        "FallAnimation",
+        "IdleAnimation",
+        "JumpAnimation",
+        "RunAnimation",
+        "SwimAnimation",
+        "WalkAnimation",
+        "PoseAnimation",
+        "MoodAnimation",
+    ]
+}
+
 export const AssetTypeNameToId = new Map<string,number>()
 for (let i = 0; i < AssetTypes.length; i++) {
     const name = AssetTypes[i]

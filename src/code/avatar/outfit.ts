@@ -4,7 +4,7 @@ import { API, type Authentication } from "../api";
 import { BODYCOLOR3 } from "../misc/flags"
 import { download, hexToRgb } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
-import { Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes } from "./asset";
+import { Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType } from "./asset";
 import type { AssetJson } from "./asset"
 import { AvatarType, BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin } from "./constant"
 
@@ -802,6 +802,22 @@ export class Outfit {
         }
     }
 
+    removeAssetType(type: string | number) {
+        let typeName = ""
+        if (typeof type === "number") {
+            typeName = AssetTypes[type]
+        } else {
+            typeName = type
+        }
+
+        for (let i = this.assets.length - 1; i >= 0; i--) {
+            const asset = this.assets[i]
+            if (asset.assetType.name === typeName) {
+                this.assets.splice(i, 1)
+            }
+        }
+    }
+
     addAsset(id: number, type: string | number, name: string) {
         let typeId = 0
         let typeName = ""
@@ -811,6 +827,17 @@ export class Outfit {
         } else {
             typeName = type
             typeId = AssetTypeNameToId.get(type) || 0
+        }
+
+        if (MaxOneOfAssetTypes.includes(typeName)) {
+            this.removeAssetType(typeName)
+        }
+
+        if (typeName === "Head") {
+            const toRemove = ToRemoveBeforeBundleType.DynamicHead
+            for (const type of toRemove) {
+                this.removeAssetType(type)
+            }
         }
 
         const asset = new Asset()
