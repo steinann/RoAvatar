@@ -113,7 +113,10 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
             if (!hasLoadedAvatar) {
                 API.Users.GetUserInfo(auth).then(result => {
                     if (result) {
-                        const idToUse = result.id
+                        const urlParams = new URLSearchParams(window.location.search)
+                        const urlId = Number(urlParams.get("id"))
+
+                        const idToUse = urlId || result.id
                         API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
                             if (result instanceof Outfit) { 
                                 setOutfit(result)
@@ -122,7 +125,6 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
                         })
                     }
                 })
-                
             } else {
                 lastOutfit = outfit
                 updatePreview(outfit, auth)
