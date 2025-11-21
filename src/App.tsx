@@ -8,9 +8,11 @@ import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import ItemCategory from './react/itemCategory'
 //import SubCategory from './react/subCategory'
-import { CategoryDictionary } from './code/avatar/sorts'
+import { CategoryDictionary, SortInfo } from './code/avatar/sorts'
 import SaveButton from './react/saveButton'
 import UndoRedo from './react/undoRedo'
+import SpecialCategory from './react/specialCategory'
+import { AvatarType } from './code/avatar/constant'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 const outfitHistory: Outfit[] = []
@@ -19,7 +21,7 @@ let outfitHistoryIndex = -1
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
   const [outfit, _setOutfit] = useState<Outfit>(new Outfit())
-  const [currentAnimName, setCurrentAnimName] = useState<string>("idle.Animation1")
+  const [currentAnimName, _setCurrentAnimName] = useState<string>("idle.Animation1")
 
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
   const [categoryType, _setCategoryType] = useState<string>("Recent")
@@ -33,6 +35,21 @@ function App() {
     outfitHistory.push(outfit)
     outfitHistoryIndex++
     _setOutfit(outfit)
+  }
+
+  function setCurrentAnimName(name: string) {
+    //switch to compatible animation if avatar is r6
+    if (outfit.playerAvatarType === AvatarType.R6 && name === "swim.Swim") {
+      name = "walk.WalkAnim"
+    } else if (outfit.playerAvatarType === AvatarType.R6 && name === "jump.JumpAnim") {
+      name = "fall.FallAnim"
+    } else if (outfit.playerAvatarType === AvatarType.R6 && name.startsWith("emote.")) {
+      const emoteId = Number(name.split(".")[1])
+      const danceName = `dance${emoteId % 3 + 1}.2`
+      name = danceName
+    }
+
+    _setCurrentAnimName(name)
   }
 
   function setCategorySource(categorySource: string) {
@@ -109,9 +126,13 @@ function App() {
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource][categoryType]} currentCategory={subCategoryType} setCurrentCategory={setSubCategoryType}/>
               {/*<SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>*/}
-              <ItemCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName}>
+              {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
+              (<ItemCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName}>
 
-              </ItemCategory>
+              </ItemCategory>)
+              :
+              <SpecialCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName}/>
+              }
             </div>
           </div>
         </OutfitContext>

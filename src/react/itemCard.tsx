@@ -21,7 +21,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick }: {a
 
     if (auth && itemInfo) {
         
-        return (<a className="item" href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined}>
+        return (<a className="item" title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined}>
             <button className={`item-image`} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {cardImage}

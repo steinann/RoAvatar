@@ -158,23 +158,54 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
     //skinning
     const meshSkinning = mesh.skinning
     if (meshSkinning && meshSkinning.subsets.length > 0 && canIncludeSkinning) {
-        console.log(meshSkinning)
         //bone weight and indices
-        const skinIndices = []
-        const skinWeights = []
+        const skinIndices = new Uint16Array(meshSkinning.skinnings.length * 4)
+        const skinWeights = new Float32Array(meshSkinning.skinnings.length * 4)
+        
+        //const skinIndices = []
+        //const skinWeights = []
+        
         for (const subset of meshSkinning.subsets) {
             for (let i = subset.vertsBegin; i < subset.vertsBegin + subset.vertsLength; i++) {
                 const skinning = meshSkinning.skinnings[i]
+                
+                skinWeights[i * 4 + 0] = skinning.boneWeights[0] / 255
+                skinWeights[i * 4 + 1] = skinning.boneWeights[1] / 255
+                skinWeights[i * 4 + 2] = skinning.boneWeights[2] / 255
+                skinWeights[i * 4 + 3] = skinning.boneWeights[3] / 255
+
+                skinIndices[i * 4 + 0] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
+                skinIndices[i * 4 + 1] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[1]]]]
+                skinIndices[i * 4 + 2] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[2]]]]
+                skinIndices[i * 4 + 3] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[3]]]]
+
+                //TODO: fix whatever is wrong above
+                
+                /*const resultingIndex = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
+                console.log(resultingIndex)
+                if (resultingIndex === 0) {
+                    console.log(skinning)
+
+                    console.log(subset.boneIndices)
+                    console.log(meshSkinning.nameTable)
+                }*/
+                /*
                 for (const weight of skinning.boneWeights) {
                     skinWeights.push(weight / 255)
                 }
                 for (const index of skinning.subsetIndices) {
-                    skinIndices.push(BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[index]]])
+                    const boneName = meshSkinning.nameTable[subset.boneIndices[index]]
+                    const boneIndex = BoneNameToIndex[boneName]
+                    skinIndices.push(boneIndex)
                 }
+                */
             }
         }
         geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
         geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeights, 4))
+        console.log(mesh)
+        console.log(geometry.attributes.skinIndex)
+        console.log(geometry.attributes.skinWeight)
     }
 
     return geometry

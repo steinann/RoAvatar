@@ -681,7 +681,8 @@ class AnimationTrack {
                         }
                     }
                 } else {
-                    console.warn(`Unknown animation child with className: ${child.className}`, child)
+                    //Removed warning because it causes an insane amount of lag
+                    //console.warn(`Unknown animation child with className: ${child.className}`, child)
                 }
             }
 
@@ -807,14 +808,17 @@ class AnimationTrack {
                     if (partCurve.position) {
                         const lowerX = partCurve.position[0].getLowerKey(time)
                         const higherX = partCurve.position[0].getHigherKey(time)
+                        if (lowerX) cf.Position[0] = lowerX.value
                         if (lowerX && higherX) cf.Position[0] = getCurveValue(time, lowerX, higherX)
 
                         const lowerY = partCurve.position[1].getLowerKey(time)
                         const higherY = partCurve.position[1].getHigherKey(time)
+                        if (lowerY) cf.Position[1] = lowerY.value
                         if (lowerY && higherY) cf.Position[1] = getCurveValue(time, lowerY, higherY)
 
                         const lowerZ = partCurve.position[2].getLowerKey(time)
                         const higherZ = partCurve.position[2].getHigherKey(time)
+                        if (lowerZ) cf.Position[2] = lowerZ.value
                         if (lowerZ && higherZ) cf.Position[2] = getCurveValue(time, lowerZ, higherZ)
                     }
 
@@ -823,14 +827,17 @@ class AnimationTrack {
 
                         const lowerX = partCurve.rotation[0].getLowerKey(time)
                         const higherX = partCurve.rotation[0].getHigherKey(time)
+                        if (lowerX) euler.x = lowerX.value
                         if (lowerX && higherX) euler.x = getCurveValue(time, lowerX, higherX)
 
                         const lowerY = partCurve.rotation[1].getLowerKey(time)
                         const higherY = partCurve.rotation[1].getHigherKey(time)
+                        if (lowerY) euler.y = lowerY.value
                         if (lowerY && higherY) euler.y = getCurveValue(time, lowerY, higherY)
 
                         const lowerZ = partCurve.rotation[2].getLowerKey(time)
                         const higherZ = partCurve.rotation[2].getHigherKey(time)
+                        if (lowerZ) euler.z = lowerZ.value
                         if (lowerZ && higherZ) euler.z = getCurveValue(time, lowerZ, higherZ)
 
                         const newEuler = euler.reorder("YXZ")

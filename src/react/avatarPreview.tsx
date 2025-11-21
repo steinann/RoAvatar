@@ -9,22 +9,6 @@ import { Outfit } from "../code/avatar/outfit"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import AnimatorWrapper from "../code/rblx/instance/Animator"
 
-/*
-import type { AnimationTrack } from "../code/rblx/animation"
-
-const animationTrackMap = new Map<string,AnimationTrack>()
-
-type AnimationTable = {[K in string]: {[K in string]: [string,number]}}
-const initAnimationsTable: AnimationTable = {
-    "idle": {
-        "Animation1": ["http://www.roblox.com/asset/?id=507766388", 9],
-        "Animation2": ["http://www.roblox.com/asset/?id=507766666", 1],
-    }
-}
-
-let animationsTable: AnimationTable = JSON.parse(JSON.stringify(initAnimationsTable))
-*/
-
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
 let currentRig: Instance | undefined = undefined
@@ -62,6 +46,8 @@ let currentlyUpdatingPreview = false
 function updatePreview(outfit: Outfit, auth: Authentication) {
     if (!currentlyUpdatingPreview) {
         currentlyUpdatingPreview = true
+
+        //update rig
         const newRigType: AvatarType = outfit.playerAvatarType
 
         const promises: Promise<undefined>[] = []
@@ -70,6 +56,7 @@ function updatePreview(outfit: Outfit, auth: Authentication) {
         }
 
         Promise.all(promises).then(() => {
+            //get humanoid description
             const hrp = new Instance("HumanoidDescription")
             const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
             hrpWrapper.fromOutfit(outfit, auth)
@@ -77,6 +64,7 @@ function updatePreview(outfit: Outfit, auth: Authentication) {
             if (currentRig) {
                 const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
                 if (humanoid) {
+                    //apply humanoid description to rig
                     hrpWrapper.applyDescription(humanoid, auth).then((result) => {
                         if (currentRig) {
                             addInstance(currentRig, auth)
@@ -108,6 +96,7 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
     const outfit = useContext(OutfitContext)
     const containerRef = useCallback(mount, [])
 
+    //load the initial avatar
     useEffect(() => {
         if (auth) {
             if (!hasLoadedAvatar) {
@@ -132,6 +121,7 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
         }
     }, [auth, outfit, setOutfit])
 
+    //play/load animations
     useEffect(() => {
         if (currentRig) {
             const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
@@ -139,12 +129,19 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
                 const animator = humanoid.FindFirstChildOfClass("Animator")
                 if (animator) {
                     const animatorW = new AnimatorWrapper(animator)
-                    animatorW.playAnimation(animName)
+                    const successfullyPlayed = animatorW.playAnimation(animName)
+                    if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
+                        const emoteId = BigInt(animName.split(".")[1])
+                        animatorW.loadAvatarAnimation(auth, emoteId, true, true).then(() => {
+                            animatorW.playAnimation(animName)
+                        })
+                    }
                 }
             }
         }
-    }, [animName])
+    }, [auth, animName])
 
+    //render animations
     useEffect(() => {
         if (animationInterval) {
             clearInterval(animationInterval)

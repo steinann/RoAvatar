@@ -85,7 +85,7 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({categoryType, subCategoryType, setOutfit, setAnimName}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void}): React.JSX.Element {
+export default function ItemCategory({categoryType, subCategoryType, setOutfit, setAnimName, onClickItem}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -114,6 +114,7 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit, 
         }
     }
 
+    //create item infos based on response
     const itemInfos: ItemInfo[] = []
     for (const item of items) {
         const itemType = item.itemCategory.itemType === 1 ? "Asset" : "Bundle"
@@ -128,60 +129,68 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit, 
         itemInfos.push(new ItemInfo(itemType, itemSubType, item.itemId, item.itemName))
     }
 
+    //determine on click function for itemcards
+    const defaultOnClick = (auth: Authentication, item: ItemInfo) => {
+        if (!outfit.containsAsset(item.id) && item.itemType === "Asset") {
+            const newOutfit = outfit.clone(); 
+            newOutfit.addAsset(item.id, item.type, item.name);
+            if (item.type.endsWith("Animation")) {
+                const entry = DefaultAnimations[item.type as AnimationProp]
+                const mainName = entry[0]
+                const subArr = entry[1]
+                const sub0 = subArr[0]
+                if (sub0) {
+                    const sub0Name = sub0[0]
+
+                    setAnimName(`${mainName}.${sub0Name}`)
+                }
+            } else {
+                setAnimName(`idle.Animation1`)
+            }
+            setOutfit(newOutfit)
+        } else if (item.itemType === "Asset") {
+            const newOutfit = outfit.clone(); 
+            newOutfit.removeAsset(item.id);
+            setOutfit(newOutfit)
+        } else if (item.itemType === "Bundle" && (item.type === "Outfit" || item.type === "Character")) {
+            API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+                if (result instanceof Outfit) {
+                    if (item.type === "Character") {
+                        result.bodyColors = outfit.bodyColors.clone()
+                    }
+
+                    setOutfit(result)
+                }
+            })
+        } else if (item.itemType === "Bundle" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack")) {
+            const newOutfit = outfit.clone()
+
+            const toRemove = ToRemoveBeforeBundleType[item.type]
+            for (const type of toRemove) {
+                newOutfit.removeAssetType(type)
+            }
+
+            API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+                if (result instanceof Outfit) {
+                    for (const asset of result.assets) {
+                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                    }
+
+                    setOutfit(newOutfit)
+                }
+            })
+        }
+    }
+    const onClickFunc = onClickItem || defaultOnClick
+
+    //create item cards
     let itemComponents = null
 
     if (auth && itemInfos.length > 0) {
         itemComponents = <>{
             itemInfos.map((item) => (
-                <ItemCard auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={() => {
-                    if (!outfit.containsAsset(item.id) && item.itemType === "Asset") {
-                        const newOutfit = outfit.clone(); 
-                        newOutfit.addAsset(item.id, item.type, item.name);
-                        if (item.type.endsWith("Animation")) {
-                            const entry = DefaultAnimations[item.type as AnimationProp]
-                            const mainName = entry[0]
-                            const subArr = entry[1]
-                            const sub0 = subArr[0]
-                            if (sub0) {
-                                const sub0Name = sub0[0]
-                                setAnimName(`${mainName}.${sub0Name}`)
-                            }
-                        } else {
-                            setAnimName(`idle.Animation1`)
-                        }
-                        setOutfit(newOutfit)
-                    } else if (item.itemType === "Asset") {
-                        const newOutfit = outfit.clone(); 
-                        newOutfit.removeAsset(item.id);
-                        setOutfit(newOutfit)
-                    } else if (item.itemType === "Bundle" && (item.type === "Outfit" || item.type === "Character")) {
-                        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
-                            if (result instanceof Outfit) {
-                                if (item.type === "Character") {
-                                    result.bodyColors = outfit.bodyColors.clone()
-                                }
-
-                                setOutfit(result)
-                            }
-                        })
-                    } else if (item.itemType === "Bundle" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack")) {
-                        const newOutfit = outfit.clone()
-
-                        const toRemove = ToRemoveBeforeBundleType[item.type]
-                        for (const type of toRemove) {
-                            newOutfit.removeAssetType(type)
-                        }
-
-                        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
-                            if (result instanceof Outfit) {
-                                for (const asset of result.assets) {
-                                    newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
-                                }
-
-                                setOutfit(newOutfit)
-                            }
-                        })
-                    }
+                <ItemCard auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={(item) => {
+                    onClickFunc(auth, item)
                 }}/>
             ))
         }</>

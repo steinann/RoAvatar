@@ -115,6 +115,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
         "Animations": {
             "All Animations": new SortInfo(AllAnimationSorts),
             "Emotes": new SpecialInfo("Emotes"),
+            "_Emotes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EmoteAnimation") || 0)]),
             "Idle": new SortInfo([new ItemSort(51)]),
             "Walk": new SortInfo([new ItemSort(55)]),
             "Run": new SortInfo([new ItemSort(53)]),

@@ -85,6 +85,7 @@ body {
 
 .main {
     width: 100%;
+    height: 100vh;
 
     display: flex;
     flex-direction: row;
@@ -92,6 +93,7 @@ body {
 
 .main-right {
     width: -webkit-fill-available;
+    height: 100%;
 }
 
 .avatar-preview {
@@ -164,6 +166,8 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
+    height: 0;
+    flex-grow: 1;
 }
 
 .item-container {
@@ -179,7 +183,7 @@ body {
     margin-left: 15px;
 
     overflow-y: auto;
-    height: 500px;
+    height: 100%;
 }
 
 .item {
@@ -280,6 +284,52 @@ body {
     box-shadow: #00000078 0 0 80px inset !important;
 }
 
+.emote-bar {
+    height: 80px;
+}
+
+.emote-box {
+    width: 80px;
+    aspect-ratio: 1/1;
+
+    border-style: none;
+    background-color: #3c3f48;
+    padding: 0;
+
+    border-radius: 1em;
+    overflow: hidden;
+    margin: 0 2.5px;
+
+    cursor: pointer;
+}
+
+.emote-box img {
+    width: 100%;
+    height: 100%;
+}
+
+.emote-equipped {
+    box-shadow: #f5f5f5 0 0 0 1px inset;
+}
+
 .dark-scrollbar {
     scrollbar-color: #121215 #2a2a2d;
+}
+
+.save-and-history {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.save-button {
+    background-color: #335fff;
+    color: #f5f5f5;
+    width: 45%;
+    margin: 15px 2.5% 15px 0;
+    padding: 4%;
+    font-size: 200%;
+    border-style: none;
+    border-radius: 12px;
+    cursor: pointer;
 }

@@ -1,3 +1,4 @@
+//this is way slower than not using a worker
 import { add, clamp, divide, floor, gaussian_rbf, multiply, type WeightChunk } from "./mesh-deform";
 
 onmessage = function(event) {

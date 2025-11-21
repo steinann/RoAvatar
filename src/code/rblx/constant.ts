@@ -139,7 +139,7 @@ export const BodyPartEnumToNames: {[K in number]: string[]} = {
     [BodyPart.RightLeg]: ["Right Leg", "RightUpperLeg", "RightLowerLeg", "RightFoot"]
 }
 
-export type AnimationProp = "ClimbAnimation" | "FallAnimation" | "IdleAnimation" | "JumpAnimation" | "MoodAnimation" | "RunAnimation" | "SwimAnimation" | "WalkAnimation"
+export type AnimationProp = "ClimbAnimation" | "FallAnimation" | "IdleAnimation" | "JumpAnimation" | "MoodAnimation" | "RunAnimation" | "SwimAnimation" | "WalkAnimation" | "dance1" | "dance2" | "dance3" | "toolnone"
 export const AllAnimations: AnimationProp[] = [
     "ClimbAnimation",
     "FallAnimation",
@@ -151,6 +151,17 @@ export const AllAnimations: AnimationProp[] = [
     "WalkAnimation",
 ]
 
+export const MainToSubNames: {[K in string]: string[]} = {
+    "climb": ["ClimbAnim"],
+    "fall": ["FallAnim"],
+    "idle": ["Animation1", "Animation2"],
+    "jump": ["JumpAnim"],
+    "mood": ["Animation1"],
+    "run": ["RunAnim"],
+    "swim": ["Swim"],
+    "walk": ["WalkAnim"]
+}
+
 export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]]} = {
     "ClimbAnimation": ["climb",[["ClimbAnim",507765644n]]],
     "FallAnimation": ["fall",[["FallAnim",507767968n]]],
@@ -159,7 +170,14 @@ export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]
     "MoodAnimation": ["mood",[["Animation1",7715096377n]]],
     "RunAnimation": ["run",[["RunAnim",913376220n]]],
     "SwimAnimation": ["swim",[["Swim",913384386n]]],
-    "WalkAnimation": ["walk",[["WalkAnim",913402848n]]]
+    "WalkAnimation": ["walk",[["WalkAnim",913402848n]]],
+
+    //sourced from the last id in their tables
+    "dance1": ["dance1",[["2",507772104n]]],
+    "dance2": ["dance2",[["2",507776879n]]],
+    "dance3": ["dance3",[["2",507777623n]]],
+
+    "toolnone": ["toolnone",[["ToolNoneAnim", 507768375n]]]
 }
 
 export const DefaultAnimationsR6: typeof DefaultAnimations = {
@@ -170,7 +188,14 @@ export const DefaultAnimationsR6: typeof DefaultAnimations = {
     "MoodAnimation": ["mood",[]],
     "RunAnimation": ["run",[["RunAnim",180426354n]]],
     "SwimAnimation": ["swim",[]],
-    "WalkAnimation": ["walk",[["WalkAnim",180426354n]]]
+    "WalkAnimation": ["walk",[["WalkAnim",180426354n]]],
+
+    //sourced from the last id in their tables
+    "dance1": ["dance1",[["2",182491065n]]],
+    "dance2": ["dance2",[["2",182491277n]]],
+    "dance3": ["dance3",[["2",182491423n]]],
+
+    "toolnone": ["toolnone",[["ToolNoneAnim", 182393478n]]]
 }
 
 export const DataType = {

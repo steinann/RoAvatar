@@ -139,6 +139,11 @@ async function RBLXGet(url: string, auth?: Authentication, headers?: any): Promi
     })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function RBLXDelete(url: string, auth: Authentication, body: any, attempt = 0): Promise<Response> {
+    return RBLXPost(url, auth, body, attempt, "DELETE")
+}
+
 /*async function RBLXPatch(url: string, auth: Authentication, body: any, attempt = 0): Promise<Response> {
     return RBLXPost(url, auth, body, attempt, "PATCH")
 }*/
@@ -396,6 +401,15 @@ const API = {
             } else {
                 return response
             }
+        },
+        GetEmotes: async function(auth: Authentication): Promise<Response> {
+            return await RBLXGet("https://avatar.roblox.com/v1/emotes", auth)
+        },
+        EquipEmote: async function(auth: Authentication, assetId: number, slot: number): Promise<Response> {
+            return await RBLXPost(`https://avatar.roblox.com/v1/emotes/${assetId}/${slot}`, auth, "")
+        },
+        UnequipEmote: async function(auth: Authentication, slot: number): Promise<Response> {
+            return await RBLXDelete(`https://avatar.roblox.com/v1/emotes/${slot}`, auth, "")
         }
     },
     "Asset": {
