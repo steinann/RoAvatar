@@ -431,8 +431,6 @@ export function addInstance(instance: Instance, auth: Authentication) {
                                 if (skeleton) {
                                     result.bind(skeleton)
                                     scene.add(result)
-                                    
-                                    console.log("SKELETON ADDED!")
                                 }
                             } else {
                                 scene.add(result)

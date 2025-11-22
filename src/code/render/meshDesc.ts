@@ -208,9 +208,9 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
         }
         geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
         geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeights, 4))
-        console.log(mesh)
-        console.log(geometry.attributes.skinIndex)
-        console.log(geometry.attributes.skinWeight)
+        //console.log(mesh)
+        //console.log(geometry.attributes.skinIndex)
+        //console.log(geometry.attributes.skinWeight)
     }
 
     return geometry

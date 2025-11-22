@@ -86,7 +86,7 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
                         if (responseToken) {
                             auth.TOKEN = responseToken
                         }
-                        RBLXPost(url, auth, body, attempt + 1, method)
+                        resolve(RBLXPost(url, auth, body, attempt + 1, method))
                     } else {
                         resolve(response)
                     }
@@ -287,7 +287,7 @@ const API = {
                                 resolve(response)
                             })
                         } else {
-                            resolve(new Response("", {status: 400}))
+                            resolve(new Response("", {status: 200}))
                         }
                     })
                 }))
@@ -297,8 +297,8 @@ const API = {
                     //scale
                     promises.push(new Promise((resolve) => {
                         RBLXPost("https://avatar.roblox.com/v1/avatar/set-scales", auth, outfit.scale.toJson()).then(response => {
-                        resolve(response)
-                    })
+                            resolve(response)
+                        })
                     }))
 
                     //bodyColors
@@ -322,6 +322,7 @@ const API = {
                     
                     for (const value of values) {
                         if (value.status !== 200) {
+                            console.log(value)
                             isSuccess = false
                         }
                     }

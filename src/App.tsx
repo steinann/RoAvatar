@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import { Authentication } from './code/api'
 import { AuthContext } from './react/context/auth-context'
@@ -16,26 +16,56 @@ import { AvatarType } from './code/avatar/constant'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 const outfitHistory: Outfit[] = []
-let outfitHistoryIndex = -1
 
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
   const [outfit, _setOutfit] = useState<Outfit>(new Outfit())
   const [currentAnimName, _setCurrentAnimName] = useState<string>("idle.Animation1")
 
+  const [canUndo, setCanUndo] = useState<boolean>(false)
+  const [canRedo, setCanRedo] = useState<boolean>(false)
+  const [historyIndex, setHistoryIndex] = useState<number>(-1)
+
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
   const [categoryType, _setCategoryType] = useState<string>("Recent")
   const [subCategoryType, _setSubCategoryType] = useState<string>("All")
 
-  function setOutfit(outfit: Outfit) {
-    if (outfitHistory.length > outfitHistoryIndex) {
-      outfitHistory.splice(outfitHistoryIndex)
+  function undo() {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1)
+      _setOutfit(outfitHistory[historyIndex - 1])
+
+      setCanUndo(historyIndex - 1 > 0)
+      setCanRedo(historyIndex - 1 < outfitHistory.length - 1)
+    }
+    //console.log(outfitHistory, outfitHistoryIndex)
+    
+  }
+
+  function redo() {
+    if (historyIndex < outfitHistory.length - 1) {
+      setHistoryIndex(historyIndex + 1)
+      _setOutfit(outfitHistory[historyIndex + 1])
+
+      setCanUndo(historyIndex + 1 > 0)
+      setCanRedo(historyIndex + 1 < outfitHistory.length - 1)
+    }
+    //console.log(outfitHistory, outfitHistoryIndex)
+  }
+
+  const setOutfit = useCallback((newOutfit: Outfit) => {
+    if (outfitHistory.length > historyIndex + 1) {
+      outfitHistory.splice(historyIndex + 1)
     }
 
-    outfitHistory.push(outfit)
-    outfitHistoryIndex++
-    _setOutfit(outfit)
-  }
+    outfitHistory.push(newOutfit)
+    setHistoryIndex(historyIndex + 1)
+    
+    _setOutfit(newOutfit)
+    setCanUndo(historyIndex + 1 > 0)
+    setCanRedo(historyIndex + 1 < outfitHistory.length - 1)
+    //console.log(outfitHistory, outfitHistoryIndex)
+  }, [historyIndex])
 
   function setCurrentAnimName(name: string) {
     //switch to compatible animation if avatar is r6
@@ -105,7 +135,7 @@ function App() {
     if (!outfit) {
       setOutfit(new Outfit())
     }
-  }, [auth, outfit])
+  }, [auth, outfit, setOutfit])
 
   return (
     <>
@@ -116,8 +146,8 @@ function App() {
               <BarCategory className="background-transparent bar-double-margin"></BarCategory>
               <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}></AvatarPreview>
               <div className="save-and-history">
-                <SaveButton/>
-                <UndoRedo/>
+                <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length}/>
+                <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
               </div>
               {/*<Test_AvatarPreview/>*/}
             </div>
