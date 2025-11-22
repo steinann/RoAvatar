@@ -5,6 +5,7 @@ import type { Outfit } from "../code/avatar/outfit"
 import ItemCategory from "./itemCategory"
 import BarCategory from "./barCategory"
 import { AuthContext } from "./context/auth-context"
+import React from "react"
 
 function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemInfo }: {setAnimName: (a: string) => void, setCurrentSlot: (a: number) => void, currentSlot: number, slot: number, auth?: Authentication, itemInfo?: ItemInfo}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
@@ -25,7 +26,10 @@ function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemIn
         }
     }, [auth, imageUrl, itemInfo])
 
-    const cardImage = imageUrl !== "loading" ? (<img src={imageUrl}></img>) : (<div className="item-loading"></div>)
+    let cardImage: React.JSX.Element | null = imageUrl !== "loading" ? (<img src={imageUrl}></img>) : (<div className="item-loading"></div>)
+    if (!itemInfo) {
+        cardImage = null
+    }
 
     return <button title={itemInfo ? itemInfo.name : "No emote equipped"} className={`emote-box${currentSlot === slot ? " emote-equipped" : ""}`} onClick={() => {
             setCurrentSlot(slot)
