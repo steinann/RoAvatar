@@ -483,7 +483,7 @@ const API = {
                 if (response instanceof ArrayBuffer) {
                     const buffer = response
                     const mesh = new FileMesh()
-                    mesh.fromBuffer(buffer)
+                    await mesh.fromBuffer(buffer)
                     CACHE.Mesh.set(cacheStr, mesh.clone())
                     return mesh
                 } else {

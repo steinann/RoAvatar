@@ -6,6 +6,8 @@ import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
 import { deformReferenceToBaseBodyParts, layerClothingChunked, offsetMesh } from '../rblx/mesh-deform'
 import { BoneNameToIndex } from './renderer'
+//import { OBJExporter } from 'three/examples/jsm/Addons.js'
+//import { download } from '../misc/misc'
 
 //const CACHE_cage = new Map<Instance, Promise<[MeshDesc, FileMesh]>>()
 
@@ -140,9 +142,12 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
     let facesEnd = mesh.coreMesh.faces.length
     let facesStart = 0
     if (mesh.lods) {
-        if (mesh.lods.lodOffsets.length > 2) {
+        if (mesh.lods.lodOffsets.length >= 2) {
             facesStart = mesh.lods.lodOffsets[0]
             facesEnd = mesh.lods.lodOffsets[1]
+            if (facesEnd === 0) {
+                facesEnd = mesh.coreMesh.faces.length
+            }
         }
     }
 
@@ -396,6 +401,15 @@ export class MeshDesc {
             }
 
             deformReferenceToBaseBodyParts(dist_mesh, targetCages, this.targetSizes, this.targetCFrames)
+
+            /*
+            // remove the ref_mesh.coreMesh.removeDuplicateVertices(0.01) line and add this back to easily generate inner cage meshes from an avatar body
+            const distMeshTHREE = new THREE.Mesh(fileMeshToTHREEGeometry(dist_mesh))
+            
+            const exporter = new OBJExporter();
+            const result = exporter.parse(distMeshTHREE);
+            download("cage.obj", result)
+            */
 
             //offset ref_mesh
             offsetMesh(ref_mesh, this.layerDesc.referenceOrigin)

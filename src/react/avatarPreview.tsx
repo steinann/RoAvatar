@@ -121,6 +121,18 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
         }
     }, [auth, outfit, setOutfit])
 
+    //load extra scene
+    /*useEffect(() => {
+        if (auth) {
+            API.Asset.GetRBX("../assets/Mesh Deformation Test.rbxl").then(result => {
+                if (result instanceof RBX) {
+                    const root = result.generateTree()
+                    addInstance(root, auth)
+                }
+            })
+        }
+    }, [auth])*/
+
     //play/load animations
     useEffect(() => {
         if (currentRig) {

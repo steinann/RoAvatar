@@ -5,6 +5,9 @@ import { clonePrimitiveArray } from "../misc/misc"
 import { add, divide, hashVec2, hashVec3, magnitude, minus } from "./mesh-deform"
 import { Vector3 } from "./rbx"
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const DracoDecoderModule: any;
+
 export type Vec4 = [number,number,number,number]
 export type Vec3 = [number,number,number]
 export type Vec2 = [number,number]
@@ -454,7 +457,193 @@ export class FileMesh {
         }
     }
 
-    fromBuffer(buffer: ArrayBuffer) {
+    async readChunk(view: SimpleView) {
+        const chunkType = view.readUtf8String(8)
+        const chunkVersion = view.readUint32()
+
+        console.log(`Reading chunk: ${chunkType} version: ${chunkVersion}`)
+
+        const size = view.readUint32()
+        const newViewOffset = view.viewOffset + size
+        
+        switch (chunkType) {
+            case "COREMESH":
+                await this.readChunkCOREMESH(view, chunkVersion)
+                break
+            case "SKINNING":
+                this.readChunkSKINNING(view, chunkVersion)
+                break
+            case "LODS\0\0\0\0":
+                this.readChunkLODS(view, chunkVersion)
+                break
+        }
+        console.log(this)
+        view.viewOffset = newViewOffset
+    }
+
+    readChunkLODS(view: SimpleView, version: number) {
+        if (version !== 1) return
+
+        this.lods.lodType = view.readUint16()
+        this.lods.numHighQualityLODs = view.readUint8()
+
+        //lodOffsets
+        this.lods.numLodOffsets = view.readUint32()
+        for (let i = 0; i < this.lods.numLodOffsets; i++) {
+            this.lods.lodOffsets.push(view.readUint32())
+        }
+    }
+
+    readChunkSKINNING(view: SimpleView, version: number) {
+        if (version !== 1) return
+
+        //vertex skinnings
+        this.skinning.numSkinnings = view.readUint32()
+        for (let i = 0; i < this.skinning.numSkinnings; i++) {
+            this.skinning.skinnings.push(readSkinning(view))
+        }
+
+        //bones
+        this.skinning.numBones = view.readUint32()
+        for (let i = 0; i < this.skinning.numBones; i++) {
+            this.skinning.bones.push(readBone(view))
+        }
+
+        //bone names
+        this.skinning.nameTableSize = view.readUint32()
+        let lastString = ""
+        for (let i = 0; i < this.skinning.nameTableSize; i++) {
+            if (view.readUint8() !== 0) {
+                view.viewOffset--;
+                lastString += view.readUtf8String(1)
+            } else {
+                this.skinning.nameTable.push(lastString)
+                lastString = ""
+            }
+        }
+
+        //subsets
+        this.skinning.numSubsets = view.readUint32()
+        for (let i = 0; i < this.skinning.numSubsets; i++) {
+            this.skinning.subsets.push(readSubset(view))
+        }
+    }
+
+    async readChunkCOREMESH(view: SimpleView, version: number) {
+        if (version === 1) {
+            this.coreMesh.numverts = view.readUint32()
+            for (let i = 0; i < this.coreMesh.numverts; i++) {
+                this.coreMesh.verts.push(readVert(view))
+            }
+
+            this.coreMesh.numfaces = view.readUint32()
+            for (let i = 0; i < this.coreMesh.numfaces; i++) {
+                this.coreMesh.faces.push(readFace(view))
+            }
+        } else if (version === 2) {
+            const dracoBitStreamSize = view.readUint32()
+            const buffer = (view.buffer.slice(view.viewOffset, view.viewOffset + dracoBitStreamSize))
+            //console.log(dracoBitStreamSize, DracoDecoderModule)
+            const decoderModule = await DracoDecoderModule()
+            const decoder = new decoderModule.Decoder()
+
+            const mesh = new decoderModule.Mesh();
+            const status = decoder.DecodeArrayToMesh(new Int8Array(buffer), dracoBitStreamSize, mesh);
+            if (!status.ok() || mesh.ptr === 0) {
+                throw new Error("Draco decode failed");
+            }
+
+            this.coreMesh.numfaces = mesh.num_faces();
+            this.coreMesh.numverts = mesh.num_points();
+
+            const posAttr = decoder.GetAttributeByUniqueId(mesh, 0)
+            if (posAttr.ptr === 0) {
+                throw new Error("No position attribute")
+            }
+
+            const normalAttr = decoder.GetAttributeByUniqueId(mesh, 1)
+            if (normalAttr.ptr === 0) {
+                throw new Error("No normal attribute")
+            }
+
+            const uvAttr = decoder.GetAttributeByUniqueId(mesh, 2)
+            if (uvAttr.ptr === 0) {
+                throw new Error("No uv attribute")
+            }
+
+            const tangentAttr = decoder.GetAttributeByUniqueId(mesh, 3)
+            if (tangentAttr.ptr === 0) {
+                throw new Error("No tangent attribute")
+            }
+
+            const colorAttr = decoder.GetAttributeByUniqueId(mesh, 4)
+            if (colorAttr.ptr === 0) {
+                throw new Error("No color attribute")
+            }
+
+            const posArray = new decoderModule.DracoFloat32Array()
+            const posSuccess = decoder.GetAttributeFloatForAllPoints(mesh, posAttr, posArray)
+            const normalArray = new decoderModule.DracoFloat32Array()
+            const normalSuccess = decoder.GetAttributeFloatForAllPoints(mesh, normalAttr, normalArray)
+            const uvArray = new decoderModule.DracoFloat32Array()
+            const uvSuccess = decoder.GetAttributeFloatForAllPoints(mesh, uvAttr, uvArray)
+            const tangentArray = new decoderModule.DracoUInt8Array()
+            const tangentSuccess = decoder.GetAttributeUInt8ForAllPoints(mesh, tangentAttr, tangentArray)
+            const colorArray = new decoderModule.DracoUInt8Array()
+            const colorSuccess = decoder.GetAttributeUInt8ForAllPoints(mesh, colorAttr, colorArray)
+
+            if (posSuccess && normalSuccess && uvSuccess && tangentSuccess && colorSuccess) {
+                for (let i = 0; i < this.coreMesh.numverts; i++) {
+                    const pos: Vec3 = [posArray.GetValue(i * 3 + 0), posArray.GetValue(i * 3 + 1), posArray.GetValue(i * 3 + 2)]
+                    const normal: Vec3 = [normalArray.GetValue(i * 3 + 0), normalArray.GetValue(i * 3 + 1), normalArray.GetValue(i * 3 + 2)]
+                    const uv: Vec2 = [uvArray.GetValue(i * 2 + 0), uvArray.GetValue(i * 2 + 1)]
+                    const tangent: Vec4 = [tangentArray.GetValue(i * 4 + 0) - 127, tangentArray.GetValue(i * 4 + 1) - 127, tangentArray.GetValue(i * 4 + 2) - 127, tangentArray.GetValue(i * 4 + 3) - 127]
+                    const color: Vec4 = [colorArray.GetValue(i * 4 + 0), colorArray.GetValue(i * 4 + 1), colorArray.GetValue(i * 4 + 2), colorArray.GetValue(i * 4 + 3)]
+                    
+                    this.coreMesh.verts.push(new FileMeshVertex(pos, normal, uv, tangent, color))
+                }
+            }
+            decoderModule.destroy(posArray)
+            decoderModule.destroy(normalArray)
+            decoderModule.destroy(uvArray)
+            decoderModule.destroy(tangentArray)
+            decoderModule.destroy(colorArray)
+
+            const faceArray = new decoderModule.DracoInt32Array()
+            for (let i = 0; i < this.coreMesh.numfaces; i++) {
+                /*const faceSuccess =*/ decoder.GetFaceFromMesh(mesh, i, faceArray)
+                //if (faceSuccess) {
+                    const [a,b,c] = [faceArray.GetValue(0), faceArray.GetValue(1), faceArray.GetValue(2)]
+                    this.coreMesh.faces.push(new FileMeshFace(a, b, c))
+
+                    if (a >= this.coreMesh.numverts || b >= this.coreMesh.numverts || c >= this.coreMesh.numverts) {
+                        console.warn(`Face ${i} has out-of-range index: ${a}, ${b}, ${c}`);
+                        continue; // skip invalid face
+                    }
+                //}
+            }
+            decoderModule.destroy(faceArray)
+
+            //console.log(decoder.GetMetadata(mesh))
+            //console.log(decoder.GetAttribute(mesh, 0))
+
+            decoderModule.destroy(mesh)
+            decoderModule.destroy(decoder)
+
+            /*const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath("../../draco/")
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            const geometry = await new Promise(resolve => {
+                dracoLoader.parse(view.buffer.slice(view.viewOffset, view.viewOffset + dracoBitStreamSize), (geometry) => {
+                    resolve(geometry)
+                })
+            })
+            console.log(geometry)*/
+            
+        }
+    }
+
+    async fromBuffer(buffer: ArrayBuffer) {
         this.reset()
 
         const view = new SimpleView(buffer)
@@ -617,6 +806,12 @@ export class FileMesh {
 
                 break
                 }
+            case "version 6.00\n":
+            case "version 7.00\n":
+                while (view.viewOffset < view.buffer.byteLength - 1) {
+                    await this.readChunk(view)
+                }
+                break
             default:
                 console.warn(`Failed to read mesh, unknown version: ${version}`)
         }
