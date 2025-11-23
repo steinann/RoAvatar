@@ -4,6 +4,8 @@ R15 --> Slim = R15_Wide * R15_Proportions
 
 */
 
+//TODO: BUG: Fix issue with step height not scaling the legs properly!
+
 import { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
 import { lerp, lerpVec3, specialClamp } from "../misc/misc"
