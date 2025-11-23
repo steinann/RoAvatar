@@ -269,6 +269,7 @@ export class MeshDesc {
     enclosedLayers?: WrapLayerDesc[]
 
     //result data
+    compilationTimestamp: number = -1
     instance?: Instance
 
     dispose() {
@@ -432,7 +433,7 @@ export class MeshDesc {
             */
 
             //layer the clothing
-            layerClothingChunked(mesh, ref_mesh, dist_mesh)
+            layerClothingChunked(mesh, ref_mesh, dist_mesh, `${this.mesh}-${this.layerDesc.reference}`)
         }
 
         let canIncludeSkinning = true
@@ -462,6 +463,8 @@ export class MeshDesc {
             threeMesh.scale.set(this.size.X / oldSize[0], this.size.Y / oldSize[1], this.size.Z / oldSize[2])
         }
         */
+
+        this.compilationTimestamp = Date.now() / 1000
 
         return threeMesh
     }

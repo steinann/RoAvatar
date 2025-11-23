@@ -46,6 +46,11 @@ export class RenderableDesc {
     }
 
     needsRegeneration(other: RenderableDesc) {
+        //layered clothing cooldown
+        if (this.meshDesc.layerDesc && (Date.now() / 1000) - this.meshDesc.compilationTimestamp < 0.6) {
+            return false
+        }
+
         return (!this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!this.size.isSame(other.size) && (this.isSkinned || other.isSkinned)))
     }
 

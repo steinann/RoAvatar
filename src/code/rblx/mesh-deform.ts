@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "./rbx"
+import { ENABLE_LC_WEIGHT_CACHE } from '../misc/flags';
+
+const WeightCache = new Map<string,WeightChunk[]>()
 
 export function hashVec2(x: number,y: number) {
     return Math.round(x * 100000) + Math.round(y * 100)
@@ -415,7 +418,7 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
 }
 
 //discover new algorithm that works better
-export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
     console.time("total")
 
     //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
@@ -443,7 +446,16 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
     const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
     console.timeEnd("offsetArray")
     console.time("weights")
-    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    let allWeights = undefined
+    if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
+        allWeights = WeightCache.get(cacheId)
+    }
+    if (!allWeights) {
+        allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+        if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
+            WeightCache.set(cacheId, allWeights)
+        }
+    }
     console.timeEnd("weights")
 
     console.time("offset")

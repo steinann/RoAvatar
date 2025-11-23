@@ -2,7 +2,7 @@ import { OutfitOrigin } from "./avatar/constant"
 import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
 import { browserCookiesGet } from "./browser"
-import { BODYCOLOR3 } from "./misc/flags"
+import { BODYCOLOR3, ENABLE_API_CACHE } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
 import { FileMesh } from "./rblx/mesh"
 import { RBX } from "./rblx/rbx"
@@ -205,11 +205,15 @@ const API = {
                 } else {
                     const image = new Image()
                     image.onload = () => {
-                        CACHE.Image.set(fetchStr, image)
+                        if (ENABLE_API_CACHE) {
+                            CACHE.Image.set(fetchStr, image)
+                        }
                         resolve(image)
                     }
                     image.onerror = () => {
-                        CACHE.Image.set(fetchStr, undefined)
+                        if (ENABLE_API_CACHE) {
+                            CACHE.Image.set(fetchStr, undefined)
+                        }
                         resolve(undefined)
                     }
                     image.crossOrigin = "anonymous"
@@ -429,7 +433,9 @@ const API = {
                 const response = await RBLXGet(fetchStr, auth, headers)
                 if (response.status === 200) {
                     const data = await response.arrayBuffer()
-                    CACHE.AssetBuffer.set(cacheStr, data)
+                    if (ENABLE_API_CACHE) {
+                        CACHE.AssetBuffer.set(cacheStr, data)
+                    }
                     return data
                 } else {
                     return response
@@ -457,7 +463,9 @@ const API = {
                     const buffer = response
                     const rbx = new RBX()
                     rbx.fromBuffer(buffer)
-                    CACHE.RBX.set(cacheStr, rbx.clone())
+                    if (ENABLE_API_CACHE) {
+                        CACHE.RBX.set(cacheStr, rbx.clone())
+                    }
                     return rbx
                 } else {
                     return response
@@ -485,7 +493,9 @@ const API = {
                     const buffer = response
                     const mesh = new FileMesh()
                     await mesh.fromBuffer(buffer)
-                    CACHE.Mesh.set(cacheStr, mesh.clone())
+                    if (ENABLE_API_CACHE) {
+                        CACHE.Mesh.set(cacheStr, mesh.clone())
+                    }
                     return mesh
                 } else {
                     return response
@@ -559,7 +569,13 @@ function PurgeFailedThumbnails() {
         const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(val))
         const shouldPurge = val.attempt > 3 || cachedThumbnail
         if (shouldPurge && !cachedThumbnail) {
-            CACHE.Thumbnails.set(requestIdFromThumbnailInfo(val), undefined)
+            if (ENABLE_API_CACHE) {
+                CACHE.Thumbnails.set(requestIdFromThumbnailInfo(val), undefined)
+            }
+
+            for (const resolve of val.resolves) {
+                resolve(undefined)
+            }
         }
 
         return val.attempt <= 3 && !CACHE.Thumbnails.get(requestIdFromThumbnailInfo(val))
@@ -593,7 +609,9 @@ function BatchThumbnails() {
                             if (requestIdFromThumbnailInfo(thumbnailInfo) === result.requestId) {
                                 if (result.state === "Completed") {
                                     for (const resolve of thumbnailInfo.resolves) {
-                                        CACHE.Thumbnails.set(result.requestId, result.imageUrl)
+                                        if (ENABLE_API_CACHE) {
+                                            CACHE.Thumbnails.set(result.requestId, result.imageUrl)
+                                        }
                                         resolve(result.imageUrl)
                                         thumbnailInfo.attempt = 999
                                     }

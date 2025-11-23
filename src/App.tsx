@@ -153,7 +153,7 @@ function App() {
               </div>
               <div className='worn-items dark-scrollbar'>
                 {outfit.assets.map(asset => {
-                  return <ItemCard auth={auth} key={asset.id} className='worn-list-item' itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
+                  return <ItemCard auth={auth} key={asset.id} className='worn-list-item' includeName={false} itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
                     const newOutfit = outfit.clone()
                     newOutfit.removeAsset(asset.id)
                     setOutfit(newOutfit)

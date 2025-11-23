@@ -102,6 +102,9 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit, 
     useEffect(() => {
         if (!hasLoadedAll && items.length <= 0) {
             loadMore()
+        } else {
+            //in case the amount of items isnt enough to add a scrollbar but there is still another page
+            onScroll()
         }
     })
 
