@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ItemInfo } from "../code/avatar/asset";
 import { API, Authentication } from "../code/api";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick }: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className }: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick }: {a
 
     if (auth && itemInfo) {
         
-        return (<a className="item" title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined}>
+        return (<a className={"item" + className ? "item " + className : ""} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined}>
             <button className={`item-image`} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {cardImage}
@@ -35,7 +35,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick }: {a
             marginTop: "0.5rem",
         }
 
-        return (<div className="item">
+        return (<div className={"item" + className ? "item " + className : ""}>
             <button className="item-image">
                 {cardImage}
             </button>

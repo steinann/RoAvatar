@@ -13,7 +13,8 @@ const renderables = new Map<Instance,RenderableDesc>()
 const destroyConnections = new Map<Instance,Connection>()
 const skeletons = new Map<Instance,THREE.Skeleton>()
 
-const lookAwayVector = [-0.406, 0.406, -0.819]
+//const lookAwayVector = [-0.406, 0.406, -0.819]
+const lookAwayVector = [0.406, 0.306, -0.819]
 const lookAwayDistance = 6
 
 const scene = new THREE.Scene();

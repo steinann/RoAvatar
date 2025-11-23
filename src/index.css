@@ -91,6 +91,10 @@ body {
     flex-direction: row;
 }
 
+.main-left {
+    width: 420px;
+}
+
 .main-right {
     width: -webkit-fill-available;
     height: 100%;
@@ -384,4 +388,21 @@ body {
 
 .undo {
     margin-right: 5px;
+}
+
+.worn-items {
+    height: 120px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+}
+
+.worn-list-item .item-image {
+    width: 60px;
+}
+
+.worn-list-item {
+    width: 60px;
+    margin-right: 3px;
 }

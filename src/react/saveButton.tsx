@@ -15,6 +15,7 @@ export default function SaveButton({historyIndex,historyLength}: {historyIndex: 
         }
     }, [historyLength, lastSaveIndex])
 
+    //TODO: compare the current outfit with the last saved one
     return <button className={`save-button roboto-600${lastSaveIndex === historyIndex ? " save-button-inactive" : ""}`} onClick={() => {
         if (auth && lastSaveIndex !== historyIndex) {
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {

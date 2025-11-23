@@ -13,6 +13,8 @@ import SaveButton from './react/saveButton'
 import UndoRedo from './react/undoRedo'
 import SpecialCategory from './react/specialCategory'
 import { AvatarType } from './code/avatar/constant'
+import ItemCard from './react/itemCard'
+import { ItemInfo } from './code/avatar/asset'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 const outfitHistory: Outfit[] = []
@@ -148,6 +150,15 @@ function App() {
               <div className="save-and-history">
                 <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length}/>
                 <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
+              </div>
+              <div className='worn-items dark-scrollbar'>
+                {outfit.assets.map(asset => {
+                  return <ItemCard auth={auth} key={asset.id} className='worn-list-item' itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
+                    const newOutfit = outfit.clone()
+                    newOutfit.removeAsset(asset.id)
+                    setOutfit(newOutfit)
+                  }}/>
+                })}
               </div>
               {/*<Test_AvatarPreview/>*/}
             </div>
