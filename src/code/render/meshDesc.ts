@@ -249,7 +249,7 @@ class WrapLayerDesc {
 }
 
 export class MeshDesc {
-    size: Vector3 = new Vector3(1,1,1)
+    //size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
     mesh?: string
     hasSkinning: boolean = false
@@ -276,7 +276,7 @@ export class MeshDesc {
     }
 
     isSame(other: MeshDesc) {
-        const singularTrue = this.size.isSame(other.size) &&
+        const singularTrue = //this.size.isSame(other.size) &&
             this.scaleIsRelative === other.scaleIsRelative &&
             this.mesh === other.mesh &&
             this.adjustPosition.isSame(other.adjustPosition) &&
@@ -453,12 +453,15 @@ export class MeshDesc {
         threeMesh.castShadow = true
         threeMesh.geometry = geometry
 
+        threeMesh.scale.set(mesh.size[0], mesh.size[1], mesh.size[2])
+        /*
         if (!this.scaleIsRelative) {
             threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
         } else {
             const oldSize = mesh.size
             threeMesh.scale.set(this.size.X / oldSize[0], this.size.Y / oldSize[1], this.size.Z / oldSize[2])
         }
+        */
 
         return threeMesh
     }
@@ -474,7 +477,7 @@ export class MeshDesc {
             case "Part": {
                 const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
                 if (specialMesh) {
-                    this.size = specialMesh.Property("Scale") as Vector3
+                    //this.size = specialMesh.Property("Scale") as Vector3
     
                     switch (specialMesh.Property("MeshType")) {
                         case MeshType.FileMesh: {
@@ -483,7 +486,7 @@ export class MeshDesc {
                         }
                         case MeshType.Head: {
                             this.mesh = "rbxasset://avatar/heads/head.mesh"
-                            this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
+                            //this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
                             break
                         } //TODO: add the rest of the mesh types
                         default: {
@@ -530,7 +533,7 @@ export class MeshDesc {
                 const meshIdStr = child.Property("MeshId") as string
 
                 this.mesh = meshIdStr
-                this.size = child.Property("Size") as Vector3
+                //this.size = child.Property("Size") as Vector3
                 this.scaleIsRelative = true
 
                 //humanoid layered clothing
@@ -542,7 +545,7 @@ export class MeshDesc {
 
                     if (wrapLayer) {
                         this.scaleIsRelative = false
-                        this.size = new Vector3(1,1,1)
+                        //this.size = new Vector3(1,1,1)
 
                         const selfLayerOrder = wrapLayer.Prop("Order") as number
 

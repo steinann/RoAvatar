@@ -43,6 +43,7 @@ type OutfitJson = {
     scales?: ScaleJson //i hate this inconsistency, my code will always use scale
 }
 
+export type ScaleName = "height" | "width" | "head" | "depth" | "proportion" | "bodyType"
 export class Scale {
     height!: number //1
     width!: number //1

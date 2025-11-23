@@ -5,6 +5,7 @@ import { MeshDesc } from "./meshDesc";
 import { rad } from '../misc/misc';
 import type { Authentication } from '../api';
 import { traverseRigCFrame } from '../rblx/scale';
+import { MeshType } from '../rblx/constant';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -16,6 +17,7 @@ function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
 
 export class RenderableDesc {
     cframe: CFrame = new CFrame()
+    size: Vector3 = new Vector3(1,1,1)
     meshDesc: MeshDesc = new MeshDesc()
     materialDesc: MaterialDesc = new MaterialDesc()
 
@@ -39,11 +41,12 @@ export class RenderableDesc {
             this.adjustPosition.isSame(other.adjustPosition) &&
             this.adjustRotation.isSame(other.adjustRotation) &&
             this.adjustScale.isSame(other.adjustScale) &&
-            this.isBodyPart === other.isBodyPart
+            this.isBodyPart === other.isBodyPart &&
+            this.size.isSame(other.size)
     }
 
     needsRegeneration(other: RenderableDesc) {
-        return (!this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc))
+        return (!this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!this.size.isSame(other.size) && (this.isSkinned || other.isSkinned)))
     }
 
     fromRenderableDesc(other: RenderableDesc) {
@@ -51,7 +54,9 @@ export class RenderableDesc {
             throw new Error("These RenderableDesc objects have differences that require recompilation")
         }
 
+        //everything that doesnt require compilation should be here
         this.cframe = other.cframe
+        this.size = other.size
         this.adjustPosition = other.adjustPosition
         this.adjustRotation = other.adjustRotation
         this.adjustScale = other.adjustScale
@@ -103,6 +108,43 @@ export class RenderableDesc {
             }
         }
 
+        //mesh size
+        switch (child.className) {
+            case "Part": {
+                const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
+                if (specialMesh) {
+                    this.size = specialMesh.Property("Scale") as Vector3
+    
+                    switch (specialMesh.Property("MeshType")) {
+                        case MeshType.Head: {
+                            this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
+                            break
+                        }
+                        default: {
+                            break
+                        }
+                    }
+                }
+    
+                break
+            }
+            case "MeshPart": {
+                this.size = child.Property("Size") as Vector3
+
+                //humanoid layered clothing
+                if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {
+                    //wrap layer
+                    const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+
+                    if (wrapLayer) {
+                        this.size = new Vector3(1,1,1)
+                    }
+                }
+
+                break
+            }
+        }
+
         this.meshDesc.fromInstance(child)
         this.materialDesc.fromInstance(child)
     }
@@ -148,6 +190,14 @@ export class RenderableDesc {
 
         this.result = threeMesh
         this.originalScale = threeMesh.scale.clone()
+        
+        if (!this.meshDesc.scaleIsRelative) {
+            threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
+        } else {
+            const oldSize = this.originalScale
+            threeMesh.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+        }
+
         this.dispose(renderer, scene, originalResult)
 
         return threeMesh
@@ -164,16 +214,25 @@ export class RenderableDesc {
                 }
             }
 
+            //apply size
+            if (!this.meshDesc.scaleIsRelative) {
+                this.result.scale.set(this.size.X, this.size.Y, this.size.Z)
+            } else {
+                const oldSize = this.originalScale
+                this.result.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+            }
+
             //apply adjustment
-            this.result.scale.set(this.originalScale.x, this.originalScale.y, this.originalScale.z)
-            this.result.scale.multiply(new THREE.Vector3(this.adjustScale.X, this.adjustScale.Y, this.adjustScale.Z))
-            
+            this.result.scale.set(this.result.scale.x, this.result.scale.y, this.result.scale.z)
+            this.result.scale.multiply(new THREE.Vector3(this.adjustScale.X, this.adjustScale.Y, this.adjustScale.Z));
+
             const offsetCF = new CFrame()
             offsetCF.Position = this.adjustPosition.toVec3()
             offsetCF.Orientation = this.adjustRotation.toVec3()
             resultCF = resultCF.multiply(offsetCF)
 
             setTHREEMeshCF(this.result, resultCF)
+            this.result.updateMatrix()
         }
     }
 }

@@ -396,8 +396,10 @@ export function addInstance(instance: Instance, auth: Authentication) {
         if (oldDesc && !oldDesc.needsRegeneration(newDesc)) {
             //do nothing except update
             //console.log(`Updating ${instance.Prop("Name")}`)
-            oldDesc.fromRenderableDesc(newDesc)
-            oldDesc.updateResult()
+            if (!oldDesc.isSame(newDesc)) {
+                oldDesc.fromRenderableDesc(newDesc)
+                oldDesc.updateResult()
+            }
         } else {
             if (!isRenderingMesh.get(instance)) {
                 console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)

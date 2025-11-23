@@ -172,7 +172,7 @@ function App() {
 
               </ItemCategory>)
               :
-              <SpecialCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName}/>
+              <SpecialCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
               }
             </div>
           </div>
