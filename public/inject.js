@@ -13,3 +13,4 @@ contentElement.appendChild(iframe)
 contentElement.style.paddingTop = "0"
 contentElement.style.marginTop = "0"
 document.getElementsByTagName("body")[0].style.overflow = "hidden"
+document.getElementsByTagName("title")[0].innerText = "RoAvatar - Roblox"
