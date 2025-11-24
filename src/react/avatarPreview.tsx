@@ -8,6 +8,7 @@ import { Instance, RBX } from "../code/rblx/rbx"
 import { Outfit } from "../code/avatar/outfit"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import AnimatorWrapper from "../code/rblx/instance/Animator"
+import { base64ToArrayBuffer } from "../code/misc/misc"
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -104,14 +105,36 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
                     if (result) {
                         const urlParams = new URLSearchParams(window.location.search)
                         const urlId = Number(urlParams.get("id"))
+                        const base64Json = urlParams.get("base64")
+                        const buffer = urlParams.get("buffer")
 
-                        const idToUse = urlId || result.id
-                        API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
-                            if (result instanceof Outfit) { 
-                                setOutfit(result)
+                        if (buffer) {
+                            console.log("buffer", buffer)
+                            const arrayBuffer = base64ToArrayBuffer(buffer)
+                            const outfit = new Outfit()
+                            outfit.fromBuffer(arrayBuffer, auth).then(() => {
+                                setOutfit(outfit)
                                 hasLoadedAvatar = true
-                            } 
-                        })
+                            })
+                        }
+
+                        if (base64Json && !buffer) {
+                            const jsonData = atob(base64Json)
+                            const outfit = new Outfit()
+                            outfit.fromJson(JSON.parse(jsonData))
+                            setOutfit(outfit)
+                            hasLoadedAvatar = true
+                        }
+
+                        if (!base64Json && !buffer) {
+                            const idToUse = urlId || result.id
+                            API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
+                                if (result instanceof Outfit) { 
+                                    setOutfit(result)
+                                    hasLoadedAvatar = true
+                                } 
+                            })
+                        }
                     }
                 })
             } else {

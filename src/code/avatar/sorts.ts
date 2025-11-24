@@ -102,6 +102,9 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Dynamic Heads": new SortInfo([new ItemSort(2, "Outfit")]),
             "Heads": new SortInfo([new ItemSort(17)]),
             "Faces": new SortInfo([new ItemSort(18)]),
+            /*"Eyebrows": new SortInfo([new ItemSort(AssetTypeNameToId.get("DynamicHead") || 0)]),
+            "Eyelashes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyelashAccessory") || 0)]),
+            "Mood": new SortInfo([new ItemSort(AssetTypeNameToId.get("MoodAnimation") || 0)]),*/
         },
         "Body": {
             "Skin Color": new SpecialInfo("Skin Color"),

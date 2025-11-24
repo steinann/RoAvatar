@@ -15,6 +15,7 @@ import SpecialCategory from './react/specialCategory'
 import { AvatarType } from './code/avatar/constant'
 import ItemCard from './react/itemCard'
 import { ItemInfo } from './code/avatar/asset'
+//import { arrayBufferToBase64 } from './code/misc/misc'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
 const outfitHistory: Outfit[] = []
@@ -56,6 +57,18 @@ function App() {
   }
 
   const setOutfit = useCallback((newOutfit: Outfit) => {
+    window.outfit = newOutfit
+
+    //if (!auth) return
+    /*const outfitBuffer = newOutfit.toBuffer()
+    new Outfit().fromBuffer(outfitBuffer, auth).then((fromBufferOutfit) => {
+      console.log(outfitBuffer)
+      console.log(arrayBufferToBase64(outfitBuffer))
+      console.log(newOutfit)
+      console.log(fromBufferOutfit)
+      console.log("compare them!")
+    })*/
+
     if (outfitHistory.length > historyIndex + 1) {
       outfitHistory.splice(historyIndex + 1)
     }
@@ -67,7 +80,10 @@ function App() {
     setCanUndo(historyIndex + 1 > 0)
     setCanRedo(historyIndex + 1 < outfitHistory.length - 1)
     //console.log(outfitHistory, outfitHistoryIndex)
+    console.log(newOutfit.toBuffer())
   }, [historyIndex])
+
+  window.setOutfit = setOutfit
 
   function setCurrentAnimName(name: string) {
     //switch to compatible animation if avatar is r6
@@ -180,6 +196,13 @@ function App() {
       </AuthContext>
     </>
   )
+}
+
+declare global {
+    interface Window {
+        outfit: Outfit;
+        setOutfit: (a: Outfit) => void;
+    }
 }
 
 export default App

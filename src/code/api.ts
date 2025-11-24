@@ -407,6 +407,50 @@ const API = {
                 return response
             }
         },
+        SaveOutfit: async function(auth: Authentication, outfit: Outfit) {
+            const requestUrl = `https://avatar.roblox.com/${BODYCOLOR3 ? "v3" : "v2"}/outfits/create`
+
+            const response = await RBLXPost(requestUrl, auth, outfit.toCleanJson())
+
+            if (response.status === 200) {
+                //AlertMessage("Successfully saved outfit to Roblox", false, 3000)
+                return response
+            } else if (response.status === 403) {
+                //AlertMessage("Max outfits limit reached", true, 3000)
+                return response
+            } else {
+                console.log("Trying without unowned assets...")
+
+                const response = await RBLXPost(requestUrl, auth, outfit.toCleanJson(true))
+                /*if (response.status != 200) {
+                    let body = response.json()
+                    if (body) {
+                        if (body.errors) {
+                            if (body.errors[0]) {
+                                if (body.errors[0].code == 0) {
+                                    AlertMessage("Invalid outfit (Invalid assets)", true, 3000)
+                                } else if (body.errors[0].code == 4) {
+                                    AlertMessage("Invalid outfit (Invalid Name)", true, 3000)
+                                } else {
+                                    AlertMessage("Invalid outfit", true, 3000)
+                                }
+                            } else {
+                                AlertMessage("Invalid outfit", true, 3000)
+                            }
+                        } else {
+                            AlertMessage("Invalid outfit", true, 3000)
+                        }
+                    } else {
+                        AlertMessage("Invalid outfit", true, 3000)
+                    }
+                } else {
+                    AlertMessage("Successfully saved outfit to Roblox", false, 3000)
+                }*/
+                return response
+            }
+
+            return response
+        },
         GetEmotes: async function(auth: Authentication): Promise<Response> {
             return await RBLXGet("https://avatar.roblox.com/v1/emotes", auth)
         },
@@ -501,6 +545,24 @@ const API = {
                     return response
                 }
             }
+        }
+    },
+    "Inventory": {
+        GetInventory: async function(auth: Authentication, assetTypes: string[], cursor?: string) {
+            let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?assetTypes="
+
+            for (let i = 0; i < assetTypes.length; i++) {
+                requestUrl += assetTypes[i]
+                if (i < assetTypes.length - 1) {
+                    requestUrl += ","
+                }
+            }
+
+            if (cursor) {
+                requestUrl += `&cursor=${cursor}`
+            }
+
+            return RBLXGet(requestUrl, auth)
         }
     },
     "Users": {

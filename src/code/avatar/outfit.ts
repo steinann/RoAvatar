@@ -1,8 +1,9 @@
 //Dependencies: asset.js
 
 import { API, type Authentication } from "../api";
+import SimpleView from "../lib/simple-view";
 import { BODYCOLOR3 } from "../misc/flags"
-import { download, hexToRgb } from "../misc/misc";
+import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
 import { Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType } from "./asset";
 import type { AssetJson } from "./asset"
@@ -104,6 +105,7 @@ export class Scale {
     }
 }
 
+type BodyColor3Name = "headColor3" | "torsoColor3" | "rightArmColor3" | "leftArmColor3" | "rightLegColor3" | "leftLegColor3"
 export class BodyColor3s {
     colorType: ColorType //Color3
 
@@ -879,11 +881,276 @@ export class Outfit {
             asset.meta = new AssetMeta()
             asset.meta.order = LayeredClothingAssetOrder[asset.assetType.id]
         }
-        //asset.assetType.name = AssetTypes[assetDetails.AssetTypeId]
+        asset.assetType.name = AssetTypes[assetDetails.AssetTypeId]
 
         this.assets.push(asset)
 
         return true
+    }
+
+    async fromBuffer(buffer: ArrayBuffer, auth: Authentication) {
+        const view = new SimpleView(buffer)
+
+        //flags
+        const outfitFlags = view.readUint8()
+        
+        const allSameColor = !!(outfitFlags & 2)
+        this.playerAvatarType = (outfitFlags & 1) ? AvatarType.R15 : AvatarType.R6
+
+        //scale
+        this.scale.height = view.readUint8() / 100
+        this.scale.width = view.readUint8() / 100
+        this.scale.depth = view.readUint8() / 100
+        this.scale.head = view.readUint8() / 100
+        const rawBodyType = view.readUint8()
+        this.scale.bodyType = rawBodyType / 100
+        if (rawBodyType > 0) {
+            this.scale.proportion = view.readUint8() / 100
+        }
+
+        //body colors
+        this.bodyColors = new BodyColor3s()
+        if (allSameColor) {
+            const r = view.readUint8()
+            const g = view.readUint8()
+            const b = view.readUint8()
+            const color = rgbToHex(r,g,b)
+            this.bodyColors.setAll(color)
+        } else {
+            const bodyColorNames: BodyColor3Name[] = ["headColor3", "torsoColor3", "leftArmColor3", "rightArmColor3", "leftLegColor3", "rightLegColor3"]
+            for (const bodyColor of bodyColorNames) {
+                const r = view.readUint8()
+                const g = view.readUint8()
+                const b = view.readUint8()
+                const color = rgbToHex(r,g,b)
+                this.bodyColors[bodyColor] = color
+            }
+        }
+
+        //assets
+        while (view.viewOffset < view.buffer.byteLength) {
+            const flags = view.readUint8()
+            let id = 0
+
+            if (flags & 16) {
+                id = Number(view.readUint64())
+            } else {
+                id = view.readUint32()
+            }
+
+            await this.addAssetId(auth, id)
+            
+            let asset: Asset | undefined = undefined
+            for (const assetIn of this.assets) {
+                if (assetIn.id === id) {
+                    asset = assetIn
+                }
+            }
+
+            //order
+            if (flags & 1) {
+                const order = view.readUint8()
+                if (asset) {
+                    if (!asset.meta) asset.meta = new AssetMeta()
+                    asset.meta.order = order
+                }
+            }
+
+            //pos
+            if (flags & 2) {
+                const posX = mapNum(view.readUint8(), 0,255, -0.25,0.25)
+                const posY = mapNum(view.readUint8(), 0,255, -0.25,0.25)
+                const posZ = mapNum(view.readUint8(), 0,255, -0.25,0.25)
+                if (asset) {
+                    if (!asset.meta) asset.meta = new AssetMeta()
+                    asset.meta.position = {X: posX, Y: posY, Z: posZ}
+                }
+            }
+
+            //rot
+            if (flags & 4) {
+                const rotX = mapNum(view.readUint8(), 0,255, -30,30)
+                const rotY = mapNum(view.readUint8(), 0,255, -30,30)
+                const rotZ = mapNum(view.readUint8(), 0,255, -30,30)
+                if (asset) {
+                    if (!asset.meta) asset.meta = new AssetMeta()
+                    asset.meta.rotation = {X: rotX, Y: rotY, Z: rotZ}
+                }
+            }
+
+            //scale
+            if (flags & 8) {
+                const scaleX = mapNum(view.readUint8(), 0,255, 0.5,2)
+                const scaleY = mapNum(view.readUint8(), 0,255, 0.5,2)
+                const scaleZ = mapNum(view.readUint8(), 0,255, 0.5,2)
+                if (asset) {
+                    if (!asset.meta) asset.meta = new AssetMeta()
+                    asset.meta.scale = {X: scaleX, Y: scaleY, Z: scaleZ}
+                }
+            }
+        }
+
+        return this
+    }
+
+    toBuffer(): ArrayBuffer {
+        //get right bodycolors
+        let bodyColors: BodyColor3s | undefined = undefined
+        if (this.bodyColors instanceof BodyColor3s) {
+            bodyColors = this.bodyColors
+        } else {
+            bodyColors = this.bodyColors.toColor3()
+        }
+
+        //calculate buffer size
+        let bufferSize = 1+5+3
+        if (Math.floor(this.scale.bodyType * 100) > 0) bufferSize += 1
+        const m = bodyColors.headColor3;
+        const allSameColor = (bodyColors.headColor3 === m && bodyColors.torsoColor3 === m && bodyColors.leftArmColor3 === m && bodyColors.rightArmColor3 === m && bodyColors.leftLegColor3 === m && bodyColors.rightLegColor3)
+        if (!allSameColor) bufferSize += 15
+        for (const asset of this.assets) {
+            const order = asset.meta?.order
+            let pos = asset.meta?.position
+            let rot = asset.meta?.rotation
+            let scale = asset.meta?.scale
+
+            if (pos && (Math.abs(pos.X) + Math.abs(pos.Y) + Math.abs(pos.Z)) < 0.01) {
+                pos = undefined
+            }
+
+            if (rot && (Math.abs(rot.X) + Math.abs(rot.Y) + Math.abs(rot.Z)) < 0.01) {
+                rot = undefined
+            }
+
+            if (scale && (Math.round(scale.X * 100) === 100 && Math.round(scale.Y * 100) === 100 && Math.round(scale.Z * 100)) === 100) {
+                scale = undefined
+            }
+
+            bufferSize += 5
+            if (asset.id > Math.pow(2,32)) bufferSize += 4
+
+            if (order !== undefined) bufferSize += 1
+            if (pos) bufferSize += 3
+            if (rot) bufferSize += 3
+            if (scale) bufferSize += 3
+        }
+
+        //create buffer
+        console.log(`Outfit is ${bufferSize} bytes`)
+        const buffer = new ArrayBuffer(bufferSize)
+        const view = new SimpleView(buffer)
+
+        //flags 1 byte
+        let outfitFlags = 0
+        if (this.playerAvatarType === AvatarType.R15) outfitFlags += 1
+        if (allSameColor) outfitFlags += 2
+        view.writeUint8(outfitFlags)
+
+        //scale 5-6 bytes
+        view.writeUint8(Math.floor(this.scale.height * 100))
+        view.writeUint8(Math.floor(this.scale.width * 100))
+        view.writeUint8(Math.floor(this.scale.depth * 100))
+        view.writeUint8(Math.floor(this.scale.head * 100))
+        view.writeUint8(Math.floor(this.scale.bodyType * 100))
+        if (Math.floor(this.scale.bodyType * 100) > 0) {
+            view.writeUint8(Math.floor(this.scale.proportion * 100))
+        }
+
+        //body colors 3-18 bytes
+        const headColor = hexToRgb(bodyColors.headColor3) || {r:0,g:0,b:0}
+        view.writeUint8(Math.floor(headColor.r * 255))
+        view.writeUint8(Math.floor(headColor.g * 255))
+        view.writeUint8(Math.floor(headColor.b * 255))
+
+        if (!allSameColor) {
+            const torsoColor = hexToRgb(bodyColors.torsoColor3) || {r:0,g:0,b:0}
+            view.writeUint8(Math.floor(torsoColor.r * 255))
+            view.writeUint8(Math.floor(torsoColor.g * 255))
+            view.writeUint8(Math.floor(torsoColor.b * 255))
+
+            const leftArmColor = hexToRgb(bodyColors.leftArmColor3) || {r:0,g:0,b:0}
+            view.writeUint8(Math.floor(leftArmColor.r * 255))
+            view.writeUint8(Math.floor(leftArmColor.g * 255))
+            view.writeUint8(Math.floor(leftArmColor.b * 255))
+
+            const rightArmColor = hexToRgb(bodyColors.rightArmColor3) || {r:0,g:0,b:0}
+            view.writeUint8(Math.floor(rightArmColor.r * 255))
+            view.writeUint8(Math.floor(rightArmColor.g * 255))
+            view.writeUint8(Math.floor(rightArmColor.b * 255))
+
+            const leftLegColor = hexToRgb(bodyColors.leftLegColor3) || {r:0,g:0,b:0}
+            view.writeUint8(Math.floor(leftLegColor.r * 255))
+            view.writeUint8(Math.floor(leftLegColor.g * 255))
+            view.writeUint8(Math.floor(leftLegColor.b * 255))
+
+            const rightLegColor = hexToRgb(bodyColors.rightLegColor3) || {r:0,g:0,b:0}
+            view.writeUint8(Math.floor(rightLegColor.r * 255))
+            view.writeUint8(Math.floor(rightLegColor.g * 255))
+            view.writeUint8(Math.floor(rightLegColor.b * 255))
+        }
+
+        //assets 5-15 bytes each
+        for (const asset of this.assets) {
+            const id = asset.id
+
+            const order = asset.meta?.order
+            let pos = asset.meta?.position
+            let rot = asset.meta?.rotation
+            let scale = asset.meta?.scale
+
+            if (pos && (Math.abs(pos.X) + Math.abs(pos.Y) + Math.abs(pos.Z)) < 0.01) {
+                pos = undefined
+            }
+
+            if (rot && (Math.abs(rot.X) + Math.abs(rot.Y) + Math.abs(rot.Z)) < 0.01) {
+                rot = undefined
+            }
+
+            if (scale && (Math.round(scale.X * 100) === 100 && Math.round(scale.Y * 100) === 100 && Math.round(scale.Z * 100)) === 100) {
+                scale = undefined
+            }
+
+            const idIs64bit = id > Math.pow(2,32)
+
+            let flags = 0
+            if (order !== undefined) flags += 1
+            if (pos) flags += 2
+            if (rot) flags += 4
+            if (scale) flags += 8
+            if (idIs64bit) flags += 16
+
+            view.writeUint8(flags)
+
+            if (!idIs64bit) {
+                view.writeUint32(id)
+            } else {
+                view.writeUint64(BigInt(id))
+            }
+
+            if (order !== undefined) {
+                view.writeUint8(order)
+            }
+
+            if (pos) {
+                view.writeUint8(Math.floor(mapNum(pos.X, -0.25,0.25, 0,255)))
+                view.writeUint8(Math.floor(mapNum(pos.Y, -0.25,0.25,0,255)))
+                view.writeUint8(Math.floor(mapNum(pos.Z, -0.25,0.25, 0,255)))
+            }
+
+            if (rot) {
+                view.writeUint8(Math.floor(mapNum(rot.X, -30,30, 0,255)))
+                view.writeUint8(Math.floor(mapNum(rot.Y, -30,30, 0,255)))
+                view.writeUint8(Math.floor(mapNum(rot.Z, -30,30, 0,255)))
+            }
+
+            if (scale) {
+                view.writeUint8(Math.floor(mapNum(scale.X, 0.5,2, 0,255)))
+                view.writeUint8(Math.floor(mapNum(scale.Y, 0.5,2, 0,255)))
+                view.writeUint8(Math.floor(mapNum(scale.Z, 0.5,2, 0,255)))
+            }
+        }
+
+        return view.buffer
     }
 
     /*wear(auth: Authentication, onlyItems: boolean) {
@@ -1142,6 +1409,7 @@ export class Outfit {
         return totalPrice
     }*/
 }
+
 
 /*class PurchaseInfo {
     itemId

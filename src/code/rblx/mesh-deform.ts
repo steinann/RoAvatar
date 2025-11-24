@@ -419,10 +419,10 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
 
 //discover new algorithm that works better
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
-    console.time("total")
+    //console.time("total")
 
     //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
-    console.time("inflation")
+    //console.time("inflation")
     /*
     for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
         const ref_vert = ref_mesh.coreMesh.verts[i]
@@ -440,12 +440,12 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
     for (const vert of dist_mesh.coreMesh.verts) {
         vert.position = add(vert.position, multiply(vert.normal, [0.05,0.05,0.05]))
     }
-    console.timeEnd("inflation")
+    //console.timeEnd("inflation")
 
-    console.time("offsetArray")
+    //console.time("offsetArray")
     const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
-    console.timeEnd("offsetArray")
-    console.time("weights")
+    //console.timeEnd("offsetArray")
+    //console.time("weights")
     let allWeights = undefined
     if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
         allWeights = WeightCache.get(cacheId)
@@ -456,9 +456,9 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
             WeightCache.set(cacheId, allWeights)
         }
     }
-    console.timeEnd("weights")
+    //console.timeEnd("weights")
 
-    console.time("offset")
+    //console.time("offset")
 
 
     for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
@@ -481,9 +481,9 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
         vert.position = add(vert.position, totalOffset)
     }
-    console.timeEnd("offset")
+    //console.timeEnd("offset")
 
-    console.timeEnd("total")
+    //console.timeEnd("total")
 }
 
 

@@ -229,4 +229,39 @@ function hexToColor3(hex: string) {
     return new Color3(rgb?.r, rgb?.g, rgb?.b)
 }
 
+export function rgbToHex(r: number, g: number, b: number) {
+    // Helper function to convert a single color component to a two-digit hex string
+    function componentToHex(c: number) {
+        const hex = c.toString(16); // Convert decimal to hexadecimal
+        return hex.length === 1 ? "0" + hex : hex; // Prepend '0' if only one digit
+    }
+
+    // Combine the individual hex components with a '' prefix
+    return ("" + componentToHex(r) + componentToHex(g) + componentToHex(b)).toUpperCase();
+}
+
+//Source: https://stackoverflow.com/questions/9267899/how-can-i-convert-an-arraybuffer-to-a-base64-encoded-string
+export function arrayBufferToBase64(buffer: ArrayBuffer) {
+    let binary = '';
+    const bytes = new Uint8Array( buffer );
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
+    }
+    return btoa( binary );
+}
+
+export function base64ToArrayBuffer(base64: string) {
+    const binaryString = atob(base64);
+
+    const length = binaryString.length;
+    const bytes = new Uint8Array(length);
+
+    for (let i = 0; i < length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+}
+
 export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

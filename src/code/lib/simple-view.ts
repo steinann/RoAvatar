@@ -46,6 +46,18 @@ export default class SimpleView {
         return value
     }
 
+    writeUint64(value: bigint, littleEndian = true) {
+        this.view.setBigUint64(this.viewOffset, value, littleEndian)
+        this.viewOffset += 8
+    }
+
+    readUint64(littleEndian = true): bigint {
+        const value = this.view.getBigUint64(this.viewOffset, littleEndian)
+        this.viewOffset += 8
+        
+        return value
+    }
+
     writeInt32(value: number, littleEndian = true) {
         value = Math.max(value, -2147483648)
         value = Math.min(value, 2147483647)

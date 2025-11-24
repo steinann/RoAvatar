@@ -402,7 +402,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
             }
         } else {
             if (!isRenderingMesh.get(instance)) {
-                console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
+                //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
 
                 newDesc.result = oldDesc?.result //this is done so that the result can be disposed if a removeInstance is called during generation
                 renderables.set(instance, newDesc)
@@ -439,7 +439,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                                 scene.add(result)
                             }
 
-                            console.log(`Generated ${instance.Prop("Name")} ${instance.id}`)
+                            //console.log(`Generated ${instance.Prop("Name")} ${instance.id}`)
 
                             isRenderingMesh.set(instance, false)
                             addInstance(instance, auth)
