@@ -4,8 +4,6 @@ R15 --> Slim = R15_Wide * R15_Proportions
 
 */
 
-//TODO: BUG: Fix issue with step height not scaling the legs properly!
-
 import { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
 import { lerp, lerpVec3, specialClamp } from "../misc/misc"
@@ -787,11 +785,12 @@ function BuildJointsFromAttachments(self: RigData, rootPart: Instance, character
 			const currentScale = (part.Prop("Size") as Vector3).divide(originalSize)
 			const totalScale = currentScale.multiply(adjustScale)
 			part.setProperty("Size", originalSize.multiply(totalScale))
-
+			
 			//scale attachments
 			for (const child of part.GetChildren()) {
-				const attachment = child.FindFirstChildOfClass("Attachment")
-				if (attachment) {
+				//const attachment = child.FindFirstChildOfClass("Attachment")
+				const attachment = child
+				if (attachment && attachment.className === "Attachment") {
 					const originalPosition = attachment.FindFirstChild(originalPositionName)
 					if (originalPosition) {
 						const originalP = originalPosition.Prop("Value") as Vector3
