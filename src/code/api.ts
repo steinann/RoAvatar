@@ -335,7 +335,7 @@ const API = {
                 })
             })
         },
-        SaveOutfitToRoblox: async function(auth: Authentication, outfit: Outfit) {
+        SaveOutfitNoRetry: async function(auth: Authentication, outfit: Outfit) {
             const requestUrl = `https://avatar.roblox.com/${BODYCOLOR3 ? "v3" : "v2"}/outfits/create`
 
             return RBLXPost(requestUrl, auth, outfit.toCleanJson())
