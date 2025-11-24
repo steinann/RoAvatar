@@ -220,7 +220,7 @@ function toChunkPos(v0: Vec3, size: Vec3, widthSplit: number, heightSplit: numbe
 }
 
 
-export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) {
+export function createWeightsForMeshChunkedOLD(mesh: FileMesh, ref_mesh: FileMesh) {
     const sigma = ref_mesh.size[2] / 0.838 * 0.04
     
     //create base chunks
@@ -353,6 +353,162 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
     return weightChunks
 }
 
+export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) {
+    const sigma = ref_mesh.size[2] / 0.838 * 0.04
+    
+    //create base chunks
+    const heightRatio = Math.min(Math.max(ref_mesh.size[1] / ref_mesh.size[0],0.5),2)
+
+    const widthSplit = mesh.coreMesh.verts.length < 1500 ? 8 : 12
+    const heightSplit = Math.floor(widthSplit * heightRatio)
+    const depthSplit = 1
+
+    const lowerBound: Vec3 = [0,0,0]
+    const higherBound: Vec3 = [widthSplit - 1, heightSplit - 1, depthSplit - 1]
+
+    const baseChunks: MeshChunk[] = new Array(widthSplit * heightSplit * depthSplit)
+    let i = 0;
+    for (let x = 0; x < widthSplit; x++) {
+        for (let y = 0; y < heightSplit; y++) {
+            for (let z = 0; z < depthSplit; z++) {
+                const baseChunk: MeshChunk = {
+                    pos: [x,y,z],
+                    indices: [],
+                }
+
+                baseChunks[i] = baseChunk
+                i++
+            }
+        }
+    }
+
+    let [meshLowerBound, meshHigherBound] = mesh.bounds
+    meshLowerBound = toChunkPos(meshLowerBound, mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound)
+    meshHigherBound = toChunkPos(meshHigherBound, mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound)
+
+    /*meshLowerBound[0] -= 1
+    meshLowerBound[1] -= 1
+    meshLowerBound[2] -= 1
+    meshHigherBound[0] += 1
+    meshHigherBound[1] += 1
+    meshHigherBound[2] += 1*/
+
+    const usedBaseChunks: MeshChunk[] = []
+    for (let i = 0; i < baseChunks.length; i++) {
+        const baseChunk = baseChunks[i]
+        if (baseChunk.pos[0] >= meshLowerBound[0] && baseChunk.pos[1] >= meshLowerBound[1] && baseChunk.pos[2] >= meshLowerBound[2] &&
+            baseChunk.pos[0] <= meshHigherBound[0] && baseChunk.pos[1] <= meshHigherBound[1] && baseChunk.pos[2] <= meshHigherBound[2]
+        ) {
+            usedBaseChunks.push(baseChunk)
+        }
+    }
+    
+    /*
+    const vert = ref_mesh.coreMesh.verts[2]
+    const chunkPos = clamp(floor(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound)    
+
+    console.log(vert.position, ref_mesh.size)
+    console.log(chunkPos)
+    console.log("---")
+    console.log(toChunkPos(vert.position, ref_mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound))
+    */
+
+    for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
+        const vert = ref_mesh.coreMesh.verts[i]
+        const chunkPos = clamp(minus(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit]), [0.5,0.5,0.5]), lowerBound, higherBound)
+        /*const chunkPos: Vec3 = clamp([
+            mapNum(vert.position[0], mesh.bounds[0][0], mesh.bounds[1][0], lowerBound[0], higherBound[0]) + 0.5,
+            mapNum(vert.position[1], mesh.bounds[0][1], mesh.bounds[1][1], lowerBound[1], higherBound[1]) + 0.5,
+            mapNum(vert.position[2], mesh.bounds[0][2], mesh.bounds[1][2], lowerBound[2], higherBound[2]) + 0.5,
+        ],lowerBound,higherBound)
+        */
+
+        for (let j = 0; j < usedBaseChunks.length; j++) {
+            const baseChunk = usedBaseChunks[j]
+            if (distance(baseChunk.pos, chunkPos) <= Math.sqrt(3)) {
+                baseChunk.indices.push(i)
+            }
+        }
+    }
+
+    //make sure every chunk has at least some indices by making ones without any indices setting refererences to the closest ones with
+    const chunkToCloseChunk = new Map<MeshChunk,MeshChunk>()
+
+    for (const baseChunk of usedBaseChunks) {
+        if (baseChunk.indices.length < 10) {
+            let closestChunk = undefined
+            let lastDistance = 99999
+
+            for (const baseChunk2 of usedBaseChunks) {
+                const dist = distance(baseChunk2.pos, baseChunk.pos)
+                if (dist < lastDistance && baseChunk2.indices.length > 10) {
+                    lastDistance = dist
+                    closestChunk = baseChunk2
+                }
+            }
+
+            if (closestChunk) {
+                chunkToCloseChunk.set(baseChunk, closestChunk)
+            }
+        }
+    }
+
+    for (const baseChunk of usedBaseChunks) {
+        const closeChunk = chunkToCloseChunk.get(baseChunk)
+        if (closeChunk) {
+            baseChunk.indices = closeChunk.indices
+        }
+    }
+
+
+    //calculate weights
+    const weightChunks: WeightChunk[] = new Array(mesh.coreMesh.verts.length)
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+        const chunkPos = clamp(floor(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound)
+        /*const chunkPos: Vec3 = floor(clamp([
+            mapNum(vert.position[0], mesh.bounds[0][0], mesh.bounds[1][0], lowerBound[0], higherBound[0]),
+            mapNum(vert.position[1], mesh.bounds[0][1], mesh.bounds[1][1], lowerBound[1], higherBound[1]),
+            mapNum(vert.position[2], mesh.bounds[0][2], mesh.bounds[1][2], lowerBound[2], higherBound[2]),
+        ],lowerBound,higherBound))*/
+        const [x,y,z] = chunkPos
+
+        const baseChunk = baseChunks[x * (heightSplit * depthSplit) + y * depthSplit + z]
+        const weights = new Array(baseChunk.indices.length)
+        let weightSum = 0
+
+        for (let i = 0; i < baseChunk.indices.length; i++) {
+            const index = baseChunk.indices[i]
+            const weight = gaussian_rbf(vert.position, ref_mesh.coreMesh.verts[index].position, sigma)
+            weightSum += weight
+            weights[i] = weight
+        }
+
+        if (weightSum !== 0) {
+            for (let i = 0; i < weights.length; i++) {
+                weights[i] /= weightSum
+            }
+        }/* else {
+            if (i === 0) {
+                console.log("b")
+                console.log(vert.position)
+                console.log(clamp((multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound))
+                console.log(i, baseChunk, chunkPos)
+            }
+        }*/
+
+        const weightChunk = {
+            meshChunk: baseChunk,
+            weights: weights,
+        }
+
+        weightChunks[i] = weightChunk
+    }
+
+    return weightChunks
+}
+
 /**THIS FUNCTION IS SO EXPENSIVE IT NEEDS TO BE ASYNC SO JS DOESNT CRASH; TODO: OPTIMIZE!!!
 */
 export async function createWeightsForMesh(mesh: FileMesh, ref_mesh: FileMesh) {
@@ -419,7 +575,7 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
 
 //discover new algorithm that works better
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
-    //console.time("total")
+    console.time("total")
 
     //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
     //console.time("inflation")
@@ -483,7 +639,7 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
     }
     //console.timeEnd("offset")
 
-    //console.timeEnd("total")
+    console.timeEnd("total")
 }
 
 

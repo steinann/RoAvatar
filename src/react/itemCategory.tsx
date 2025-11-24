@@ -43,7 +43,6 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
-            console.log("starting items", loadId, nextPageToken)
             API.Avatar.GetAvatarInventory(auth, sortOption, nextPageToken, itemInfos).then(response => {
                 if (loadId !== lastLoadId) return
                 if (response.status === 200) {
@@ -55,13 +54,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                         } else {
                             setNextPageToken(null)
                         }
-
-                        console.log("setting items", loadId)
-                        if (nextPageToken !== null) {
-                            console.log(nextPageToken)
-                        } else {
-                            console.log("null")
-                        }
+                        
                         const newItems = body.avatarInventoryItems
                         setItems(prev => [...prev, ...newItems])
                     }).finally(() => {
