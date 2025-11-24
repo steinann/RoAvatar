@@ -195,7 +195,7 @@ export class CFrame {
         return this
     }
 
-    inverse() { //TODO: check that this is ok (using invert instead of getInverse)
+    inverse() {
         const thisM = new THREE.Matrix4().fromArray(this.getMatrix())
         const inverse = thisM.clone()
         inverse.invert()

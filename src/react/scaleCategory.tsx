@@ -5,7 +5,7 @@ import { mapNum } from "../code/misc/misc"
 import type { Outfit, ScaleName } from "../code/avatar/outfit"
 import { AvatarType } from "../code/avatar/constant"
 
-//TODO: Make changing scale less laggy by not requiring mesh compilation for skinnedmeshes and having a cooldown on layered clothing
+//TODO: Make changing scale less laggy by not requiring mesh compilation for skinnedmeshes
 function ScaleInput({outfit, setOutfit, _setOutfit, scale, scaleName, min, max}: {outfit: Outfit, setOutfit: (a: Outfit) => void, _setOutfit: (a: Outfit) => void, scale: ScaleName, scaleName: string, min: number, max: number}): React.JSX.Element {
     return <>
         <div className="scale-info">
