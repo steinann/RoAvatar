@@ -6,6 +6,7 @@ import ItemCategory from "./itemCategory"
 import BarCategory from "./barCategory"
 import { AuthContext } from "./context/auth-context"
 import React from "react"
+import ItemCard from "./itemCard"
 
 function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemInfo }: {setAnimName: (a: string) => void, setCurrentSlot: (a: number) => void, currentSlot: number, slot: number, auth?: Authentication, itemInfo?: ItemInfo}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
@@ -28,7 +29,8 @@ function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemIn
 
     let cardImage: React.JSX.Element | null = imageUrl !== "loading" ? (<img src={imageUrl}></img>) : (<div className="item-loading"></div>)
     if (!itemInfo) {
-        cardImage = null
+        //cardImage = null
+        cardImage = <span className="emote-box-empty roboto-600">{slot}</span>
     }
 
     return <button title={itemInfo ? itemInfo.name : "No emote equipped"} className={`emote-box${currentSlot === slot ? " emote-equipped" : ""}`} onClick={() => {
@@ -119,7 +121,30 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {c
         setEquippedEmotes(newEquippedEmottes)
 
         API.Avatar.EquipEmote(auth, item.id, currentSlot)
-    }}/>
+    }}>
+        <ItemCard forceImage="../assets/remove.png" auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
+            if (!auth) return
+            setAnimName(`idle.Animation1`)
+
+            if (!equippedEmotes) return
+
+            const newEquippedEmottes = []
+
+            for (const emoteInfo of equippedEmotes) {
+                if (emoteInfo.position !== currentSlot) {
+                    newEquippedEmottes.push({
+                        assetId: emoteInfo.assetId,
+                        assetName: emoteInfo.assetName,
+                        position: emoteInfo.position,
+                    })
+                }
+            }
+
+            setEquippedEmotes(newEquippedEmottes)
+
+            API.Avatar.UnequipEmote(auth, currentSlot)
+        }}/>
+    </ItemCategory>
     </>)
 
     return <>

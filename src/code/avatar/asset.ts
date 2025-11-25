@@ -169,7 +169,7 @@ export const BundleTypes = [
     "AnimationPack"
 ]
 
-type ItemType = "Asset" | "Bundle"
+type ItemType = "Asset" | "Bundle" | "None"
 export class ItemInfo {
     itemType: ItemType
     type: string

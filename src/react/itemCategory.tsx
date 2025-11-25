@@ -80,7 +80,7 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({categoryType, subCategoryType, setOutfit, setAnimName, onClickItem}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void}): React.JSX.Element {
+export default function ItemCategory({children, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem}: React.PropsWithChildren & {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -209,6 +209,7 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit, 
     return (
     <div className="container">
         <div ref={scrollDivRef} onScroll={onScroll} className="item-container dark-scrollbar">
+            {children}
             {itemComponents}
             { isLoading ? (new Array(20).fill(0).map(() => (
                 <ItemCard/>

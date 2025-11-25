@@ -4,12 +4,17 @@ import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
 import RadialButton from "./radialButton";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, includeName = true}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, includeName?: boolean}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, includeName = true, forceImage = undefined}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, includeName?: boolean, forceImage?: string}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     const nameRef = useRef(null)
 
     useEffect(() => {
+        if (forceImage && imageUrl !== forceImage) {
+            setImageUrl(forceImage)
+            return
+        }
+
         if (auth && itemInfo) {
             if (imageUrl === "loading") {
                 API.Thumbnails.GetThumbnail(auth, itemInfo.itemType, itemInfo.id, "150x150").then((result) => {
@@ -27,7 +32,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         } else if (imageUrl !== "loading") {
             setImageUrl("loading")
         }
-    }, [auth, imageUrl, itemInfo])
+    }, [auth, forceImage, imageUrl, itemInfo])
 
     const cardImage = imageUrl !== "loading" ? (<img className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 
