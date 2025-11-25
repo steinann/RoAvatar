@@ -52,7 +52,7 @@ export default function SliderInput({value, setValue}: {value: number, setValue:
             setIsDragging(true)
             updateSlider(e as unknown as MouseEvent, false, true)
         }}>
-        <div className="slider-input-thumb" style={{left: value * 100 + "%"}}></div>
+        <div className={`slider-input-thumb${isDragging ? " slider-input-thumb-dragging" : ""}`} style={{left: value * 100 + "%"}}></div>
         <div className="slider-input-fill" style={{width: value * 100 + "%"}}></div>
     </div>
 }

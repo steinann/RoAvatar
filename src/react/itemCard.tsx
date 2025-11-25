@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ItemInfo } from "../code/avatar/asset";
 import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
+import RadialButton from "./radialButton";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, includeName = true}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, includeName?: boolean}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
@@ -38,10 +39,10 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 browserOpenURL(`https://www.roblox.com/catalog/${itemInfo.id}`)
             }
         }}>
-            <button className={`item-image`} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
+            <RadialButton className={`item-image`} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {cardImage}
-            </button>
+            </RadialButton>
             {includeName ? <span ref={nameRef} className="item-name roboto-600">{itemInfo.name}</span> : null}
         </a>)
     } else {
@@ -52,9 +53,9 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
 
         return (<div className={"item" + className ? "item " + className : ""}>
-            <button className="item-image">
+            <RadialButton className="item-image">
                 {cardImage}
-            </button>
+            </RadialButton>
             {includeName ? <div ref={nameRef} className="item-name loading-gradient" style={nameStyle}></div> : null}
         </div>)
     }
