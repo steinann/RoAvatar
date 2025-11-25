@@ -47,6 +47,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                 if (loadId !== lastLoadId) return
                 if (response.status === 200) {
                     response.json().then(body => {
+                        if (loadId !== lastLoadId) return
                         //console.log(body)
                         const pageToken = body.nextPageToken
                         if (pageToken && pageToken.length > 0) {
@@ -58,6 +59,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                         const newItems = body.avatarInventoryItems
                         setItems(prev => [...prev, ...newItems])
                     }).finally(() => {
+                        if (loadId !== lastLoadId) return
                         setIsLoading(false)
                     })
                 } else {
@@ -185,7 +187,7 @@ export default function ItemCategory({categoryType, subCategoryType, setOutfit, 
     if (auth && itemInfos.length > 0) {
         itemComponents = <>{
             itemInfos.map((item) => (
-                <ItemCard auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={(item) => {
+                <ItemCard key={item.id} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={(item) => {
                     onClickFunc(auth, item)
                 }}/>
             ))

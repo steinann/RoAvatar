@@ -593,7 +593,7 @@ const API = {
             }
 
             const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(thisThumbnailInfo))
-            if (cachedThumbnail) {
+            if (CACHE.Thumbnails.has(requestIdFromThumbnailInfo(thisThumbnailInfo))) {
                 return new Promise(resolve => {
                     resolve(cachedThumbnail)
                 })
