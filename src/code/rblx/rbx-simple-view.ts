@@ -123,6 +123,13 @@ export default class RBXSimpleView {
         return value
     }
 
+    writeInt64(value: bigint, littleEndian = true) {
+        this.lockCheck()
+
+        this.view.setBigInt64(this.viewOffset, value, littleEndian)
+        this.viewOffset += 8
+    }
+
     readInt64(littleEndian = true) {
         this.lockCheck()
 

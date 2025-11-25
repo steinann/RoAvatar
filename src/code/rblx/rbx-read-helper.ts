@@ -43,6 +43,10 @@ function untransformInt32(num: number) {
     return num
 }
 
+function transformInt32(num: number) {
+    return num*2
+}
+
 function untransformInt64(num: bigint) {
     if (num % 2n === 0n) {
         num /= 2n
@@ -51,6 +55,10 @@ function untransformInt64(num: bigint) {
     }
 
     return num
+}
+
+function transformInt64(num: bigint) {
+    return num*2n
 }
 
 function readReferents(length: number, chunkView: RBXSimpleView) {
@@ -96,4 +104,4 @@ function intToRgb(colorInt: number) {
     return [deg(x), deg(y), deg(z), singular]
 }*/
 
-export { bitsToFloat32, untransformInt32, untransformInt64, readReferents, intToRgb }
+export { bitsToFloat32, untransformInt32, transformInt32, untransformInt64, transformInt64, readReferents, intToRgb }
