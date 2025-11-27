@@ -185,9 +185,10 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
     let itemComponents = null
 
     if (auth && itemInfos.length > 0) {
+        let i = 0;
         itemComponents = <>{
             itemInfos.map((item) => (
-                <ItemCard key={item.id} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={(item) => {
+                <ItemCard key={i++} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={(item) => {
                     onClickFunc(auth, item)
                 }}/>
             ))
