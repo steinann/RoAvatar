@@ -35,14 +35,18 @@ export default function ScaleCategory({setOutfit, _setOutfit}: {setOutfit: (a: O
         </div>
         <div className="rig-select">
             <button className={`rig-button rig-button-left roboto-600${outfit.playerAvatarType === AvatarType.R6 ? " rig-button-active" : ""}`} onClick={() => {
-                const newOutfit = outfit.clone()
-                newOutfit.playerAvatarType = AvatarType.R6
-                setOutfit(newOutfit)
+                if (outfit.playerAvatarType !== AvatarType.R6) {
+                    const newOutfit = outfit.clone()
+                    newOutfit.playerAvatarType = AvatarType.R6
+                    setOutfit(newOutfit)
+                }
             }}>R6</button>
             <button className={`rig-button rig-button-right roboto-600${outfit.playerAvatarType === AvatarType.R15 ? " rig-button-active" : ""}`} onClick={() => {
-                const newOutfit = outfit.clone()
-                newOutfit.playerAvatarType = AvatarType.R15
-                setOutfit(newOutfit)
+                if (outfit.playerAvatarType !== AvatarType.R15) {
+                    const newOutfit = outfit.clone()
+                    newOutfit.playerAvatarType = AvatarType.R15
+                    setOutfit(newOutfit)
+                }
             }}>R15</button>
         </div>
         <ScaleInput outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit} scale="height" scaleName="Height" min={0.9} max={1.05}/>
