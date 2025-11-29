@@ -103,6 +103,29 @@ body {
 .avatar-preview {
     overflow: hidden;
     border-radius: 12px;
+    position: relative;
+}
+
+.avatar-preview-focus {
+    position: absolute;
+    right: 5%;
+    top: 5%;
+    transform: scale(1.5);
+
+    color: #f5f5f5;
+    background-color: transparent;
+    border-style: none;
+    padding: 0;
+    
+    opacity: 100%;
+    transition-duration: 0.1s;
+    transition-property: opacity;
+    cursor: pointer;
+}
+
+.focus-disabled {
+    opacity: 30%;
+    cursor: auto;
 }
 
 .division-down {

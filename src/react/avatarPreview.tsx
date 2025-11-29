@@ -1,10 +1,11 @@
-import { useCallback, useContext, useEffect } from "react"
+import * as THREE from 'three';
+import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
-import { addInstance, mount } from "../code/render/renderer"
+import { addInstance, getRendererCamera, getRendererControls, mount } from "../code/render/renderer"
 import { AvatarType } from "../code/avatar/constant"
 import { API, Authentication } from "../code/api"
-import { Instance, RBX } from "../code/rblx/rbx"
+import { Instance, RBX, Vector3 } from "../code/rblx/rbx"
 import { Outfit } from "../code/avatar/outfit"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import AnimatorWrapper from "../code/rblx/instance/Animator"
@@ -97,6 +98,8 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
     const outfit = useContext(OutfitContext)
     const containerRef = useCallback(mount, [])
 
+    const [cameraLocked, setCameraLocked] = useState(true)
+
     //load the initial avatar
     useEffect(() => {
         if (auth) {
@@ -183,6 +186,24 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
         }
 
         animationInterval = setInterval(() => {
+            //update camera position
+            if (cameraLocked && currentRig) {
+                const upperTorso = currentRig.FindFirstChild("HumanoidRootPart")
+                if (upperTorso) {
+                    const controls = getRendererControls()
+                    const camera = getRendererCamera()
+
+                    const pos = upperTorso.Prop("Position") as Vector3
+                    
+                    const offset = new THREE.Vector3().subVectors(camera.position, controls.target)
+
+                    controls.target.set(pos.X, pos.Y + 0.5, pos.Z)
+                    camera.position.set(pos.X + offset.x, pos.Y + 0.5 + offset.y, pos.Z + offset.z)
+                    controls.update()
+                }
+            }
+
+            //update animation and instance renderables
             if (currentRig && auth) {
                 const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
                 if (humanoid) {
@@ -196,7 +217,18 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
                 }
             }
         }, 1000 / 60)
-    }, [auth])
+    }, [auth, cameraLocked])
 
-    return (<div className="avatar-preview" ref={containerRef}></div>)
+    return (<div className="avatar-preview" ref={containerRef} onMouseDown={(e) => {
+        if (e.buttons == 2 && (e.target as HTMLCanvasElement).id === "OutfitInfo-outfit-image-3d") {
+            setCameraLocked(false)
+        }
+    }}>
+        <button className={`avatar-preview-focus${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
+            e.preventDefault()
+            setCameraLocked(true)
+        }}>
+            <span className="material-symbols-outlined">center_focus_weak</span>
+        </button>
+    </div>)
 }

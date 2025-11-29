@@ -17,6 +17,8 @@ const skeletons = new Map<Instance,THREE.Skeleton>()
 const lookAwayVector = [0.406, 0.306, -0.819]
 const lookAwayDistance = 6
 
+const orbitControlsTarget: [number, number, number] = [0,3,0]
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 1000 );
 
@@ -127,11 +129,11 @@ const controls = new OrbitControls(camera, renderer.domElement)
 controls.maxDistance = 25
 controls.zoomSpeed = 2
 
-controls.target.set(0,3,0)
+controls.target.set(...orbitControlsTarget)
 console.log(controls.target)
 
 camera.position.set(lookAwayVector[0] * lookAwayDistance,3 + lookAwayVector[1] * lookAwayDistance,lookAwayVector[2] * lookAwayDistance)
-camera.lookAt(new THREE.Vector3(0,3,0))
+camera.lookAt(new THREE.Vector3(...orbitControlsTarget))
 controls.update()
 
 function animate() {
