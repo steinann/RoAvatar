@@ -1,4 +1,5 @@
 import type { Outfit } from "../code/avatar/outfit"
+import BodyColorCategory from "./bodyColorCategory"
 import EmoteCategory from "./emoteCategory"
 import ScaleCategory from "./scaleCategory"
 
@@ -8,6 +9,8 @@ export default function SpecialCategory({categoryType, subCategoryType, setOutfi
             return <EmoteCategory categoryType={categoryType} setOutfit={setOutfit} setAnimName={setAnimName}/>
         case "Scale":
             return <ScaleCategory setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+        case "Skin Color":
+            return <BodyColorCategory setOutfit={setOutfit} _setOutfit={_setOutfit}/>
         default:
             return <></>
     }

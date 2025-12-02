@@ -30,8 +30,8 @@ function App() {
   const [historyIndex, setHistoryIndex] = useState<number>(-1)
 
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
-  const [categoryType, _setCategoryType] = useState<string>("Recent")
-  const [subCategoryType, _setSubCategoryType] = useState<string>("All")
+  const [categoryType, _setCategoryType] = useState<string>("Body") //Recent
+  const [subCategoryType, _setSubCategoryType] = useState<string>("Skin Color") //All
 
   function undo() {
     if (historyIndex > 0) {

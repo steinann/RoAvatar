@@ -571,3 +571,104 @@ body {
     animation-duration: 0.1s;
     animation-timing-function: ease-out;
 }
+
+.bodypart-select {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 30%;
+    height: fit-content;
+    margin: 0 0;
+}
+
+.bodycolor {
+    all: unset;
+    padding: 0;
+    border-style: none;
+    cursor: pointer;
+    margin: 5px;
+    border-radius: 5px;
+}
+
+.bodycolor-active {
+    box-shadow: #fff inset 0px 0px 0px 3px;
+}
+
+.bodycolor-head {
+    width: 25%;
+    height: auto;
+    aspect-ratio: 1/1;
+}
+
+.bodycolor-torso {
+    width: 38%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    padding-left: 10px;
+}
+
+.bodycolor-limb {
+    width: 19%;
+    height: auto;
+    aspect-ratio: 1 / 2;
+}
+
+.bodycolor-section {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+}
+
+.bodycolor-category {
+    width: 90%;
+    align-self: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.select {
+    height: 2em;
+    font-size: 1.4em;
+    border-style: none;
+    margin: .2em;
+    border-radius: 100000px;
+    padding: .4em 1.2em;
+    background-color: #2a2a2d;
+    color: #f5f5f5;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+}
+
+.select ul {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    padding: 0;
+    margin: 1.9em 0 0;
+    background-color: #2a2a2d;
+    left: 0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.select ul button {
+    background-color: #2a2a2d;
+    color: #f5f5f5;
+    border-style: none;
+    font-size: 1em;
+    text-wrap-mode: nowrap;
+    padding: .4em 1.2em;
+    cursor: pointer;
+}
+
+.select ul button:hover {
+    background-color: #47474b;
+}
