@@ -1,0 +1,15 @@
+Meaning of tags in code:
+    TODO: (How to finish the unfinished code)
+    ISSUE: (A bug/issue/inaccuracy with THIS program, these should be fixed as they are inaccurate)
+    BUG: (A bug/issue with roblox, these should NOT be fixed as to maintain accuracy)
+
+ISSUES (Relating to renderer inaccuracy):
+    -Skinning treats Root bone as world origin instead of treating it as the renderable's CFrame, see 126276012366391, 140233792042793 and 107221904954874 as examples
+    -Accessory rotation and position adjustment is applied during RenderableDesc.updateResult() instead of being applied to the accessory's attachment during HumanoidDescription._applyAccessories()
+    -Accessory rotation adjustment is calculated incorrectly when the accessory's attachment has an orientation other than (0,0,0), see 5857549387 as an example
+    -Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand
+    -Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
+
+ISSUES (General):
+    -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
+    -Skinned meshes require regeneration when changing size due to THREE.js being weird
