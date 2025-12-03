@@ -4,6 +4,7 @@ import { OutfitContext } from "./context/outfit-context";
 import SelectInput from "./selectInput";
 import { FullBodyColors, RegularBodyColors } from "../code/avatar/constant";
 import { hexToRgb } from "../code/misc/misc";
+import RadialButton from "./radialButton";
 
 function partNameToHexName(partName: string) {
     let hexName: "headColor" | "torsoColor" | "rightArmColor" | "leftArmColor" | "rightLegColor" | "leftLegColor" = "headColor"
@@ -210,13 +211,13 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
         <div className="bodycolor-select">
             {bodyColors.map((color) => {
                 const isSelected = allColorsSame && color.toUpperCase() === currentColors[0].toUpperCase()
-                return <button className={`bodycolor`} style={{backgroundColor: "#" + color}} onClick={() => {
+                return <RadialButton className={`bodycolor-color`} style={{backgroundColor: "#" + color}} onClick={() => {
                     paint(color)
                 }}>
                     {isSelected ? <div className="bodycolor-selected">
                         <span className="material-symbols-outlined">check_box</span>
                     </div> : null}
-                </button>
+                </RadialButton>
             })}
         </div>
     </div>

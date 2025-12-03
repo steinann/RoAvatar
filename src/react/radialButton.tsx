@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 
-export default function RadialButton({ children, className = "", circleClassName = "", onClick, effectDisabled = false }: React.PropsWithChildren & {className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean}): React.JSX.Element {
+export default function RadialButton({ children, className = "", circleClassName = "", onClick, effectDisabled = false, style = {} }: React.PropsWithChildren & {className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties}): React.JSX.Element {
     const circleRef = useRef(null);
     const buttonRef = useRef(null);
 
@@ -36,7 +36,7 @@ export default function RadialButton({ children, className = "", circleClassName
 
     return (
         <>
-            <button ref={buttonRef} className={`radialButton ${className}`} onClick={selfHandleOnClick}>
+            <button ref={buttonRef} style={style} className={`radialButton ${className}`} onClick={selfHandleOnClick}>
                 <div ref={circleRef} className={`radialButton-circle ${circleClassName}`}></div>
                 {children}
             </button>

@@ -586,6 +586,7 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
     height: 100%;
+    gap: 5px;
     aspect-ratio: 6 / 5;
     overflow: auto;
 }
@@ -597,8 +598,17 @@ body {
     cursor: pointer;
     margin: 5px;
     border-radius: 5px;
+}
+
+.bodycolor-color {
+    all: unset;
+    padding: 0;
+    border-style: none;
+    cursor: pointer;
+    border-radius: 100%;
     aspect-ratio: 1 / 1;
     position: relative;
+    overflow: clip;
 }
 
 .bodycolor-selected {
@@ -666,7 +676,7 @@ body {
     font-size: 1.4em;
     border-style: none;
     margin: .2em;
-    border-radius: 100000px;
+    border-radius: 1em;
     padding: .4em 1.2em;
     background-color: #2a2a2d;
     color: #f5f5f5;
@@ -686,7 +696,7 @@ body {
     margin: 1.9em 0 0;
     background-color: #2a2a2d;
     left: 0;
-    border-radius: 12px;
+    border-radius: 1em;
     overflow: hidden;
     z-index: 2;
 }
