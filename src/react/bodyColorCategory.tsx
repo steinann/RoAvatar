@@ -193,7 +193,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
     }
 
     return <div className="bodycolor-category">
-        <div className="bodypart-select dark-scrollbar">
+        <div className="bodypart-select">
             <SelectInput value={selectPart} setValue={setSelectPart} alternatives={["All", "Head", "Torso", "Right Arm", "Left Arm", "Right Leg", "Left Leg"]}/>
             <div className="bodycolor-section bodycolor-section-top">
                 <BodyPartSelect className="bodycolor-head" partName="Head" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
@@ -208,7 +208,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
                 <BodyPartSelect className="bodycolor-limb" partName="LeftLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
             </div>
         </div>
-        <div className="bodycolor-select">
+        <div className="bodycolor-select dark-scrollbar">
             {bodyColors.map((color) => {
                 const isSelected = allColorsSame && color.toUpperCase() === currentColors[0].toUpperCase()
                 return <RadialButton className={`bodycolor-color`} style={{backgroundColor: "#" + color}} onClick={() => {
