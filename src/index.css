@@ -582,6 +582,14 @@ body {
     margin: 0 0;
 }
 
+.bodycolor-select {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+    height: 100%;
+    aspect-ratio: 6 / 5;
+    overflow: auto;
+}
+
 .bodycolor {
     all: unset;
     padding: 0;
@@ -589,10 +597,31 @@ body {
     cursor: pointer;
     margin: 5px;
     border-radius: 5px;
+    aspect-ratio: 1 / 1;
+    position: relative;
+}
+
+.bodycolor-selected {
+    display: flex;
+    position: absolute;
+    width: 75%;
+    height: 75%;
+    left: 12.5%;
+    top: 12.5%;
+    background-color: #00000086;
+    border-radius: 1000000px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.bodycolor-selected span {
+    color: #f5f5f5;
+    transform: scale(1.5);
 }
 
 .bodycolor-active {
-    box-shadow: #fff inset 0px 0px 0px 3px;
+    box-shadow: var(--box-shadow-color) inset 0px 0px 0px 3px;
 }
 
 .bodycolor-head {
@@ -622,12 +651,14 @@ body {
 }
 
 .bodycolor-category {
-    width: 90%;
-    align-self: center;
+    width: -webkit-fill-available;
+    height: 70vh;
+    align-self: flex-start;
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
     align-items: flex-start;
+    margin: 0 15px;
 }
 
 .select {
@@ -657,6 +688,7 @@ body {
     left: 0;
     border-radius: 12px;
     overflow: hidden;
+    z-index: 2;
 }
 
 .select ul button {
