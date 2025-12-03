@@ -240,12 +240,11 @@ body {
     cursor: pointer;
 
     border-style: none;
-    background-color: transparent;
+    background-color: #2b2d33;
     padding: 0;
 }
 
 .item-image img {
-    background-color: #2b2d33;
     width: 100%;
     aspect-ratio: 1/1;
 }

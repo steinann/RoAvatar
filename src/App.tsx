@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import './App.css'
-import { Authentication } from './code/api'
+import { API, Authentication } from './code/api'
 import { AuthContext } from './react/context/auth-context'
 import { Outfit } from './code/avatar/outfit'
 import { OutfitContext } from './react/context/outfit-context'
@@ -15,6 +15,7 @@ import SpecialCategory from './react/specialCategory'
 import { AvatarType } from './code/avatar/constant'
 import ItemCard from './react/itemCard'
 import { ItemInfo } from './code/avatar/asset'
+import { arrayBufferToBase64, base64ToArrayBuffer } from './code/misc/misc'
 //import { arrayBufferToBase64 } from './code/misc/misc'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
@@ -30,8 +31,8 @@ function App() {
   const [historyIndex, setHistoryIndex] = useState<number>(-1)
 
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
-  const [categoryType, _setCategoryType] = useState<string>("Body") //Recent
-  const [subCategoryType, _setSubCategoryType] = useState<string>("Skin Color") //All
+  const [categoryType, _setCategoryType] = useState<string>("Recent") //Recent
+  const [subCategoryType, _setSubCategoryType] = useState<string>("All") //All
 
   function undo() {
     if (historyIndex > 0) {
@@ -147,6 +148,9 @@ function App() {
 
       newAuth.fill().then(() => {
         setAuth(newAuth)
+        window.saveOutfit = (a: Outfit) => {
+          API.Avatar.SaveOutfit(newAuth, a)
+        }
       })
     }
 
@@ -202,7 +206,13 @@ declare global {
     interface Window {
         outfit: Outfit;
         setOutfit: (a: Outfit) => void;
+        arrayBufferToBase64: (a: ArrayBuffer) => string;
+        base64ToArrayBuffer: (a: string) => ArrayBuffer;
+        saveOutfit: (a: Outfit) => void;
     }
 }
+
+window.arrayBufferToBase64 = arrayBufferToBase64
+window.base64ToArrayBuffer = base64ToArrayBuffer
 
 export default App
