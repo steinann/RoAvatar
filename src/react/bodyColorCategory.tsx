@@ -38,7 +38,7 @@ function BodyPartSelect({className, partName, currentPartNames, setCurrentPartNa
     const colorAsRgb = hexToRgb(outfit.bodyColors.toHexJson()[hexName]) || {r:0,g:0,b:0}
     const averageBrightness = (colorAsRgb.r + colorAsRgb.g + colorAsRgb.b) / 3
 
-    const outlineColor = averageBrightness > 0.8 ? "#666" : "#fff"
+    const outlineColor = averageBrightness > 0.8 ? "#7c7c7c" : "#fff"
 
     return <button className={`${className}${currentPartNames.includes(partName) ? " bodycolor bodycolor-active": " bodycolor"}`} onClick={() => {
         /*const newCurrentPartNames = [...currentPartNames]
@@ -118,7 +118,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
     }
 
     function paint(color: string) {
-        console.log(setOutfit)
+        console.log(_setOutfit)
 
         const newOutfit = outfit.clone()
 
@@ -134,27 +134,27 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
             switch (partName) {
                 case "Head":
                     newBodyColors.headColor3 = color
-                    _setOutfit(newOutfit)
+                    setOutfit(newOutfit)
                     break
                 case "RightArm":
                     newBodyColors.rightArmColor3 = color
-                    _setOutfit(newOutfit)
+                    setOutfit(newOutfit)
                     break
                 case "LeftArm":
                     newBodyColors.leftArmColor3 = color
-                    _setOutfit(newOutfit)
+                    setOutfit(newOutfit)
                     break
                 case "Torso":
                     newBodyColors.torsoColor3 = color
-                    _setOutfit(newOutfit)
+                    setOutfit(newOutfit)
                     break
                 case "RightLeg":
                     newBodyColors.rightLegColor3 = color
-                    _setOutfit(newOutfit)
+                    setOutfit(newOutfit)
                     break
                 case "LeftLeg":
                     newBodyColors.leftLegColor3 = color
-                    _setOutfit(newOutfit)
+                    setOutfit(newOutfit)
                     break
             }
         }
