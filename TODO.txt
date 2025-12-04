@@ -11,6 +11,8 @@ ISSUES (Relating to renderer inaccuracy):
     -Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
     -LC: Layered clothing is not layered, i guess its just clothing then?
     -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that leads to weird results)
+    -LC: Layered clothing does not use HSR (Hidden Surface Removal)
+    -LC: Layered clothing does not deform the body/inner clothing to avoid clipping
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
