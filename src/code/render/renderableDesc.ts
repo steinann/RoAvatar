@@ -26,9 +26,9 @@ export class RenderableDesc {
     isSkinned: boolean = false //based on compiled mesh
 
     //adjustment
-    adjustPosition = new Vector3(0,0,0)
+    /*adjustPosition = new Vector3(0,0,0)
     adjustRotation = new Vector3(0,0,0)
-    adjustScale = new Vector3(1,1,1)
+    adjustScale = new Vector3(1,1,1)*/
 
     originalScale: THREE.Vector3 = new THREE.Vector3(1,1,1) //based on compiled mesh
     result?: THREE.Mesh
@@ -38,9 +38,9 @@ export class RenderableDesc {
         return this.cframe.isSame(other.cframe) &&
                 this.meshDesc.isSame(other.meshDesc) &&
                 this.materialDesc.isSame(other.materialDesc) &&
-            this.adjustPosition.isSame(other.adjustPosition) &&
+            /*this.adjustPosition.isSame(other.adjustPosition) &&
             this.adjustRotation.isSame(other.adjustRotation) &&
-            this.adjustScale.isSame(other.adjustScale) &&
+            this.adjustScale.isSame(other.adjustScale) &&*/
             this.isBodyPart === other.isBodyPart &&
             this.size.isSame(other.size)
     }
@@ -62,9 +62,9 @@ export class RenderableDesc {
         //everything that doesnt require compilation should be here
         this.cframe = other.cframe
         this.size = other.size
-        this.adjustPosition = other.adjustPosition
+        /*this.adjustPosition = other.adjustPosition
         this.adjustRotation = other.adjustRotation
-        this.adjustScale = other.adjustScale
+        this.adjustScale = other.adjustScale*/
         this.isBodyPart = other.isBodyPart
         //this.isSkinned = other.isSkinned
     }
@@ -104,9 +104,9 @@ export class RenderableDesc {
                     const accessoryDescriptions = humanoidDescription.GetChildren()
                     for (const accessoryDesc of accessoryDescriptions) {
                         if (accessoryDesc.className === "AccessoryDescription" && accessoryDesc.Prop("Instance") === accessory) {
-                            this.adjustPosition = accessoryDesc.Prop("Position") as Vector3
+                            /*this.adjustPosition = accessoryDesc.Prop("Position") as Vector3
                             this.adjustRotation = accessoryDesc.Prop("Rotation") as Vector3
-                            this.adjustScale = accessoryDesc.Prop("Scale") as Vector3
+                            this.adjustScale = accessoryDesc.Prop("Scale") as Vector3*/
                         }
                     }
                 }
@@ -227,7 +227,7 @@ export class RenderableDesc {
                 this.result.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
             }
 
-            //apply adjustment
+            //apply adjustment (INACCURATE DO NOT USE)
             /*
             this.result.scale.set(this.result.scale.x, this.result.scale.y, this.result.scale.z)
             this.result.scale.multiply(new THREE.Vector3(this.adjustScale.X, this.adjustScale.Y, this.adjustScale.Z));
