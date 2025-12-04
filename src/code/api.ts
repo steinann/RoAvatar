@@ -189,6 +189,7 @@ type ThumbnailInfo = {
     size: string,
     resolves: ((url: string | undefined) => void)[],
     attempt: number,
+    lastTryTimestamp: number,
 }
 let ThumbnailsToBatch: ThumbnailInfo[] = []
 
@@ -583,13 +584,14 @@ const API = {
                 type = "Outfit"
             }
 
-            const thisThumbnailInfo = {
+            const thisThumbnailInfo: ThumbnailInfo = {
                 auth: auth,
                 type: type,
                 id: id,
                 size: size,
                 attempt: 0,
                 resolves: [],
+                lastTryTimestamp: 0,
             }
 
             const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(thisThumbnailInfo))
@@ -615,6 +617,7 @@ const API = {
                     size: size,
                     resolves: [resolve],
                     attempt: 0,
+                    lastTryTimestamp: 0,
                 })
             })
         }
@@ -648,6 +651,10 @@ function BatchThumbnails() {
     let auth: Authentication | undefined = undefined
     const body = []
     for (const thumbnailInfo of ThumbnailsToBatch) {
+        if (Date.now() / 1000 - thumbnailInfo.lastTryTimestamp < 1) {
+            continue
+        }
+
         body.push({
             "format": null,
             "requestId": requestIdFromThumbnailInfo(thumbnailInfo),
@@ -658,6 +665,7 @@ function BatchThumbnails() {
 
         auth = thumbnailInfo.auth
 
+        thumbnailInfo.lastTryTimestamp = Date.now() / 1000
         thumbnailInfo.attempt++
     }
 
