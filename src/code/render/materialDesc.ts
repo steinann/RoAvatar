@@ -11,7 +11,7 @@ function mapImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sX: number
     ctx.rotate(rad(rotation))
     ctx.translate(-oX,-oY)
 
-    ctx.drawImage(img, sX, sY, sW, sH, oX - 2, oY - 2, oW + 4, oH + 4)
+    //ctx.drawImage(img, sX, sY, sW, sH, oX - 2, oY - 2, oW + 4, oH + 4)
     ctx.drawImage(img, sX, sY, sW, sH, oX, oY, oW, oH)
 
     ctx.restore()
@@ -375,6 +375,9 @@ export class MaterialDesc {
                                 mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 0, 0, canvas.width, canvas.height)
                                 break
                             case "Pants":
+                                texture.generateMipmaps = false
+                                texture.minFilter = THREE.LinearFilter
+                                texture.magFilter = THREE.LinearFilter
                                 if (!this.bodyPart) break
                                 if (this.avatarType === AvatarType.R15) {
                                     renderClothingToCanvasR15(ctx, this.bodyPart, undefined, layerTexture)
@@ -383,6 +386,9 @@ export class MaterialDesc {
                                 }
                                 break
                             case "Shirt":
+                                texture.generateMipmaps = false
+                                texture.minFilter = THREE.LinearFilter
+                                texture.magFilter = THREE.LinearFilter
                                 if (!this.bodyPart) break
                                 if (this.avatarType === AvatarType.R15) {
                                     renderClothingToCanvasR15(ctx, this.bodyPart, layerTexture, undefined)
@@ -391,6 +397,9 @@ export class MaterialDesc {
                                 }
                                 break
                             case "TShirt":
+                                texture.generateMipmaps = false
+                                texture.minFilter = THREE.LinearFilter
+                                texture.magFilter = THREE.LinearFilter
                                 if (!this.bodyPart) break
                                 if (this.avatarType === AvatarType.R15 && this.bodyPart === BodyPart.Torso) {
                                     mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 2, 74, 128, 128, 0)
@@ -428,7 +437,6 @@ export class MaterialDesc {
             }
 
             //document.body.appendChild(canvas)
-
             texture.needsUpdate = true
             return [texture, hasTransparency]
         } else {

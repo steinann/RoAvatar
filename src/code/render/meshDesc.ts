@@ -6,6 +6,7 @@ import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
 import { deformReferenceToBaseBodyParts, layerClothingChunked, offsetMesh } from '../rblx/mesh-deform'
 import { BoneNameToIndex } from './renderer'
+import { USE_VERTEX_COLOR } from '../misc/flags'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -131,10 +132,17 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
     //colors
     const colors = new Float32Array(mesh.coreMesh.verts.length * 4)
     for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-        colors[i * 4 + 0] = mesh.coreMesh.verts[i].color[0] / 255
-        colors[i * 4 + 1] = mesh.coreMesh.verts[i].color[1] / 255
-        colors[i * 4 + 2] = mesh.coreMesh.verts[i].color[2] / 255
-        colors[i * 4 + 3] = mesh.coreMesh.verts[i].color[3] / 255
+        if (USE_VERTEX_COLOR) {
+            colors[i * 4 + 0] = mesh.coreMesh.verts[i].color[0] / 255
+            colors[i * 4 + 1] = mesh.coreMesh.verts[i].color[1] / 255
+            colors[i * 4 + 2] = mesh.coreMesh.verts[i].color[2] / 255
+            colors[i * 4 + 3] = mesh.coreMesh.verts[i].color[3] / 255
+        } else {
+            colors[i * 4 + 0] = 1
+            colors[i * 4 + 1] = 1
+            colors[i * 4 + 2] = 1
+            colors[i * 4 + 3] = 1
+        }
     }
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 4))
 

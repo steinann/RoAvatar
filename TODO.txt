@@ -11,6 +11,8 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that leads to weird results)
     -LC: Layered clothing does not use HSR (Hidden Surface Removal)
     -LC: Layered clothing does not deform the body/inner clothing to avoid clipping
+    -Vertex colors are used when they shouldn't be, see 17399885483 as an example (DO NOTE: vertex colors are currently disabled FULLY because i dont think anything really needs it)
+    -Accessory position (attachment and adjustment offset) should be affected by accessory adjustment scale AND regular scale, this can probably be done by setting the attachment position like this (original position -> position adjustment -> scaled -> scale adjustment)
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
