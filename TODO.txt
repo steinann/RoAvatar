@@ -9,8 +9,8 @@ ISSUES (Relating to renderer inaccuracy):
     -Accessory rotation adjustment is calculated incorrectly when the accessory's attachment has an orientation other than (0,0,0), see 5857549387 as an example
     -Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand
     -Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
-	-LC: Layered clothing is not layered, i guess its just clothing then?
-	-LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that leads to weird results)
+    -LC: Layered clothing is not layered, i guess its just clothing then?
+    -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that leads to weird results)
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
