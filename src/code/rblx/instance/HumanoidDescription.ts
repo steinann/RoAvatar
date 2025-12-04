@@ -610,13 +610,14 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         let scaleInfo = null
 
         if (avatarType === AvatarType.R15) {
-            scaleInfo = ScaleCharacter(rig, mockOutfit)
+            scaleInfo = ScaleCharacter(rig, mockOutfit, this.instance)
         } else {
             const children = rig.GetChildren()
             for (const child of children) {
                 if (child.className === "Accessory") {
                     //BUG: Roblox scales accessories even in R6, it's also inconsistent and sometimes some accessories may not be scaled
-                    ScaleAccessory(child, new Vector3(1,1,1), new Vector3(1,1,1), null, null, rig)
+                    //Also this is neccessary here because the code below adjusts accessories, maybe thats why roblox also does it?
+                    ScaleAccessory(child, new Vector3(1,1,1), new Vector3(1,1,1), null, null, rig, this.instance)
                 }
             }
         }

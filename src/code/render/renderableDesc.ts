@@ -228,6 +228,7 @@ export class RenderableDesc {
             }
 
             //apply adjustment
+            /*
             this.result.scale.set(this.result.scale.x, this.result.scale.y, this.result.scale.z)
             this.result.scale.multiply(new THREE.Vector3(this.adjustScale.X, this.adjustScale.Y, this.adjustScale.Z));
 
@@ -248,6 +249,7 @@ export class RenderableDesc {
             const resultRot = newRot.multiply(ogRot)
             resultCF.Orientation = [...resultRot.Orientation]
 
+            */
             setTHREEMeshCF(this.result, resultCF)
             this.result.updateMatrix()
         }
