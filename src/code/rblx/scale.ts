@@ -304,28 +304,32 @@ function originalChildrenOfPart(part: Instance) {
     }
 }
 
-//Adjusts the position and rotation of the attachment inside an accessory
+//Adjusts accessory attachment based on adjustment (position, rotation, scale) and scale
 function adjustAttachment(attachment: Instance, adjustPosition: Vector3, adjustRotation: Vector3, adjustScale: Vector3, scale: Vector3) {
 	const ogRot: Vector3 = new Vector3().fromVec3((attachment.Prop("CFrame") as CFrame).Orientation)
 	const ogPos: Vector3 = new Vector3().fromVec3((attachment.Prop("CFrame") as CFrame).Position)
 
-	const totalScale = scale.multiply(adjustScale)
+	console.log(attachment.parent?.parent?.name)
+	console.log(adjustPosition, adjustScale, adjustRotation, adjustScale, scale)
 
-	//position
-	let newCFrame = new CFrame(ogPos.X * totalScale.X, ogPos.Y * totalScale.Y, ogPos.Z * totalScale.Z)
-	newCFrame = newCFrame.multiply(new CFrame(adjustPosition.X * scale.X, adjustPosition.Y * scale.Y, adjustPosition.Z * scale.Z).inverse())
+	const totalScale = scale.multiply(adjustScale)
 
 	//rotation
 	const ogRotCFrame = new CFrame()
 	ogRotCFrame.Orientation = ogRot.toVec3()
+
+	//position
+	let newCFrame = new CFrame(ogPos.X * totalScale.X, ogPos.Y * totalScale.Y, ogPos.Z * totalScale.Z)
 	newCFrame = newCFrame.multiply(ogRotCFrame)
+	newCFrame = newCFrame.multiply(new CFrame(adjustPosition.X * scale.X, adjustPosition.Y * scale.Y, adjustPosition.Z * scale.Z).inverse())
 
 	let adjustRotCFrame = new CFrame()
 	adjustRotCFrame.Orientation = adjustRotation.toVec3()
 	adjustRotCFrame = adjustRotCFrame.inverse()
 
-	newCFrame = newCFrame.multiply(newCFrame.inverse()).multiply(adjustRotCFrame).multiply(newCFrame)
-	
+	newCFrame = ogRotCFrame.multiply(adjustRotCFrame).multiply(ogRotCFrame.inverse()).multiply(newCFrame)
+
+	console.log(newCFrame)
 	attachment.setProperty("CFrame", newCFrame)
 }
 
