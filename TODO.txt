@@ -5,7 +5,6 @@ Meaning of tags in code:
 
 ISSUES (Relating to renderer inaccuracy):
     -Skinning treats Root bone as world origin instead of treating it as the renderable's CFrame, see 126276012366391, 140233792042793 and 107221904954874 as examples
-    -Accessory rotation, position and scale adjustment is applied during RenderableDesc.updateResult() instead of being applied to the accessory's attachment and size during HumanoidDescription._applyAccessories()
     -Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand
     -Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
     -LC: Layered clothing is not layered, i guess its just clothing then?
@@ -16,3 +15,4 @@ ISSUES (Relating to renderer inaccuracy):
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
     -Skinned meshes require regeneration when changing size due to THREE.js being weird
+    -Accessory rotation, position and scale adjustment is applied during RenderableDesc.updateResult() instead of being applied to the accessory's attachment and size during HumanoidDescription._applyAccessories()
