@@ -306,30 +306,31 @@ function originalChildrenOfPart(part: Instance) {
 
 //Adjusts accessory attachment based on adjustment (position, rotation, scale) and scale
 function adjustAttachment(attachment: Instance, adjustPosition: Vector3, adjustRotation: Vector3, adjustScale: Vector3, scale: Vector3) {
+	//get original attachment pos/rot
 	const ogRot: Vector3 = new Vector3().fromVec3((attachment.Prop("CFrame") as CFrame).Orientation)
 	const ogPos: Vector3 = new Vector3().fromVec3((attachment.Prop("CFrame") as CFrame).Position)
 
-	console.log(attachment.parent?.parent?.name)
-	console.log(adjustPosition, adjustScale, adjustRotation, adjustScale, scale)
-
+	//avatar scale * adjustScale
 	const totalScale = scale.multiply(adjustScale)
 
-	//rotation
+	//create original rotation cframe
 	const ogRotCFrame = new CFrame()
 	ogRotCFrame.Orientation = ogRot.toVec3()
 
-	//position
+	//position, scaled original offset AND scaled adjust offset
 	let newCFrame = new CFrame(ogPos.X * totalScale.X, ogPos.Y * totalScale.Y, ogPos.Z * totalScale.Z)
 	newCFrame = newCFrame.multiply(ogRotCFrame)
 	newCFrame = newCFrame.multiply(new CFrame(adjustPosition.X * scale.X, adjustPosition.Y * scale.Y, adjustPosition.Z * scale.Z).inverse())
 
+	//create adjusted rotation cframe
 	let adjustRotCFrame = new CFrame()
 	adjustRotCFrame.Orientation = adjustRotation.toVec3()
 	adjustRotCFrame = adjustRotCFrame.inverse()
 
+	//adjusted rotation is applied in (world space WITH originalRotation considered)
 	newCFrame = ogRotCFrame.multiply(adjustRotCFrame).multiply(ogRotCFrame.inverse()).multiply(newCFrame)
 
-	console.log(newCFrame)
+	//finally change the attachment cframe
 	attachment.setProperty("CFrame", newCFrame)
 }
 
