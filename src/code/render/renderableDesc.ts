@@ -233,8 +233,20 @@ export class RenderableDesc {
 
             const offsetCF = new CFrame()
             offsetCF.Position = this.adjustPosition.toVec3()
-            offsetCF.Orientation = this.adjustRotation.toVec3()
+            //offsetCF.Orientation = this.adjustRotation.toVec3()
+
+            //rotation
+            const ogRot = new CFrame()
+            ogRot.Orientation = [...resultCF.Orientation]
+
+            const newRot = new CFrame()
+            newRot.Orientation = this.adjustRotation.toVec3()
+
+            resultCF.Orientation = [0,0,0]
             resultCF = resultCF.multiply(offsetCF)
+
+            const resultRot = newRot.multiply(ogRot)
+            resultCF.Orientation = [...resultRot.Orientation]
 
             setTHREEMeshCF(this.result, resultCF)
             this.result.updateMatrix()
