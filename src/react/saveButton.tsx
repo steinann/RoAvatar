@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
 import { API } from "../code/api"
 import { AuthContext } from "./context/auth-context"
-import RadialButton from "./radialButton"
+import RadialButton from "./generic/radialButton"
 
 export default function SaveButton({historyIndex,historyLength}: {historyIndex: number, historyLength: number}): React.JSX.Element {
     const auth = useContext(AuthContext)

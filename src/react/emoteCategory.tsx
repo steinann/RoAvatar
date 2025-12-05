@@ -75,11 +75,16 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {c
         }
     })
 
+    const wornEmotes = []
+
     const itemInfos = new Array(8).fill(undefined)
     if (equippedEmotes) {
         for (const emoteInfo of equippedEmotes) {
             const itemInfo = new ItemInfo("Asset", "EmoteAnimation", emoteInfo.assetId, emoteInfo.assetName)
             itemInfos[emoteInfo.position - 1] = itemInfo
+            if (emoteInfo.position ===  currentSlot) {
+                wornEmotes.push(emoteInfo.assetId)
+            }
         }
     }
 
@@ -95,7 +100,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {c
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={7} itemInfo={itemInfos[6]}/>
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
     </BarCategory>
-    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setOutfit={setOutfit} setAnimName={setAnimName} onClickItem={(auth: Authentication, item: ItemInfo) => {
+    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
         setAnimName(`emote.${item.id}`)
 
         if (!equippedEmotes) return

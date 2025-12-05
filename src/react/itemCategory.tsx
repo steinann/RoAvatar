@@ -80,7 +80,7 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({children, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem}: React.PropsWithChildren & {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void}): React.JSX.Element {
+export default function ItemCategory({children, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -188,7 +188,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
         let i = 0;
         itemComponents = <>{
             itemInfos.map((item) => (
-                <ItemCard key={i++} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) : false} onClick={(item) => {
+                <ItemCard key={i++} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
                     onClickFunc(auth, item)
                 }}/>
             ))

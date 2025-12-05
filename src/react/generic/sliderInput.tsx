@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { mapNum } from "../code/misc/misc"
+import { mapNum } from "../../code/misc/misc"
 
 export default function SliderInput({value, setValue}: {value: number, setValue: (value: number, mouseUp: boolean) => void}): React.JSX.Element {
     const [isDragging, setIsDragging] = useState(false)

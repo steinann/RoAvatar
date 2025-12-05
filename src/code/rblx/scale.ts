@@ -464,7 +464,6 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
     scaleChildrenOfPart(handle, resultScale, !hasAdjusted)
 
 	handle.setProperty("Size", originalSize.multiply(resultScale))
-	console.log(handle.Prop("Size"))
 	accessory.AccessoryBuildWeld()
 }
 

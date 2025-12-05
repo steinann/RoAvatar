@@ -1,10 +1,10 @@
 import { useContext, useState } from "react";
-import { BodyColor3s, BodyColors, type Outfit } from "../code/avatar/outfit";
-import { OutfitContext } from "./context/outfit-context";
-import SelectInput from "./selectInput";
-import { FullBodyColors, RegularBodyColors } from "../code/avatar/constant";
 import { hexToRgb } from "../code/misc/misc";
-import RadialButton from "./radialButton";
+import { OutfitContext } from "./context/outfit-context";
+import type { BodyColor3s, BodyColors, Outfit } from "../code/avatar/outfit";
+import { FullBodyColors, RegularBodyColors } from "../code/avatar/constant";
+import SelectInput from "./generic/selectInput";
+import RadialButton from "./generic/radialButton";
 
 function partNameToHexName(partName: string) {
     let hexName: "headColor" | "torsoColor" | "rightArmColor" | "leftArmColor" | "rightLegColor" | "leftLegColor" = "headColor"

@@ -1,9 +1,9 @@
 import { useContext } from "react"
 import { OutfitContext } from "./context/outfit-context"
-import SliderInput from "./sliderInput"
 import { mapNum } from "../code/misc/misc"
 import type { Outfit, ScaleName } from "../code/avatar/outfit"
 import { AvatarType } from "../code/avatar/constant"
+import SliderInput from "./generic/sliderInput"
 
 //TODO: Make changing scale less laggy by not requiring mesh compilation for skinnedmeshes
 function ScaleInput({outfit, setOutfit, _setOutfit, scale, scaleName, min, max}: {outfit: Outfit, setOutfit: (a: Outfit) => void, _setOutfit: (a: Outfit) => void, scale: ScaleName, scaleName: string, min: number, max: number}): React.JSX.Element {

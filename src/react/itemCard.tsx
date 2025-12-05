@@ -2,12 +2,44 @@ import { useEffect, useRef, useState } from "react";
 import type { ItemInfo } from "../code/avatar/asset";
 import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
-import RadialButton from "./radialButton";
+import RadialButton from "./generic/radialButton";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, includeName = true, forceImage = undefined}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, includeName?: boolean, forceImage?: string}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     const nameRef = useRef(null)
+
+    //Pre load item
+    /*useEffect(() => {
+        if (itemInfo && itemInfo.itemType === "Asset") {
+            let headers = undefined
+            if (itemInfo.type.includes("Accessory") || itemInfo.type.includes("Hat")) {
+                headers = {"Roblox-AssetFormat":"avatar_meshpart_accessory"}
+            }
+            API.Asset.GetRBX("rbxassetid://" + itemInfo.id, headers, auth).then(result => {
+                if (result instanceof RBX) {
+                    const tree = result.generateTree()
+                    for (const child of tree.GetChildren()) {
+                        if (child.HasProperty("MeshId")) {
+                            const meshId = child.Prop("MeshId") as string
+                            if (meshId.length > 0) {
+                                API.Asset.GetMesh(meshId, undefined, auth)
+                            }
+                        }
+                        const texturePropNames = ["TextureID", "TextureId", "Texture", "OverlayTextureId", "BaseTextureId", "ColorMap", "NormalMap", "RoughnessMap", "MetalnessMap"]
+                        for (const texturePropName of texturePropNames) {
+                            if (child.HasProperty(texturePropName)) {
+                                const textureId = child.Prop(texturePropName)
+                                if (typeof textureId === "string" && textureId.length > 0) {
+                                    API.Generic.LoadImage(textureId)
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    }, [auth,itemInfo])*/
 
     useEffect(() => {
         if (forceImage && imageUrl !== forceImage) {
