@@ -494,6 +494,10 @@ export class MaterialDesc {
             metalnessTexture = metalnessTextureInfo[0]
         }
 
+        if (this.transparency > 0.01) {
+            hasTransparency = true
+        }
+
         let material = undefined
 
         if (normalTexture || roughnessTexture || metalnessTexture) { //PBR
