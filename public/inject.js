@@ -4,7 +4,7 @@ errorElement.remove()
 let contentElement = document.getElementById("content")
 
 let iframe = document.createElement("iframe")
-iframe.src = chrome.runtime.getURL("/index.html")
+iframe.src = chrome.runtime.getURL("/index.html" + window.location.search)
 iframe.style.width = "100%"
 iframe.style.aspectRatio = "16/9"
 iframe.style.borderStyle = "hidden"
