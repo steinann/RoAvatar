@@ -439,7 +439,7 @@ export class MaterialDesc {
             //document.body.appendChild(canvas)
             texture.needsUpdate = true
             return [texture, hasTransparency]
-        } else {
+        } else { //non-color texture
             let textureUrl: string | undefined = undefined
 
             for (const layer of this.layers) {
@@ -482,7 +482,7 @@ export class MaterialDesc {
 
         if (colorTextureInfo) {
             colorTexture = colorTextureInfo[0]
-            hasTransparency = colorTextureInfo[1]
+            hasTransparency = colorTextureInfo[1] //used to stop material from being transparent if there is no reason to do so
         }
         if (normalTextureInfo) {
             normalTexture = normalTextureInfo[0]
@@ -579,158 +579,166 @@ export class MaterialDesc {
 
         switch (child.className) {
             case "Part": {
-                const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
-                if (specialMesh) {
-                    switch (specialMesh.Property("MeshType")) {
-                        case MeshType.FileMesh: {
-                            if (isAffectedByHumanoid(child)) {
-                                const partColor = (child.Prop("Color") as Color3uint8).toColor3()
-                                const partcolorLayer = new ColorLayer(partColor)
-                                this.layers.push(partcolorLayer)
-                            } else {
-                                this.transparent = true
-                            }
-                            const colorLayer = new TextureLayer()
-                            colorLayer.color = specialMesh.Property("TextureId") as string
-                            this.layers.push(colorLayer)
-                            break
-                        }
-                        default: {
-                            const partColor = (child.Prop("Color") as Color3uint8).toColor3()
-                            const colorLayer = new ColorLayer(partColor)
-                            this.layers.push(colorLayer)
-                            break
-                        }
-                    }
-    
-                    const decal = child.FindFirstChildOfClass("Decal")
-                    if (decal && ((specialMesh.Prop("TextureId") as string).length < 1 || !isAffectedByHumanoid(child))) {
-                        const decalTexture = decal.Property("Texture") as string
-                        const colorLayer = new TextureLayer()
-                        colorLayer.color = decalTexture
-                        this.layers.push(colorLayer)
-                    }
-                } else {
-                    const partColor = (child.Prop("Color") as Color3uint8).toColor3()
-                    const colorLayer = new ColorLayer(partColor)
-                    this.layers.push(colorLayer)
-
-                    const affectedByHumanoid = isAffectedByHumanoid(child)
-                    if (affectedByHumanoid) { //clothing and stuff
-                        const parent = child.parent
-                        const humanoid = parent?.FindFirstChildOfClass("Humanoid")
-
-                        const bodyPart = BodyPartNameToEnum[child.Prop("Name") as string]
-                        if (bodyPart) {
-                            this.bodyPart = bodyPart
-                            this.avatarType = AvatarType.R6
-                        }
-    
-                        if (parent && humanoid && humanoid.Property("RigType") === HumanoidRigType.R6) {
-                            //get texture of body part based on CharacterMesh
-                            let overlayTextureId = -1n
-                            let baseTextureId = -1n
-                            const children2 = parent.GetChildren()
-                            for (const child2 of children2) {
-                                if (child2.className === "CharacterMesh") {
-                                    if (BodyPartNameToEnum[child.Property("Name") as string] === child2.Property("BodyPart")) {
-                                        overlayTextureId = child2.Prop("OverlayTextureId") as bigint
-                                        baseTextureId = child2.Prop("BaseTextureId") as bigint
-                                    }
-                                }
-                            }
-
-                            if (baseTextureId > 0n) {
-                                const baseTextureLayer = new TextureLayer()
-                                baseTextureLayer.color = `rbxassetid://${baseTextureId}`
-                                this.layers.push(baseTextureLayer)
-                            }
-
-                            //clothing
-                            this.addClothingLayers(parent)
-
-                            //apply overlay
-                            if (overlayTextureId > 0n) {
-                                const overlayTextureLayer = new TextureLayer()
-                                overlayTextureLayer.color = `rbxassetid://${overlayTextureId}`
-                                this.layers.push(overlayTextureLayer)
-                            }
-                        }
-                    }
-                }
+                this.fromPart(child)
     
                 break
             }
             case "MeshPart": {
-                let affectedByHumanoid = isAffectedByHumanoid(child)
-    
-                const meshPartTexture = child.Prop("TextureID") as string
-                const surfaceAppearance = child.FindFirstChildOfClass("SurfaceAppearance")
-                let surfaceAppearanceAlphaMode = AlphaMode.Overlay
-                if (surfaceAppearance) {
-                    surfaceAppearanceAlphaMode = surfaceAppearance.Prop("AlphaMode") as number
-                }
-
-                //part color
-                if (!(surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency)) {
-                    if (affectedByHumanoid || (meshPartTexture.length < 1 || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay))) {
-                        const partColor = (child.Prop("Color") as Color3uint8).toColor3()
-                        const colorLayer = new ColorLayer(partColor)
-                        this.layers.push(colorLayer)
-                    } else {
-                        this.transparent = true
-                    }
-                }
-
-                //surface appearance
-                if (surfaceAppearance) { //TODO: do something with AlphaMode property to stop rthro characters from looking like flesh
-                    const surfaceAppearanceLayer = new TextureLayer()
-                    surfaceAppearanceLayer.color = surfaceAppearance.Property("ColorMap") as string
-                    surfaceAppearanceLayer.normal = surfaceAppearance.Property("NormalMap") as string
-                    surfaceAppearanceLayer.roughness = surfaceAppearance.Property("RoughnessMap") as string
-                    surfaceAppearanceLayer.metalness = surfaceAppearance.Property("MetalnessMap") as string
-                    this.layers.push(surfaceAppearanceLayer)
-
-                    if (surfaceAppearance.Prop("AlphaMode") === AlphaMode.Transparency) {
-                        this.transparent = true
-                    }
-
-                    affectedByHumanoid = false
-                }
-
-                //clothing
-                if (affectedByHumanoid && child.parent) {
-                    const bodyPart = BodyPartNameToEnum[child.Prop("Name") as string]
-                    if (Object.hasOwn(BodyPartNameToEnum, child.Prop("Name") as string)) {
-                        this.bodyPart = bodyPart
-                        this.avatarType = AvatarType.R15
-                    }
-
-                    if (bodyPart !== BodyPart.Head) {
-                        this.addClothingLayers(child.parent)
-                    }
-                }
-
-                //meshpart texture
-                if (!surfaceAppearance && meshPartTexture.length > 0) {
-                    const textureLayer = new TextureLayer()
-                    textureLayer.color = meshPartTexture
-                    this.layers.push(textureLayer)
-                }
-
-                //decal
-                const decal = child.FindFirstChildOfClass("Decal")
-                if (decal && ((meshPartTexture.length < 1 && !surfaceAppearance) || !isAffectedByHumanoid(child))) {
-                    const decalTexture = decal.Property("Texture") as string
-                    const decalLayer = new TextureLayer()
-                    decalLayer.color = decalTexture
-                    decalLayer.uvType = "Decal"
-                    decalLayer.face = decal.Prop("Face") as number
-                    this.layers.push(decalLayer)
-                }
+                this.fromMeshPart(child)
                 
                 break
             }
+        }
+    }
+
+    fromPart(child: Instance) {
+        const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
+        if (specialMesh) {
+            switch (specialMesh.Property("MeshType")) {
+                case MeshType.FileMesh: {
+                    if (isAffectedByHumanoid(child)) {
+                        const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                        const partcolorLayer = new ColorLayer(partColor)
+                        this.layers.push(partcolorLayer)
+                    } else {
+                        this.transparent = true
+                    }
+                    const colorLayer = new TextureLayer()
+                    colorLayer.color = specialMesh.Property("TextureId") as string
+                    this.layers.push(colorLayer)
+                    break
+                }
+                default: {
+                    const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                    const colorLayer = new ColorLayer(partColor)
+                    this.layers.push(colorLayer)
+                    break
+                }
+            }
+
+            const decal = child.FindFirstChildOfClass("Decal")
+            if (decal && ((specialMesh.Prop("TextureId") as string).length < 1 || !isAffectedByHumanoid(child))) {
+                const decalTexture = decal.Property("Texture") as string
+                const colorLayer = new TextureLayer()
+                colorLayer.color = decalTexture
+                this.layers.push(colorLayer)
+            }
+        } else {
+            const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+            const colorLayer = new ColorLayer(partColor)
+            this.layers.push(colorLayer)
+
+            const affectedByHumanoid = isAffectedByHumanoid(child)
+            if (affectedByHumanoid) { //clothing and stuff
+                const parent = child.parent
+                const humanoid = parent?.FindFirstChildOfClass("Humanoid")
+
+                const bodyPart = BodyPartNameToEnum[child.Prop("Name") as string]
+                if (bodyPart) {
+                    this.bodyPart = bodyPart
+                    this.avatarType = AvatarType.R6
+                }
+
+                if (parent && humanoid && humanoid.Property("RigType") === HumanoidRigType.R6) {
+                    //get texture of body part based on CharacterMesh
+                    let overlayTextureId = -1n
+                    let baseTextureId = -1n
+                    const children2 = parent.GetChildren()
+                    for (const child2 of children2) {
+                        if (child2.className === "CharacterMesh") {
+                            if (BodyPartNameToEnum[child.Property("Name") as string] === child2.Property("BodyPart")) {
+                                overlayTextureId = child2.Prop("OverlayTextureId") as bigint
+                                baseTextureId = child2.Prop("BaseTextureId") as bigint
+                            }
+                        }
+                    }
+
+                    if (baseTextureId > 0n) {
+                        const baseTextureLayer = new TextureLayer()
+                        baseTextureLayer.color = `rbxassetid://${baseTextureId}`
+                        this.layers.push(baseTextureLayer)
+                    }
+
+                    //clothing
+                    this.addClothingLayers(parent)
+
+                    //apply overlay
+                    if (overlayTextureId > 0n) {
+                        const overlayTextureLayer = new TextureLayer()
+                        overlayTextureLayer.color = `rbxassetid://${overlayTextureId}`
+                        this.layers.push(overlayTextureLayer)
+                    }
+                }
+            }
+        }
+    }
+
+    fromMeshPart(child: Instance) {
+        let affectedByHumanoid = isAffectedByHumanoid(child)
+
+        const meshPartTexture = child.Prop("TextureID") as string
+        const surfaceAppearance = child.FindFirstChildOfClass("SurfaceAppearance")
+        let surfaceAppearanceAlphaMode = AlphaMode.Overlay
+        if (surfaceAppearance) {
+            surfaceAppearanceAlphaMode = surfaceAppearance.Prop("AlphaMode") as number
+        }
+
+        //part color
+        if (!(surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency)) {
+            if (affectedByHumanoid || (meshPartTexture.length < 1 || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay))) {
+                const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                const colorLayer = new ColorLayer(partColor)
+                this.layers.push(colorLayer)
+            } else {
+                this.transparent = true
+            }
+        }
+
+        //surface appearance
+        if (surfaceAppearance) { //TODO: do something with AlphaMode property to stop rthro characters from looking like flesh
+            const surfaceAppearanceLayer = new TextureLayer()
+            surfaceAppearanceLayer.color = surfaceAppearance.Property("ColorMap") as string
+            surfaceAppearanceLayer.normal = surfaceAppearance.Property("NormalMap") as string
+            surfaceAppearanceLayer.roughness = surfaceAppearance.Property("RoughnessMap") as string
+            surfaceAppearanceLayer.metalness = surfaceAppearance.Property("MetalnessMap") as string
+            this.layers.push(surfaceAppearanceLayer)
+
+            if (surfaceAppearance.Prop("AlphaMode") === AlphaMode.Transparency) {
+                this.transparent = true
+            }
+
+            affectedByHumanoid = false
+        }
+
+        //clothing
+        if (affectedByHumanoid && child.parent) {
+            const bodyPart = BodyPartNameToEnum[child.Prop("Name") as string]
+            if (Object.hasOwn(BodyPartNameToEnum, child.Prop("Name") as string)) {
+                this.bodyPart = bodyPart
+                this.avatarType = AvatarType.R15
+            }
+
+            if (bodyPart !== BodyPart.Head) {
+                this.addClothingLayers(child.parent)
+            }
+        }
+
+        //meshpart texture
+        if (!surfaceAppearance && meshPartTexture.length > 0) {
+            const textureLayer = new TextureLayer()
+            textureLayer.color = meshPartTexture
+            this.layers.push(textureLayer)
+        }
+
+        //decal
+        const decal = child.FindFirstChildOfClass("Decal")
+        if (decal && ((meshPartTexture.length < 1 && !surfaceAppearance) || !isAffectedByHumanoid(child))) {
+            const decalTexture = decal.Property("Texture") as string
+            const decalLayer = new TextureLayer()
+            decalLayer.color = decalTexture
+            decalLayer.uvType = "Decal"
+            decalLayer.face = decal.Prop("Face") as number
+            this.layers.push(decalLayer)
         }
     }
 }

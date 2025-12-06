@@ -5,8 +5,8 @@ import { API, Authentication } from '../api'
 import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
 import { deformReferenceToBaseBodyParts, layerClothingChunked, offsetMesh } from '../rblx/mesh-deform'
-import { BoneNameToIndex } from './renderer'
 import { USE_VERTEX_COLOR } from '../misc/flags'
+import { BoneNameToIndex } from './skeleton'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -486,144 +486,152 @@ export class MeshDesc {
 
         switch (child.className) {
             case "Part": {
-                const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
-                if (specialMesh) {
-                    //this.size = specialMesh.Property("Scale") as Vector3
-    
-                    switch (specialMesh.Property("MeshType")) {
-                        case MeshType.FileMesh: {
-                            this.mesh = specialMesh.Property("MeshId") as string
-                            break
-                        }
-                        case MeshType.Head: {
-                            this.mesh = "rbxasset://avatar/heads/head.mesh"
-                            //this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
-                            break
-                        } //TODO: add the rest of the mesh types
-                        default: {
-                            console.warn(`MeshType ${specialMesh.Property("MeshType")} is not supported`)
-                            break
-                        }
-                    }
-                } else {
-                    const affectedByHumanoid = isAffectedByHumanoid(child)
-                    if (affectedByHumanoid && child.Prop("Name") !== "Head") { //clothing and stuff
-                        const parent = child.parent
-                        const humanoid = parent?.FindFirstChildOfClass("Humanoid")
-    
-                        if (parent && humanoid && humanoid.Property("RigType") === HumanoidRigType.R6) {
-                            //get mesh of body part based on CharacterMesh
-                            let characterMeshStr = null
-                            
-                            const children2 = parent.GetChildren()
-                            for (const child2 of children2) {
-                                if (child2.className === "CharacterMesh") {
-                                    if (BodyPartNameToEnum[child.Property("Name") as string] === child2.Property("BodyPart")) {
-                                        //TODO: check if the other properties are important
-                                        characterMeshStr = child2.Property("MeshId") as string
-                                    }
-                                }
-                            }
-    
-                            if (!characterMeshStr) { //use default blocky meshes
-                                characterMeshStr = `rbxasset://avatar/meshes/${["","torso","leftarm","rightarm","leftleg","rightleg"][BodyPartNameToEnum[child.Property("Name") as string]]}.mesh`
-                            }
-    
-                            this.mesh = characterMeshStr
-                        } else { //TODO: R15, clothing
-    
-                        }
-                    } else { //TODO: render as regular part (cube, cylinder, sphere, etc.)
-    
-                    }
-                }
+                this.fromPart(child)
     
                 break
             }
             case "MeshPart": {
-                const meshIdStr = child.Property("MeshId") as string
+                this.fromMeshPart(child)
 
-                this.mesh = meshIdStr
-                //this.size = child.Property("Size") as Vector3
-                this.scaleIsRelative = true
+                break
+            }
+        }
+    }
 
-                //humanoid layered clothing
-                if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {
-                    const rig = child.parent.parent
+    fromPart(child: Instance) {
+        const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
+        if (specialMesh) {
+            //this.size = specialMesh.Property("Scale") as Vector3
 
-                    //wrap layer
-                    const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+            switch (specialMesh.Property("MeshType")) {
+                case MeshType.FileMesh: {
+                    this.mesh = specialMesh.Property("MeshId") as string
+                    break
+                }
+                case MeshType.Head: {
+                    this.mesh = "rbxasset://avatar/heads/head.mesh"
+                    //this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
+                    break
+                } //TODO: add the rest of the mesh types
+                default: {
+                    console.warn(`MeshType ${specialMesh.Property("MeshType")} is not supported`)
+                    break
+                }
+            }
+        } else {
+            const affectedByHumanoid = isAffectedByHumanoid(child)
+            if (affectedByHumanoid && child.Prop("Name") !== "Head") { //clothing and stuff
+                const parent = child.parent
+                const humanoid = parent?.FindFirstChildOfClass("Humanoid")
 
-                    if (wrapLayer) {
-                        this.scaleIsRelative = false
-                        //this.size = new Vector3(1,1,1)
-
-                        const selfLayerOrder = wrapLayer.Prop("Order") as number
-
-                        const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
-                        const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
-                        const deformationCage = wrapLayer.Prop("CageMeshId") as string
-                        const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
-
-                        this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
-
-                        this.targetCages = []
-                        this.targetCFrames = []
-                        this.targetSizes = []
-
-                        //wrap targets
-                        for (const bodyPartEnum of AllBodyParts) {
-                            for (const bodyPartName of BodyPartEnumToNames[bodyPartEnum]) {
-                                const bodyPart = rig.FindFirstChild(bodyPartName)
-                                if (bodyPart) {
-                                    const bodyPartWrapTarget = bodyPart.FindFirstChildOfClass("WrapTarget")
-                                    if (bodyPartWrapTarget) {
-                                        const bodyPartCage = bodyPartWrapTarget.Prop("CageMeshId") as string
-
-                                        const bodyPartCageOrigin = bodyPartWrapTarget.Prop("CageOrigin") as CFrame
-                                        const bodyPartCFrame = traverseRigCFrame(bodyPart)
-                                        const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
-
-                                        const bodyPartSize = bodyPart.Prop("Size") as Vector3
-
-                                        this.targetCages.push(bodyPartCage)
-                                        this.targetCFrames.push(bodyPartTargetCFrame)
-                                        this.targetSizes.push(bodyPartSize)
-                                    }
-                                }
+                if (parent && humanoid && humanoid.Property("RigType") === HumanoidRigType.R6) {
+                    //get mesh of body part based on CharacterMesh
+                    let characterMeshStr = null
+                    
+                    const children2 = parent.GetChildren()
+                    for (const child2 of children2) {
+                        if (child2.className === "CharacterMesh") {
+                            if (BodyPartNameToEnum[child.Property("Name") as string] === child2.Property("BodyPart")) {
+                                //TODO: check if the other properties are important
+                                characterMeshStr = child2.Property("MeshId") as string
                             }
                         }
+                    }
 
-                        //underneath wrap layers
-                        const underneathLayers: WrapLayerDesc[] = []
+                    if (!characterMeshStr) { //use default blocky meshes
+                        characterMeshStr = `rbxasset://avatar/meshes/${["","torso","leftarm","rightarm","leftleg","rightleg"][BodyPartNameToEnum[child.Property("Name") as string]]}.mesh`
+                    }
 
-                        for (const accessory of rig.GetChildren()) {
-                            if (accessory.className === "Accessory") {
-                                const handle = accessory.FindFirstChildOfClass("MeshPart")
-                                if (handle) {
-                                    const wrapLayer = handle.FindFirstChildOfClass("WrapLayer")
-                                    if (wrapLayer) {
-                                        const layerOrder = wrapLayer.Prop("Order") as number
-                                        if (layerOrder < selfLayerOrder) {
-                                            const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
-                                            const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
-                                            const deformationCage = wrapLayer.Prop("CageMeshId") as string
-                                            const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+                    this.mesh = characterMeshStr
+                } else { //This should never happen, r15 characters use meshparts
 
-                                            const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
-                                            underneathLayer.order = layerOrder
-                                            underneathLayers.push(underneathLayer)
-                                        }
-                                    }
-                                }
+                }
+            } else { //TODO: render as regular part (cube, cylinder, sphere, etc.)
+
+            }
+        }
+    }
+
+    fromMeshPart(child: Instance) {
+        const meshIdStr = child.Property("MeshId") as string
+
+        this.mesh = meshIdStr
+        //this.size = child.Property("Size") as Vector3
+        this.scaleIsRelative = true
+
+        //humanoid layered clothing
+        if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {
+            const rig = child.parent.parent
+
+            //wrap layer
+            const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+
+            if (wrapLayer) {
+                this.scaleIsRelative = false
+                //this.size = new Vector3(1,1,1)
+
+                const selfLayerOrder = wrapLayer.Prop("Order") as number
+
+                const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
+                const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
+                const deformationCage = wrapLayer.Prop("CageMeshId") as string
+                const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+
+                this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+
+                this.targetCages = []
+                this.targetCFrames = []
+                this.targetSizes = []
+
+                //wrap targets
+                for (const bodyPartEnum of AllBodyParts) {
+                    for (const bodyPartName of BodyPartEnumToNames[bodyPartEnum]) {
+                        const bodyPart = rig.FindFirstChild(bodyPartName)
+                        if (bodyPart) {
+                            const bodyPartWrapTarget = bodyPart.FindFirstChildOfClass("WrapTarget")
+                            if (bodyPartWrapTarget) {
+                                const bodyPartCage = bodyPartWrapTarget.Prop("CageMeshId") as string
+
+                                const bodyPartCageOrigin = bodyPartWrapTarget.Prop("CageOrigin") as CFrame
+                                const bodyPartCFrame = traverseRigCFrame(bodyPart)
+                                const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
+
+                                const bodyPartSize = bodyPart.Prop("Size") as Vector3
+
+                                this.targetCages.push(bodyPartCage)
+                                this.targetCFrames.push(bodyPartTargetCFrame)
+                                this.targetSizes.push(bodyPartSize)
                             }
                         }
-
-                        this.enclosedLayers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
                     }
                 }
 
-                break
+                //underneath wrap layers
+                const underneathLayers: WrapLayerDesc[] = []
+
+                for (const accessory of rig.GetChildren()) {
+                    if (accessory.className === "Accessory") {
+                        const handle = accessory.FindFirstChildOfClass("MeshPart")
+                        if (handle) {
+                            const wrapLayer = handle.FindFirstChildOfClass("WrapLayer")
+                            if (wrapLayer) {
+                                const layerOrder = wrapLayer.Prop("Order") as number
+                                if (layerOrder < selfLayerOrder) {
+                                    const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
+                                    const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
+                                    const deformationCage = wrapLayer.Prop("CageMeshId") as string
+                                    const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+
+                                    const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+                                    underneathLayer.order = layerOrder
+                                    underneathLayers.push(underneathLayer)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                this.enclosedLayers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
             }
         }
     }
