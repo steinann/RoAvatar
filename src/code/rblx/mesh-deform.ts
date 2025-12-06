@@ -509,7 +509,7 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
     return weightChunks
 }
 
-/**THIS FUNCTION IS SO EXPENSIVE IT NEEDS TO BE ASYNC SO JS DOESNT CRASH; TODO: OPTIMIZE!!!
+/**THIS FUNCTION IS SO EXPENSIVE IT NEEDS TO BE ASYNC SO JS DOESNT CRASH, USE CHUNKED VERSION INSTEAD
 */
 export async function createWeightsForMesh(mesh: FileMesh, ref_mesh: FileMesh) {
     //actual depth / expected depth * a number that worked well for normally sized ref_meshes
@@ -544,7 +544,7 @@ export async function createWeightsForMesh(mesh: FileMesh, ref_mesh: FileMesh) {
     return meshVertWeights
 }
 
-//TODO: use new algorithm that accounts for normals
+//USE CHUNKED VERSION INSTEAD
 export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
     console.time("total")
 
@@ -573,7 +573,7 @@ export async function layerClothing(mesh: FileMesh, ref_mesh: FileMesh, dist_mes
     console.timeEnd("total")
 }
 
-//discover new algorithm that works better
+//TODO: discover new algorithm that works better
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
     console.time("total")
 

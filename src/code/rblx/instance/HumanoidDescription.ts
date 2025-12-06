@@ -1,7 +1,5 @@
 /*
 ISSUES (++ Probably fixed, -- Not fixed)
-++ Equipping dynamic head then unequipping results in default face
-++ Accessories cannot be unequipped
 -- Face is included in dynamic head (but not rendered)
 */
 
