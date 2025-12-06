@@ -16,14 +16,18 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [items, setItems] = useState<AvatarInventoryItem[]>([])
 
+    const refresh = () => {
+        setItems([])
+        setNextPageToken("")
+        setIsLoading(false)
+        lastLoadId++
+    }
+
     useEffect(() => {
         if (category !== lastCategory || subCategory !== lastSubCategory) {
             lastCategory = category
             lastSubCategory = subCategory
-            setItems([])
-            setNextPageToken("")
-            setIsLoading(false)
-            lastLoadId++
+            refresh()
         }
     }, [category, subCategory])
 
@@ -71,7 +75,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
 
     const hasLoadedAll = nextPageToken === null || nextPageToken === undefined
 
-    return {items, isLoading, loadMore, hasLoadedAll }
+    return {items, isLoading, loadMore, hasLoadedAll, refresh }
 }
 
 type AvatarInventoryItem = {
@@ -86,7 +90,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
 
     const scrollDivRef: React.RefObject<HTMLDivElement | null> = useRef(null)
 
-    const {items, isLoading, loadMore, hasLoadedAll } = useItems(auth, categoryType, subCategoryType)
+    const {items, isLoading, loadMore, hasLoadedAll, refresh } = useItems(auth, categoryType, subCategoryType)
 
     useEffect(() => {
         if (scrollDivRef.current) {
@@ -186,7 +190,20 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
 
     if (auth && itemInfos.length > 0) {
         let i = 0;
-        itemComponents = <>{
+        itemComponents = <>
+        {categoryType === "Characters" && subCategoryType === "Creations" ?
+        <>
+            <ItemCard key={i++} auth={auth} forceImage="../assets/newoutfit.png" itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
+                API.Avatar.SaveOutfit(auth, outfit).then((result) => {
+                    if (result.status === 200) {
+                        refresh()
+                    } else {
+                        //TODO: add error
+                    }
+                })
+            }}/>
+        </> : null}
+        {
             itemInfos.map((item) => (
                 <ItemCard key={i++} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
                     onClickFunc(auth, item)
