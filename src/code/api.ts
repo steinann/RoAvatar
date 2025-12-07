@@ -460,6 +460,9 @@ const API = {
         },
         UnequipEmote: async function(auth: Authentication, slot: number): Promise<Response> {
             return await RBLXDelete(`https://avatar.roblox.com/v1/emotes/${slot}`, auth, "")
+        },
+        GetAvatarRules: async function(): Promise<Response> {
+            return await RBLXGet("https://avatar.roblox.com/v1/avatar-rules")
         }
     },
     "Asset": {

@@ -717,7 +717,7 @@ export const accessoryRefinementTypes = [
     44,
     45,
     46
-  ]
+]
 
 export const accessoryRefinementLowerBounds: {[K in string]: {
     "position": {[K in string]: number},
@@ -726,210 +726,228 @@ export const accessoryRefinementLowerBounds: {[K in string]: {
 }
 } = {
     "Hat": {
-      "position": {
+        "position": {
         "xPosition": -0.25,
         "yPosition": -0.25,
         "zPosition": -0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": -30,
         "yRotation": -30,
         "zRotation": -30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 0.8,
         "yScale": 0.8,
         "zScale": 0.8
-      }
+        }
     },
     "FaceAccessory": {
-      "position": {
+        "position": {
         "xPosition": -0.25,
         "yPosition": -0.25,
         "zPosition": -0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": -30,
         "yRotation": -30,
         "zRotation": -30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 0.8,
         "yScale": 0.8,
         "zScale": 0.8
-      }
+        }
     },
     "NeckAccessory": {
-      "position": {
+        "position": {
         "xPosition": -0.25,
         "yPosition": -0.25,
         "zPosition": -0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": -30,
         "yRotation": -30,
         "zRotation": -30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 0.8,
         "yScale": 0.8,
         "zScale": 0.8
-      }
+        }
     },
     "ShoulderAccessory": {
-      "position": {
+        "position": {
         "xPosition": -0.25,
         "yPosition": -0.25,
         "zPosition": -0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": -30,
         "yRotation": -30,
         "zRotation": -30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 0.8,
         "yScale": 0.8,
         "zScale": 0.8
-      }
+        }
     },
     "FrontAccessory": {
-      "position": {
+        "position": {
         "xPosition": -0.25,
         "yPosition": -0.25,
         "zPosition": -0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": -15,
         "yRotation": -30,
         "zRotation": -30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 0.8,
         "yScale": 0.8,
         "zScale": 0.8
-      }
+        }
     },
     "BackAccessory": {
-      "position": {
+        "position": {
         "xPosition": -0.25,
         "yPosition": -0.25,
         "zPosition": -0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": -15,
         "yRotation": -30,
         "zRotation": -30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 0.8,
         "yScale": 0.8,
         "zScale": 0.8
-      }
+        }
     }
-  }
+}
 
 export const accessoryRefinementUpperBounds: typeof accessoryRefinementLowerBounds = {
     "Hat": {
-      "position": {
+        "position": {
         "xPosition": 0.25,
         "yPosition": 0.25,
         "zPosition": 0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": 30,
         "yRotation": 30,
         "zRotation": 30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 1.2,
         "yScale": 1.2,
         "zScale": 1.2
-      }
+        }
     },
     "FaceAccessory": {
-      "position": {
+        "position": {
         "xPosition": 0.25,
         "yPosition": 0.25,
         "zPosition": 0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": 30,
         "yRotation": 30,
         "zRotation": 30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 1.2,
         "yScale": 1.2,
         "zScale": 1.2
-      }
+        }
     },
     "NeckAccessory": {
-      "position": {
+        "position": {
         "xPosition": 0.25,
         "yPosition": 0.25,
         "zPosition": 0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": 30,
         "yRotation": 30,
         "zRotation": 30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 1.2,
         "yScale": 1.2,
         "zScale": 1.2
-      }
+        }
     },
     "ShoulderAccessory": {
-      "position": {
+        "position": {
         "xPosition": 0.25,
         "yPosition": 0.25,
         "zPosition": 0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": 30,
         "yRotation": 30,
         "zRotation": 30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 1.2,
         "yScale": 1.2,
         "zScale": 1.2
-      }
+        }
     },
     "FrontAccessory": {
-      "position": {
+        "position": {
         "xPosition": 0.25,
         "yPosition": 0.25,
         "zPosition": 0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": 15,
         "yRotation": 30,
         "zRotation": 30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 1.2,
         "yScale": 1.2,
         "zScale": 1.2
-      }
+        }
     },
     "BackAccessory": {
-      "position": {
+        "position": {
         "xPosition": 0.25,
         "yPosition": 0.25,
         "zPosition": 0.25
-      },
-      "rotation": {
+        },
+        "rotation": {
         "xRotation": 15,
         "yRotation": 30,
         "zRotation": 30
-      },
-      "scale": {
+        },
+        "scale": {
         "xScale": 1.2,
         "yScale": 1.2,
         "zScale": 1.2
-      }
+        }
     }
-  }
+}
+
+/*
+API.Avatar.GetAvatarRules().then((response: Response) => {
+    if (response.status === 200) {
+        response.json().then((data) => {
+            if (data.accessoryRefinementUpperBounds) {
+                accessoryRefinementUpperBounds = data.accessoryRefinementUpperBounds
+            }
+            if (data.accessoryRefinementLowerBounds) {
+                accessoryRefinementLowerBounds = data.accessoryRefinementLowerBounds
+            }
+            if (data.accessoryRefinementTypes) {
+                accessoryRefinementTypes = data.accessoryRefinementTypes
+            }
+        })
+    }
+})
+*/

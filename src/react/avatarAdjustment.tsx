@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import SliderInput from "./generic/sliderInput";
 import ItemCard from "./itemCard";
 import { OutfitContext } from "./context/outfit-context";
@@ -80,6 +80,8 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
     const [adjustAssetId, setAdjustAssetId] = useState<number | undefined>(undefined)
     const [adjustAsset, setAdjustAsset] = useState<Asset | undefined>(undefined)
 
+    const menuRef = useRef<HTMLUListElement>(null)
+
     function setAdjustOpen(open: boolean) {
         if (open === false) {
             setAdjustAsset(undefined)
@@ -100,6 +102,23 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
             adjustableAssets.push(asset.id)
         }
     }
+
+    //close when click outside preview
+    useEffect(() => {
+        const menuElement = menuRef.current
+
+        const mouseUpListener = (e: MouseEvent) => {
+            if (menuElement && !menuElement.contains(e.target as HTMLElement) && !adjustOpen) {
+                setOpen(false)
+            }
+        }
+
+        document.addEventListener("mouseup", mouseUpListener)
+        
+        return () => {
+            document.removeEventListener("mouseup", mouseUpListener)
+        }
+    })
 
     useEffect(() => {
         for (const asset of outfit.assets) {
@@ -156,7 +175,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
     }
 
     return <>
-        <ul className='menu-icons'>
+        <ul ref={menuRef} className='menu-icons'>
             {/*Hamburger menu*/}
             <ul className='inner-menu-icons first-menu-icons'>
                 <button title={open ? "Close Menu" : "Open Menu"} className={`menu-icon menu-open${adjustOpen ? " menu-icon-inactive":""}`} onClick={() => {setOpen(!open)}}><span className='material-symbols-outlined'>{open ? "close" : "menu"}</span></button>

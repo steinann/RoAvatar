@@ -732,6 +732,14 @@ body {
     border-radius: 1em;
     overflow: hidden;
     z-index: 2;
+    max-height: 300px;
+    transition: 0.1s;
+}
+
+.select ul.icons-collapsed {
+    max-height: 0px;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .select ul button {

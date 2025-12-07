@@ -13,6 +13,7 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: Layered clothing does not deform the body/inner clothing to avoid clipping
     -Vertex colors are used when they shouldn't be, see 17399885483 as an example (DO NOTE: vertex colors are currently disabled FULLY because i dont think anything really needs it)
     -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
+    -Some meshes do not load, see 5505442904 as an example
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
