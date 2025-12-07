@@ -355,74 +355,72 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 	//find appropriate relative scaling with attached part
 	if (attachedPart) {
         const bodyPartName = attachedPart.Prop("Name") as string
-        if (SCALE_Wide_R15[bodyPartName] === undefined) {
-            return
-        }
+        if (SCALE_Wide_R15[bodyPartName] !== undefined) {
+            let accessoryScaleType = "Classic"
+			const accessoryScaleTypeValue = accessory.FindFirstDescendant("AvatarPartScaleType")
+			if (accessoryScaleTypeValue) {
+				accessoryScaleType = accessoryScaleTypeValue.Prop("Value") as string
+			}
 
-	    let accessoryScaleType = "Classic"
-        const accessoryScaleTypeValue = accessory.FindFirstDescendant("AvatarPartScaleType")
-		if (accessoryScaleTypeValue) {
-			accessoryScaleType = accessoryScaleTypeValue.Prop("Value") as string
-        }
+			let attachedPartScaleType = "Classic"
+			const attachedPartScaleTypeValue = attachedPart.FindFirstDescendant("AvatarPartScaleType")
+			if (attachedPartScaleTypeValue) {
+				attachedPartScaleType = attachedPartScaleTypeValue.Prop("Value") as string
+			}
 
-	    let attachedPartScaleType = "Classic"
-        const attachedPartScaleTypeValue = attachedPart.FindFirstDescendant("AvatarPartScaleType")
-		if (attachedPartScaleTypeValue) {
-			attachedPartScaleType = attachedPartScaleTypeValue.Prop("Value") as string
-        }
+			let relativeScaleVector = Vector3.new(1,1,1)
+			if (accessoryScaleType !== attachedPartScaleType) {
+				if (accessoryScaleType === "Classic" && (attachedPartScaleType === "ProportionsNormal" || attachedPartScaleType === "ProportionsSlender")) {
+					//match part
+					relativeScaleVector = relativeScaleVector.divide(SCALE_Wide_R15[bodyPartName])
+				} else if (accessoryScaleType === "ProportionsNormal" && attachedPartScaleType === "Classic") {
+					//match part
+					relativeScaleVector = relativeScaleVector.multiply(SCALE_Wide_R15[bodyPartName])
+				} else if (accessoryScaleType === "ProportionsNormal" && attachedPartScaleType === "ProportionsSlender") {
+					//match part
+					relativeScaleVector = relativeScaleVector.multiply(SCALE_R15_Proportions[bodyPartName])
+				} else if (accessoryScaleType === "ProportionsSlender" && attachedPartScaleType === "Classic") {
+					//match part
+					relativeScaleVector = relativeScaleVector.multiply(SCALE_Wide_R15[bodyPartName]).divide(SCALE_R15_Proportions[bodyPartName])
+				} else if (accessoryScaleType === "ProportionsSlender" && attachedPartScaleType === "ProportionsNormal") {
+					//match part
+					relativeScaleVector = relativeScaleVector.divide(SCALE_R15_Proportions[bodyPartName])
+				}
+			}
 
-        let relativeScaleVector = Vector3.new(1,1,1)
-        if (accessoryScaleType !== attachedPartScaleType) {
-            if (accessoryScaleType === "Classic" && (attachedPartScaleType === "ProportionsNormal" || attachedPartScaleType === "ProportionsSlender")) {
-                //match part
-                relativeScaleVector = relativeScaleVector.divide(SCALE_Wide_R15[bodyPartName])
-            } else if (accessoryScaleType === "ProportionsNormal" && attachedPartScaleType === "Classic") {
-                //match part
-                relativeScaleVector = relativeScaleVector.multiply(SCALE_Wide_R15[bodyPartName])
-            } else if (accessoryScaleType === "ProportionsNormal" && attachedPartScaleType === "ProportionsSlender") {
-                //match part
-                relativeScaleVector = relativeScaleVector.multiply(SCALE_R15_Proportions[bodyPartName])
-            } else if (accessoryScaleType === "ProportionsSlender" && attachedPartScaleType === "Classic") {
-                //match part
-                relativeScaleVector = relativeScaleVector.multiply(SCALE_Wide_R15[bodyPartName]).divide(SCALE_R15_Proportions[bodyPartName])
-            } else if (accessoryScaleType === "ProportionsSlender" && attachedPartScaleType === "ProportionsNormal") {
-                //match part
-                relativeScaleVector = relativeScaleVector.divide(SCALE_R15_Proportions[bodyPartName])
-            }
-        }
-
-        if (bodyTypeScale !== null && bodyProportionScale !== null) { //IF R15, very hacky of me
-            switch (attachedPartScaleType) {
-                case "Classic":
-                    {
-                        //apply scale as Classic
-                        const bodyTypeScaleVector = SCALE_R15_Wide[bodyPartName]
-                        const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
-                        const finalVector = lerpVec3(Vector3.new(1,1,1), bodyTypeScaleVector.multiply(bodyProportionScaleVector), bodyTypeScale).multiply(relativeScaleVector)
-                        resultScale = resultScale.multiply(finalVector)
-                        break
-                    }
-                case "ProportionsNormal":
-                    {
-                        //apply scale as ProportionsNormal
-                        const bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
-                        const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
-                        const finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
-                        resultScale = resultScale.multiply(finalVector)
-                        break
-                    }
-                case "ProportionsSlender":
-                    {
-                        //apply scale as ProportionsSlender
-                        const bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
-                        const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1).divide(SCALE_R15_Proportions[bodyPartName]), Vector3.new(1,1,1), bodyProportionScale)
-                        const finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
-                        resultScale = resultScale.multiply(finalVector)
-                        break
-                    }
-            }
-        } else { //If R6, BUG: Applies scale to R6 sometimes avatar... I'm doing this because it's more frequent for it to mess up and scale accessories rather than not
-            resultScale = resultScale.multiply(relativeScaleVector)
+			if (bodyTypeScale !== null && bodyProportionScale !== null) { //IF R15, very hacky of me
+				switch (attachedPartScaleType) {
+					case "Classic":
+						{
+							//apply scale as Classic
+							const bodyTypeScaleVector = SCALE_R15_Wide[bodyPartName]
+							const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
+							const finalVector = lerpVec3(Vector3.new(1,1,1), bodyTypeScaleVector.multiply(bodyProportionScaleVector), bodyTypeScale).multiply(relativeScaleVector)
+							resultScale = resultScale.multiply(finalVector)
+							break
+						}
+					case "ProportionsNormal":
+						{
+							//apply scale as ProportionsNormal
+							const bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
+							const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1), SCALE_R15_Proportions[bodyPartName], bodyProportionScale)
+							const finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
+							resultScale = resultScale.multiply(finalVector)
+							break
+						}
+					case "ProportionsSlender":
+						{
+							//apply scale as ProportionsSlender
+							const bodyTypeScaleVector = SCALE_Wide_R15[bodyPartName]
+							const bodyProportionScaleVector = lerpVec3(Vector3.new(1,1,1).divide(SCALE_R15_Proportions[bodyPartName]), Vector3.new(1,1,1), bodyProportionScale)
+							const finalVector = lerpVec3(bodyTypeScaleVector, bodyProportionScaleVector, bodyTypeScale).multiply(relativeScaleVector)
+							resultScale = resultScale.multiply(finalVector)
+							break
+						}
+				}
+			} else { //If R6, BUG: Applies scale to R6 sometimes avatar... I'm doing this because it's more frequent for it to mess up and scale accessories rather than not
+				resultScale = resultScale.multiply(relativeScaleVector)
+			}
         }
     } else {
         console.warn("Failed to find attached part for accessory:", accessory)
