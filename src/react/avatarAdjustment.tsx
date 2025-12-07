@@ -159,7 +159,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         <ul className='menu-icons'>
             {/*Hamburger menu*/}
             <ul className='inner-menu-icons first-menu-icons'>
-                <button title={open ? "Open Menu" : "Close Menu"} className={`menu-icon menu-open${adjustOpen ? " menu-icon-inactive":""}`} onClick={() => {setOpen(!open)}}><span className='material-symbols-outlined'>{open ? "close" : "menu"}</span></button>
+                <button title={open ? "Close Menu" : "Open Menu"} className={`menu-icon menu-open${adjustOpen ? " menu-icon-inactive":""}`} onClick={() => {setOpen(!open)}}><span className='material-symbols-outlined'>{open ? "close" : "menu"}</span></button>
                 <ul className={`small-menu-icons${open ? "" : " icons-collapsed"}`}>
                     <button title="Accessory Adjustment" className={`menu-icon menu-adjust${adjustOpen ? " menu-icon-active" : ""}`} onClick={() => {setAdjustOpen(!adjustOpen)}}><span className='material-symbols-outlined'>eyeglasses_2</span></button>
                 </ul>

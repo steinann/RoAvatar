@@ -74,8 +74,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     if (auth && itemInfo) {
         
         return (<a className={actualClassName} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined} onClick={(e) => {
+            e.preventDefault()
             if (itemInfo.itemType === "Asset" && e.target === nameRef.current) {
-                e.preventDefault()
                 browserOpenURL(`https://www.roblox.com/catalog/${itemInfo.id}`)
             }
         }}>

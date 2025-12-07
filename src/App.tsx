@@ -113,9 +113,13 @@ function App() {
     setSubCategoryType(firstSubCategory)
   }
 
-  function setSubCategoryType(subCategoryType: string) {
-    _setSubCategoryType(subCategoryType)
-    switch (subCategoryType) {
+  function setSubCategoryType(newSubCategoryType: string) {
+    if (newSubCategoryType === subCategoryType) {
+      return
+    }
+
+    _setSubCategoryType(newSubCategoryType)
+    switch (newSubCategoryType) {
       case "Idle": 
         setCurrentAnimName("idle.Animation1")
         break

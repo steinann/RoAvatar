@@ -228,7 +228,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
             e.preventDefault()
             setCameraLocked(true)
         }}>
-            <span className="material-symbols-outlined">center_focus_weak</span>
+            <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
         </button>
         {children}
     </div>)
