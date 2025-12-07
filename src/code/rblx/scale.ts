@@ -912,6 +912,9 @@ function BuildJointsFromAttachments(self: RigData, rootPart: Instance, character
 		stepHeight = ((rootPart.Prop("Size") as Vector3).Y / 2)
     }
 	SetStepHeight(self, stepHeight)
+
+	//build the character joints after step height has been set
+	TraverseRigFromAttachmentsInternal(self, rootPart, characterParts, true)
 }
 
 //Builds the joints on a character

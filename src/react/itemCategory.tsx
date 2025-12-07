@@ -7,6 +7,7 @@ import ItemCard from "./itemCard"
 import { AssetTypes, BundleTypes, ItemInfo, ToRemoveBeforeBundleType } from "../code/avatar/asset"
 import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
 import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant"
+import RadialButton from "./generic/radialButton"
 
 let lastCategory = ""
 let lastSubCategory = ""
@@ -88,9 +89,21 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
+    const outfitNameInputRef: React.RefObject<HTMLInputElement | null> = useRef(null)
+    const createOutfitDialogRef: React.RefObject<HTMLDialogElement | null> = useRef(null)
     const scrollDivRef: React.RefObject<HTMLDivElement | null> = useRef(null)
 
+    const [outfitDialogOpen, setOutfitDialogOpen] = useState(false)
+
     const {items, isLoading, loadMore, hasLoadedAll, refresh } = useItems(auth, categoryType, subCategoryType)
+
+    useEffect(() => {
+        if (outfitDialogOpen) {
+            createOutfitDialogRef.current?.showModal()
+        } else {
+            createOutfitDialogRef.current?.close()
+        }
+    }, [outfitDialogOpen])
 
     useEffect(() => {
         if (scrollDivRef.current) {
@@ -193,14 +206,37 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
         itemComponents = <>
         {categoryType === "Characters" && subCategoryType === "Creations" ?
         <>
-            <ItemCard key={i++} auth={auth} forceImage="../assets/newoutfit.png" itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
-                API.Avatar.SaveOutfit(auth, outfit).then((result) => {
-                    if (result.status === 200) {
-                        refresh()
-                    } else {
-                        //TODO: add error
-                    }
+            <dialog style={outfitDialogOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={createOutfitDialogRef} onCancel={() => {setOutfitDialogOpen(false)}}>
+                <span className="dialog-title roboto-700">Create New Character</span>
+                <input ref={outfitNameInputRef} className="dialog-text-input roboto-300" placeholder="Name"></input>
+                <div className="dialog-actions">
+                    <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+                        setOutfitDialogOpen(false)
+                    }}>Cancel</RadialButton>
+                    <RadialButton className="dialog-confirm roboto-600" onClick={() => {
+                        setOutfitDialogOpen(false)
+
+                        const nameValue = outfitNameInputRef.current?.value || ""
+
+                        const toSaveOutfit = outfit.clone()
+                        if (nameValue.length > 0) {
+                            toSaveOutfit.name = nameValue
+                        } else {
+                            toSaveOutfit.name = "Untitled Avatar"
+                        }
+
+                        API.Avatar.SaveOutfit(auth, toSaveOutfit).then((result) => {
+                        if (result.status === 200) {
+                            refresh()
+                        } else {
+                            //TODO: add error
+                        }
                 })
+                    }}>Create</RadialButton>
+                </div>
+            </dialog>
+            <ItemCard key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
+                setOutfitDialogOpen(true)
             }}/>
         </> : null}
         {

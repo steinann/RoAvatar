@@ -709,3 +709,227 @@ export const FullBodyColors: string[] = []
 for (const colorDetails of FullBodyColorPalette) {
     FullBodyColors.push(colorDetails.hexColor.substring(1))
 }
+
+export const accessoryRefinementTypes = [
+    8,
+    42,
+    43,
+    44,
+    45,
+    46
+  ]
+
+export const accessoryRefinementLowerBounds: {[K in string]: {
+    "position": {[K in string]: number},
+    "rotation": {[K in string]: number},
+    "scale": {[K in string]: number},
+}
+} = {
+    "Hat": {
+      "position": {
+        "xPosition": -0.25,
+        "yPosition": -0.25,
+        "zPosition": -0.25
+      },
+      "rotation": {
+        "xRotation": -30,
+        "yRotation": -30,
+        "zRotation": -30
+      },
+      "scale": {
+        "xScale": 0.8,
+        "yScale": 0.8,
+        "zScale": 0.8
+      }
+    },
+    "FaceAccessory": {
+      "position": {
+        "xPosition": -0.25,
+        "yPosition": -0.25,
+        "zPosition": -0.25
+      },
+      "rotation": {
+        "xRotation": -30,
+        "yRotation": -30,
+        "zRotation": -30
+      },
+      "scale": {
+        "xScale": 0.8,
+        "yScale": 0.8,
+        "zScale": 0.8
+      }
+    },
+    "NeckAccessory": {
+      "position": {
+        "xPosition": -0.25,
+        "yPosition": -0.25,
+        "zPosition": -0.25
+      },
+      "rotation": {
+        "xRotation": -30,
+        "yRotation": -30,
+        "zRotation": -30
+      },
+      "scale": {
+        "xScale": 0.8,
+        "yScale": 0.8,
+        "zScale": 0.8
+      }
+    },
+    "ShoulderAccessory": {
+      "position": {
+        "xPosition": -0.25,
+        "yPosition": -0.25,
+        "zPosition": -0.25
+      },
+      "rotation": {
+        "xRotation": -30,
+        "yRotation": -30,
+        "zRotation": -30
+      },
+      "scale": {
+        "xScale": 0.8,
+        "yScale": 0.8,
+        "zScale": 0.8
+      }
+    },
+    "FrontAccessory": {
+      "position": {
+        "xPosition": -0.25,
+        "yPosition": -0.25,
+        "zPosition": -0.25
+      },
+      "rotation": {
+        "xRotation": -15,
+        "yRotation": -30,
+        "zRotation": -30
+      },
+      "scale": {
+        "xScale": 0.8,
+        "yScale": 0.8,
+        "zScale": 0.8
+      }
+    },
+    "BackAccessory": {
+      "position": {
+        "xPosition": -0.25,
+        "yPosition": -0.25,
+        "zPosition": -0.25
+      },
+      "rotation": {
+        "xRotation": -15,
+        "yRotation": -30,
+        "zRotation": -30
+      },
+      "scale": {
+        "xScale": 0.8,
+        "yScale": 0.8,
+        "zScale": 0.8
+      }
+    }
+  }
+
+export const accessoryRefinementUpperBounds: typeof accessoryRefinementLowerBounds = {
+    "Hat": {
+      "position": {
+        "xPosition": 0.25,
+        "yPosition": 0.25,
+        "zPosition": 0.25
+      },
+      "rotation": {
+        "xRotation": 30,
+        "yRotation": 30,
+        "zRotation": 30
+      },
+      "scale": {
+        "xScale": 1.2,
+        "yScale": 1.2,
+        "zScale": 1.2
+      }
+    },
+    "FaceAccessory": {
+      "position": {
+        "xPosition": 0.25,
+        "yPosition": 0.25,
+        "zPosition": 0.25
+      },
+      "rotation": {
+        "xRotation": 30,
+        "yRotation": 30,
+        "zRotation": 30
+      },
+      "scale": {
+        "xScale": 1.2,
+        "yScale": 1.2,
+        "zScale": 1.2
+      }
+    },
+    "NeckAccessory": {
+      "position": {
+        "xPosition": 0.25,
+        "yPosition": 0.25,
+        "zPosition": 0.25
+      },
+      "rotation": {
+        "xRotation": 30,
+        "yRotation": 30,
+        "zRotation": 30
+      },
+      "scale": {
+        "xScale": 1.2,
+        "yScale": 1.2,
+        "zScale": 1.2
+      }
+    },
+    "ShoulderAccessory": {
+      "position": {
+        "xPosition": 0.25,
+        "yPosition": 0.25,
+        "zPosition": 0.25
+      },
+      "rotation": {
+        "xRotation": 30,
+        "yRotation": 30,
+        "zRotation": 30
+      },
+      "scale": {
+        "xScale": 1.2,
+        "yScale": 1.2,
+        "zScale": 1.2
+      }
+    },
+    "FrontAccessory": {
+      "position": {
+        "xPosition": 0.25,
+        "yPosition": 0.25,
+        "zPosition": 0.25
+      },
+      "rotation": {
+        "xRotation": 15,
+        "yRotation": 30,
+        "zRotation": 30
+      },
+      "scale": {
+        "xScale": 1.2,
+        "yScale": 1.2,
+        "zScale": 1.2
+      }
+    },
+    "BackAccessory": {
+      "position": {
+        "xPosition": 0.25,
+        "yPosition": 0.25,
+        "zPosition": 0.25
+      },
+      "rotation": {
+        "xRotation": 15,
+        "yRotation": 30,
+        "zRotation": 30
+      },
+      "scale": {
+        "xScale": 1.2,
+        "yScale": 1.2,
+        "zScale": 1.2
+      }
+    }
+  }

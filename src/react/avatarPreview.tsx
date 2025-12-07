@@ -93,7 +93,7 @@ function updatePreview(outfit: Outfit, auth: Authentication) {
 
 let animationInterval: number | undefined = undefined
 
-export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: Outfit) => void, animName: string}): React.JSX.Element {
+export default function AvatarPreview({ children, setOutfit, animName }: React.PropsWithChildren & { setOutfit :(a: Outfit) => void, animName: string}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const containerRef = useCallback(mount, [])
@@ -230,5 +230,6 @@ export default function AvatarPreview({ setOutfit, animName }: { setOutfit :(a: 
         }}>
             <span className="material-symbols-outlined">center_focus_weak</span>
         </button>
+        {children}
     </div>)
 }

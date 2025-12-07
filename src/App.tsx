@@ -16,6 +16,7 @@ import { AvatarType } from './code/avatar/constant'
 import ItemCard from './react/itemCard'
 import { ItemInfo } from './code/avatar/asset'
 import { arrayBufferToBase64, base64ToArrayBuffer } from './code/misc/misc'
+import AvatarAdjustment from './react/avatarAdjustment'
 //import { arrayBufferToBase64 } from './code/misc/misc'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
@@ -166,7 +167,9 @@ function App() {
           <div className='main'>
             <div className='main-left division-down'>
               <BarCategory className="background-transparent bar-double-margin"></BarCategory>
-              <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}></AvatarPreview>
+              <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>
+                <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+              </AvatarPreview>
               <div className="save-and-history">
                 <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length}/>
                 <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>

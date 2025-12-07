@@ -4,7 +4,7 @@ import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, includeName = true, forceImage = undefined}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, includeName?: boolean, forceImage?: string}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     const nameRef = useRef(null)
@@ -68,15 +68,18 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
 
     const cardImage = imageUrl !== "loading" ? (<img className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 
+    const actualClassName = `item${className ? ` ${className}` : ""}`
+    const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}`
+
     if (auth && itemInfo) {
         
-        return (<a className={"item" + className ? "item " + className : ""} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined} onClick={(e) => {
+        return (<a className={actualClassName} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined} onClick={(e) => {
             if (itemInfo.itemType === "Asset" && e.target === nameRef.current) {
                 e.preventDefault()
                 browserOpenURL(`https://www.roblox.com/catalog/${itemInfo.id}`)
             }
         }}>
-            <RadialButton className={`item-image`} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
+            <RadialButton className={actualButtonClassName} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {cardImage}
             </RadialButton>
@@ -89,8 +92,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             marginTop: "0.5rem",
         }
 
-        return (<div className={"item" + className ? "item " + className : ""}>
-            <RadialButton className="item-image">
+        return (<div className={actualClassName}>
+            <RadialButton className={actualButtonClassName}>
                 {cardImage}
             </RadialButton>
             {includeName ? <div ref={nameRef} className="item-name loading-gradient" style={nameStyle}></div> : null}
