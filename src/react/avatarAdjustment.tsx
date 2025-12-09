@@ -75,7 +75,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
 
     const [open, _setOpen] = useState(false)
     const [adjustOpen, _setAdjustOpen] = useState(false)
-    const [adjustType, setAdjustType] = useState<"move" | "rotate" | "scale">("move")
+    const [adjustType, setAdjustType] = useState<AdjustType>("position")
 
     const [adjustAssetId, setAdjustAssetId] = useState<number | undefined>(undefined)
     const [adjustAsset, setAdjustAsset] = useState<Asset | undefined>(undefined)
@@ -86,7 +86,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         if (open === false) {
             setAdjustAsset(undefined)
             setAdjustAssetId(undefined)
-            setAdjustType("move")
+            setAdjustType("position")
         }
         _setAdjustOpen(open)
     }
@@ -128,19 +128,6 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         }
     }, [adjustAsset, adjustAssetId, setAdjustAsset, outfit.assets])
 
-    let adjustInputType: AdjustType = "position"
-    switch (adjustType) {
-        case "move":
-            adjustInputType = "position"
-            break
-        case "rotate":
-            adjustInputType = "rotation"
-            break
-        case "scale":
-            adjustInputType = "scale"
-            break
-    }
-
     function clearAdjust() {
         if (!outfit.containsAsset(adjustAssetId || 0)) return
 
@@ -160,10 +147,10 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         }
 
         switch (adjustType) {
-            case "move":
+            case "position":
                 newAsset.meta.position = {"X":0,"Y":0,"Z":0}
                 break
-            case "rotate":
+            case "rotation":
                 newAsset.meta.rotation = {"X":0,"Y":0,"Z":0}
                 break
             case "scale":
@@ -185,8 +172,8 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
             </ul>
             {/*Accessory adjustment buttons*/}
             <ul className={`inner-menu-icons adjust-menu-icons${adjustOpen ? "" : " icons-collapsed"}`}>
-                <button title="Move" className={`menu-icon menu-adjust-move${adjustType === "move" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("move")}}><span className='material-symbols-outlined'>drag_pan</span></button>
-                <button title="Rotate" className={`menu-icon menu-adjust-rotate${adjustType === "rotate" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("rotate")}}><span className='material-symbols-outlined'>autorenew</span></button>
+                <button title="Move" className={`menu-icon menu-adjust-move${adjustType === "position" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("position")}}><span className='material-symbols-outlined'>drag_pan</span></button>
+                <button title="Rotate" className={`menu-icon menu-adjust-rotate${adjustType === "rotation" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("rotation")}}><span className='material-symbols-outlined'>autorenew</span></button>
                 <button title="Scale" className={`menu-icon menu-adjust-scale${adjustType === "scale" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("scale")}}><span className='material-symbols-outlined'>expand_content</span></button>
             </ul>
         </ul>
@@ -212,35 +199,35 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         </ul>
 
         {/*Adjustment sliders*/}
-        {adjustOpen && adjustInputType !== "scale" && outfit.containsAsset(adjustAssetId || 0) && adjustAsset ? 
+        {adjustOpen && adjustType !== "scale" && outfit.containsAsset(adjustAssetId || 0) && adjustAsset ? 
             <div className={`adjustment-menu`}>
                 <div className="adjustment-top">
-                    <span className="adjustment-title roboto-600">{capitalizeFirstLetter(adjustInputType)}</span>
+                    <span className="adjustment-title roboto-600">{capitalizeFirstLetter(adjustType)}</span>
                     <button className="adjustment-clear" onClick={clearAdjust}><span className='material-symbols-outlined'>delete</span></button>
                 </div>
                 <div className="adjustment-bar">
                     <span className="adjustment-icon x roboto-800">X</span>
-                    <AdjustInput asset={adjustAsset} axis="x" type={adjustInputType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+                    <AdjustInput asset={adjustAsset} axis="x" type={adjustType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
                 </div>
                 <div className="adjustment-bar">
                     <span className="adjustment-icon y roboto-800">Y</span>
-                    <AdjustInput asset={adjustAsset} axis="y" type={adjustInputType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+                    <AdjustInput asset={adjustAsset} axis="y" type={adjustType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
                 </div>
                 <div className="adjustment-bar">
                     <span className="adjustment-icon z roboto-800">Z</span>
-                    <AdjustInput asset={adjustAsset} axis="z" type={adjustInputType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+                    <AdjustInput asset={adjustAsset} axis="z" type={adjustType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
                 </div>
             </div>
         : null}
-        {adjustOpen && adjustInputType === "scale" && outfit.containsAsset(adjustAssetId || 0) && adjustAsset ?
+        {adjustOpen && adjustType === "scale" && outfit.containsAsset(adjustAssetId || 0) && adjustAsset ?
             <div className={`adjustment-menu`}>
                 <div className="adjustment-top">
-                    <span className="adjustment-title roboto-600">{capitalizeFirstLetter(adjustInputType)}</span>
+                    <span className="adjustment-title roboto-600">{capitalizeFirstLetter(adjustType)}</span>
                     <button className="adjustment-clear" onClick={clearAdjust}><span className='material-symbols-outlined'>delete</span></button>
                 </div>
                 <div className="adjustment-bar">
                     <span className="adjustment-icon z roboto-800"></span>
-                    <AdjustInput asset={adjustAsset} axis="x" allAxis={true} type={adjustInputType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+                    <AdjustInput asset={adjustAsset} axis="x" allAxis={true} type={adjustType} outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit}/>
                 </div>
             </div>
         : null}
