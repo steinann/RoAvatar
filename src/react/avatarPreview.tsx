@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
 import { addInstance, getRendererCamera, getRendererControls, mount } from "../code/render/renderer"
-import { AvatarType } from "../code/avatar/constant"
+import { AvatarType, LayeredClothingAssetOrder } from "../code/avatar/constant"
 import { API, Authentication } from "../code/api"
 import { Instance, RBX, Vector3 } from "../code/rblx/rbx"
 import { Outfit } from "../code/avatar/outfit"
@@ -17,7 +17,7 @@ let currentRig: Instance | undefined = undefined
 let lastOutfit: Outfit | undefined = undefined
 
 let currentlyChangingRig = false
-function setRigTo(newRigType: AvatarType, auth: Authentication) {
+function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: string | undefined) => void) {
     return new Promise<undefined>((resolve) => {
         if (!currentlyChangingRig) {
             currentlyChangingRig = true
@@ -34,8 +34,11 @@ function setRigTo(newRigType: AvatarType, auth: Authentication) {
 
                     currentRig = newRig
                     addInstance(currentRig, auth)
+
+                    setError(undefined)
                 } else {
                     //TODO: display error
+                    setError("Failed to change rig")
                 }
                 currentlyChangingRig = false
                 resolve(undefined)
@@ -45,7 +48,8 @@ function setRigTo(newRigType: AvatarType, auth: Authentication) {
 }
 
 let currentlyUpdatingPreview = false
-function updatePreview(outfit: Outfit, auth: Authentication) {
+let failedLastDescription = false
+function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: string | undefined) => void) {
     if (!currentlyUpdatingPreview) {
         currentlyUpdatingPreview = true
 
@@ -54,7 +58,7 @@ function updatePreview(outfit: Outfit, auth: Authentication) {
 
         const promises: Promise<undefined>[] = []
         if (newRigType !== currentRigType || !currentRig) {
-            promises.push(setRigTo(newRigType, auth))
+            promises.push(setRigTo(newRigType, auth, setError))
         }
 
         Promise.all(promises).then(() => {
@@ -67,17 +71,28 @@ function updatePreview(outfit: Outfit, auth: Authentication) {
                 const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
                 if (humanoid) {
                     //apply humanoid description to rig
+                    if (failedLastDescription) { //force next humanoiddescription to do an apply all
+                        const ogDesc = humanoid.FindFirstChildOfClass("HumanoidDescription")
+                        if (ogDesc) {
+                            ogDesc.Destroy()
+                        }
+                    }
+
                     hrpWrapper.applyDescription(humanoid, auth).then((result) => {
                         if (currentRig) {
                             addInstance(currentRig, auth)
                         }
                         if (result instanceof Instance) {
+                            failedLastDescription = false
                             if (outfit !== lastOutfit && lastOutfit) {
-                                updatePreview(lastOutfit, auth)
+                                updatePreview(lastOutfit, auth, setError)
                             }
                             currentlyUpdatingPreview = false
+                            setError(undefined)
                         } else {
+                            failedLastDescription = true
                             //TODO: show error!
+                            setError("Failed to apply HumanoidDescription")
                             currentlyUpdatingPreview = false
                         }
                     })
@@ -99,6 +114,41 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
     const containerRef = useCallback(mount, [])
 
     const [cameraLocked, setCameraLocked] = useState(true)
+    const [error, _setError] = useState<string | undefined>(undefined)
+    const [warning, _setWarning] = useState<string | undefined>(undefined)
+
+    function setError(error: string | undefined) {
+        if (error) {
+            console.error(`Preview Error: ${error}`)
+        }
+        _setError(error)
+    }
+
+    function setWarning(warning: string | undefined) {
+        if (warning) {
+            console.warn(`Preview Warning: ${warning}`)
+        }
+        _setWarning(warning)
+    }
+
+    //set warning based on outfit
+    useEffect(() => {
+        let layeredCount = 0
+
+        const ignoredTypes = ["HairAccessory", "EyebrowAccessory", "EyelashAccessory"]
+
+        for (const asset of outfit.assets) {
+            if (LayeredClothingAssetOrder[asset.assetType.id] !== undefined && !ignoredTypes.includes(asset.assetType.name)) {
+                layeredCount += 1
+            }
+        }
+
+        if (layeredCount >= 2 && outfit.playerAvatarType === AvatarType.R15) {
+            setWarning("Layered accessories are not in order in the preview")
+        } else {
+            setWarning(undefined)
+        }
+    }, [outfit])
 
     //load the initial avatar
     useEffect(() => {
@@ -142,7 +192,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                 })
             } else {
                 lastOutfit = outfit
-                updatePreview(outfit, auth)
+                updatePreview(outfit, auth, setError)
             }
         }
     }, [auth, outfit, setOutfit])
@@ -219,6 +269,17 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
         }, 1000 / 60)
     }, [auth, cameraLocked])
 
+    let previewInfoClass = "none"
+    let previewInfoMessage = ""
+    if (warning) {
+        previewInfoClass = "warning"
+        previewInfoMessage = warning
+    }
+    if (error) {
+        previewInfoClass = "error"
+        previewInfoMessage = error
+    }
+
     return (<div className="avatar-preview" ref={containerRef} onMouseDown={(e) => {
         if (e.buttons == 2 && (e.target as HTMLCanvasElement).id === "OutfitInfo-outfit-image-3d") {
             setCameraLocked(false)
@@ -230,6 +291,15 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
         }}>
             <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
         </button>
+        <div className={`preview-info ${previewInfoClass}`}>
+            <div className="preview-info-icon">
+                <span title="Warning" className='material-symbols-outlined warning'>warning</span>
+                <span title="Error" className='material-symbols-outlined error'>block</span>
+            </div>
+            <div className='preview-info-message roboto-600'>
+                {previewInfoMessage}
+            </div>
+        </div>
         {children}
     </div>)
 }

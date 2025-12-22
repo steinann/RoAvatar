@@ -1045,3 +1045,46 @@ dialog {
 .adjust-asset {
     box-shadow: inset #f5f5f5 0px 0px 0px 1px;
 }
+
+.preview-info {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    align-items: center;
+}
+
+.preview-info.none {
+    display: none;
+}
+
+.preview-info.error > .preview-info-icon > .warning {
+    display: none;
+}
+
+.preview-info.warning > .preview-info-icon > .error {
+    display: none;
+}
+
+.preview-info.error > .preview-info-message {
+    color: rgb(212, 35, 59);
+}
+
+.preview-info.warning > .preview-info-message {
+    color: rgb(230, 212, 59);
+}
+
+.preview-info-icon > .warning {
+    color: rgb(230, 212, 59);
+}
+
+.preview-info-icon > .error {
+    color: rgb(212, 35, 59);
+}
+
+.preview-info-message {
+    font-size: 16px;
+}
