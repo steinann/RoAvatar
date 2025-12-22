@@ -1448,6 +1448,15 @@ export class RBX {
                         instance.addProperty(new Property(propertyNode.getAttribute("name") || "null", DataType.Color3uint8), color3uint8)
                         break
                     }
+                case "int": {
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.Int32
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, Number(propertyNode.textContent))
+                    break
+                }
             }
         }
 

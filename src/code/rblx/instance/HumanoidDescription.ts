@@ -690,20 +690,25 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                             if (bodyPart !== BodyPart.Head) {
                                 if (avatarType === AvatarType.R6) {
                                     const R6Folder = dataModel.FindFirstChild("R6")
+                                    let characterMesh = undefined
+
                                     if (R6Folder) {
-                                        const characterMesh = R6Folder.FindFirstChildOfClass("CharacterMesh")
-                                        if (characterMesh) {
-                                            for (const oldCharacterMesh of rig.GetChildren()) {
-                                                if (oldCharacterMesh.className === "CharacterMesh") {
-                                                    if (oldCharacterMesh.Prop("BodyPart") === characterMesh.Prop("BodyPart")) {
-                                                        oldCharacterMesh.Destroy()
-                                                    }
+                                        characterMesh = R6Folder.FindFirstChildOfClass("CharacterMesh")
+                                    } else {
+                                        characterMesh = dataModel.FindFirstChildOfClass("CharacterMesh")
+                                    }
+                                    if (characterMesh) {
+                                        for (const oldCharacterMesh of rig.GetChildren()) {
+                                            if (oldCharacterMesh.className === "CharacterMesh") {
+                                                if (oldCharacterMesh.Prop("BodyPart") === characterMesh.Prop("BodyPart")) {
+                                                    oldCharacterMesh.Destroy()
                                                 }
                                             }
-
-                                            characterMesh.setParent(rig)
                                         }
+
+                                        characterMesh.setParent(rig)
                                     }
+                                    
                                 } else {
                                     let R15Folder = dataModel.FindFirstChild("R15ArtistIntent")
                                     if (!R15Folder || R15Folder.GetChildren().length === 0) {
