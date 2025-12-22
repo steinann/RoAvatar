@@ -307,14 +307,32 @@ function readSkinning(view: SimpleView) {
 
 function readVert(view: SimpleView, sizeOf_vert = 40) {
     const position: Vec3 = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
+    if (isNaN(position[0])) position[0] = 0
+    if (isNaN(position[1])) position[1] = 0
+    if (isNaN(position[2])) position[2] = 0
+
     const normal: Vec3 = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
+    if (isNaN(normal[0])) normal[0] = 0
+    if (isNaN(normal[1])) normal[1] = 0
+    if (isNaN(normal[2])) normal[2] = 0
+
     const uv: Vec2 = [view.readFloat32(), view.readFloat32()]
+    if (isNaN(uv[0])) uv[0] = 0
+    if (isNaN(uv[1])) uv[1] = 0
 
     const tangent: Vec4 = [view.readInt8(), view.readInt8(), view.readInt8(), view.readInt8()]
+    if (isNaN(tangent[0])) tangent[0] = 0
+    if (isNaN(tangent[1])) tangent[1] = 0
+    if (isNaN(tangent[2])) tangent[2] = 0
+    if (isNaN(tangent[3])) tangent[3] = 0
 
     let color: Vec4 = [255,255,255,255]
     if (sizeOf_vert == 40) {
         color = [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()]
+        if (isNaN(color[0])) color[0] = 0
+        if (isNaN(color[1])) color[1] = 0
+        if (isNaN(color[2])) color[2] = 0
+        if (isNaN(color[3])) color[3] = 0
     }
 
     return new FileMeshVertex(position, normal, uv, tangent, color)

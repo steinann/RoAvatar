@@ -5,15 +5,15 @@ Meaning of tags in code:
 
 ISSUES (Relating to renderer inaccuracy):
     -Skinning treats Root bone as world origin instead of treating it as the renderable's CFrame, see 126276012366391, 140233792042793 and 107221904954874 as examples
-    -Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand
+    -Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand in R6
     -Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
     -LC: Layered clothing is not layered, i guess its just clothing then?
-    -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that leads to weird results)
+    -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that might give weird results)
     -LC: Layered clothing does not use HSR (Hidden Surface Removal)
     -LC: Layered clothing does not deform the body/inner clothing to avoid clipping
     -Vertex colors are used when they shouldn't be, see 17399885483 as an example (DO NOTE: vertex colors are currently disabled FULLY because i dont think anything really needs it)
     -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
-    -Some meshes do not load, see 5505442904 as an example
+    -Inaccurate skinning when a bundle has a weird rest pose, see bundle 197642307876020 as an example
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration

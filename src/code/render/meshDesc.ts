@@ -109,6 +109,15 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
         verts[i * 3 + 0] = mesh.coreMesh.verts[i].position[0]
         verts[i * 3 + 1] = mesh.coreMesh.verts[i].position[1]
         verts[i * 3 + 2] = mesh.coreMesh.verts[i].position[2]
+        if (isNaN(mesh.coreMesh.verts[i].position[0])) {
+            console.log(mesh.coreMesh.verts[i])
+        }
+        if (isNaN(mesh.coreMesh.verts[i].position[1])) {
+            console.log(mesh.coreMesh.verts[i])
+        }
+        if (isNaN(mesh.coreMesh.verts[i].position[2])) {
+            console.log(mesh.coreMesh.verts[i])
+        }
     }
     geometry.setAttribute("position", new THREE.BufferAttribute(verts, 3))
 
@@ -636,3 +645,10 @@ export class MeshDesc {
         }
     }
 }
+
+declare global {
+    interface Window {
+        fileMeshToTHREEGeometry: typeof fileMeshToTHREEGeometry;
+    }
+}
+window.fileMeshToTHREEGeometry = fileMeshToTHREEGeometry
