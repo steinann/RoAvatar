@@ -274,7 +274,10 @@ const API = {
 
                 //assets
                 promises.push(new Promise((resolve) => {
+                    let ogResponse: Response | undefined = undefined
+
                     RBLXPost("https://avatar.roblox.com/v2/avatar/set-wearing-assets", auth, {"assets": outfit.getAssetsJson()}).then(response => {
+                        ogResponse = response
                         return response.json()
                     }).then(body => {
                         if (body.success == false) {
@@ -292,7 +295,7 @@ const API = {
                                 resolve(response)
                             })
                         } else {
-                            resolve(new Response("", {status: 200}))
+                            resolve(ogResponse || new Response("", {status: 200}))
                         }
                     })
                 }))
@@ -326,8 +329,8 @@ const API = {
                     let isSuccess = true
                     
                     for (const value of values) {
+                        console.log(value)
                         if (value.status !== 200) {
-                            console.log(value)
                             isSuccess = false
                         }
                     }

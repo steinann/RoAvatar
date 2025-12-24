@@ -35,6 +35,9 @@ function App() {
   const [categoryType, _setCategoryType] = useState<string>("Recent") //Recent
   const [subCategoryType, _setSubCategoryType] = useState<string>("All") //All
 
+  const [alertText, setAlertText] = useState<string>("")
+  const [alertEnabled, setAlertEnabled] = useState<boolean>(false)
+
   function undo() {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1)
@@ -169,13 +172,16 @@ function App() {
       <AuthContext value={auth}>
         <OutfitContext value={outfit}>
           <div className='main'>
+            <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}`} onMouseEnter={() => {setAlertEnabled(false)}}>
+              {alertText}
+            </div>
             <div className='main-left division-down'>
               <BarCategory className="background-transparent bar-double-margin"></BarCategory>
               <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>
                 <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
               </AvatarPreview>
               <div className="save-and-history">
-                <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length}/>
+                <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length} setAlertEnabled={setAlertEnabled} setAlertText={setAlertText}/>
                 <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
               </div>
               <div className='worn-items dark-scrollbar'>

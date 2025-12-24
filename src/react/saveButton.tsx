@@ -4,7 +4,7 @@ import { API } from "../code/api"
 import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
 
-export default function SaveButton({historyIndex,historyLength}: {historyIndex: number, historyLength: number}): React.JSX.Element {
+export default function SaveButton({historyIndex,historyLength,setAlertEnabled,setAlertText}: {historyIndex: number, historyLength: number, setAlertEnabled: (a: boolean) => void, setAlertText: (a: string) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -28,6 +28,12 @@ export default function SaveButton({historyIndex,historyLength}: {historyIndex: 
                 console.log(result)
                 if (result) {
                     setLastSaveIndex(historyIndex)
+                } else {
+                    setAlertText("Failed to save outfit")
+                    setAlertEnabled(true)
+                    setTimeout(() => {
+                        setAlertEnabled(false)
+                    }, 3000)
                 }
             })
         }

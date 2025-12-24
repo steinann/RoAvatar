@@ -1097,3 +1097,39 @@ dialog {
 .preview-info-message {
     font-size: 16px;
 }
+
+#alert {
+    position: fixed;
+    width: 100%;
+    max-width: 970px;
+    right:0;
+    left:0;
+    top: calc(-48px - 12px * 2);
+    z-index: 10;
+    height: 48px;
+    background-color: #00b06f;
+    margin-right: auto;
+    margin-left: auto;
+    transition: top .4s ease;
+    transition-duration: 0.4s;
+    color: aliceblue;
+    font-size: 23px;
+    padding: 12px;
+    text-align: center;
+    display: block;
+}
+
+.errorAlert {
+    display: block !important;
+    background-color: rgb(255, 89, 89) !important;
+}
+
+.warningAlert {
+    display: block !important;
+    background-color: rgb(207, 162, 64) !important;
+}
+
+.alertOn {
+    display: block !important;
+    top: 0px !important; 
+}
