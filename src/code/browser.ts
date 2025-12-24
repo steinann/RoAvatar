@@ -1,7 +1,5 @@
 declare const browser: typeof chrome;
 
-console.log(chrome||browser)
-
 export async function browserCookiesGet(name: string, url: string): Promise<string | undefined> {
     return new Promise((resolve) => {
         if ((chrome || browser).cookies) {
