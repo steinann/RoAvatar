@@ -13,3 +13,4 @@ Instructions:
 - Run `npm run build` to build the project
 - The build will be in the **dist** folder in the project directory
 - You can then load the **dist** folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
+- The avatar editor will be available at https://www.roblox.com/my/avatar-plus
