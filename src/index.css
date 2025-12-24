@@ -113,6 +113,8 @@ body {
     overflow: hidden;
     border-radius: 12px;
     position: relative;
+    width: 100%;
+    aspect-ratio: 1;
 }
 
 .avatar-preview-focus {
@@ -381,7 +383,7 @@ body {
 }
 
 .dark-scrollbar {
-    scrollbar-color: #121215 #2a2a2d;
+    scrollbar-color: #0c0c0f #2a2a2d
 }
 
 .save-and-history {

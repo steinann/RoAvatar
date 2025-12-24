@@ -8,6 +8,12 @@ chrome.runtime.onMessage.addListener(
             case "openURL":
                 chrome.tabs.create({ url: request.URL });
                 break;
+            case "cookie":
+                chrome.cookies.get({ "name": request.name, "url": request.url }, function (e) {
+                    sendResponse({"cookie": e?.value})
+                })
+                return true
+                break;
         }
     }
 )

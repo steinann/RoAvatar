@@ -1,13 +1,23 @@
+declare const browser: typeof chrome;
+
+console.log(chrome||browser)
+
 export async function browserCookiesGet(name: string, url: string): Promise<string | undefined> {
     return new Promise((resolve) => {
-        chrome.cookies.get({ "name": name, "url": url }, function (e) {
-            resolve(e?.value)
-        })
+        if ((chrome || browser).cookies) {
+            (chrome || browser).cookies.get({ "name": name, "url": url }, function (e) {
+                resolve(e?.value)
+            })
+        } else {
+            browserSendMessage({type: "cookie", name: name, url: url}).then((response) => {
+                resolve(response.cookie)
+            })
+        }
     })
 }
 
 export function browserSendMessage(data: {[K in string]: string}) {
-    chrome.runtime.sendMessage(data)
+    return (chrome || browser).runtime.sendMessage(data)
 }
 
 export function browserOpenURL(url: string) {

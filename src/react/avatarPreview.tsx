@@ -16,6 +16,8 @@ let currentRigType = AvatarType.R15
 let currentRig: Instance | undefined = undefined
 let lastOutfit: Outfit | undefined = undefined
 
+let lastFrameTime = Date.now() / 1000
+
 let currentlyChangingRig = false
 function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: string | undefined) => void) {
     return new Promise<undefined>((resolve) => {
@@ -259,8 +261,11 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                 if (humanoid) {
                     const animator = humanoid.FindFirstChildOfClass("Animator")
                     if (animator) {
+                        const deltaTime = Date.now() / 1000 - lastFrameTime
+                        lastFrameTime = Date.now() / 1000
+
                         const animatorW = new AnimatorWrapper(animator)
-                        animatorW.renderAnimation(1 / 60)
+                        animatorW.renderAnimation(deltaTime)
                         
                         addInstance(currentRig, auth)
                     }
