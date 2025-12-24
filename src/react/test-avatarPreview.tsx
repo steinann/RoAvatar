@@ -66,7 +66,6 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                         "https://assetdelivery.roblox.com/v1/asset?id=" + 139130639469681, //Hugo / What you want
                                         "https://assetdelivery.roblox.com/v1/asset?id=" + 134948629272782, //Animation / Hakari dance
                                         "https://assetdelivery.roblox.com/v1/asset?id=" + 100114227897992, //Die lit (funnydance) / Bring it around
-                                        //"../assets/testAnim5.rbxm",
                                         //"../assets/armSwingCurveAnim.rbxm",
                                     ]
 
