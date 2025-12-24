@@ -404,6 +404,15 @@ body {
     border-radius: 12px;
     cursor: pointer;
     transition-duration: 0.1s;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.save-button-text {
+    justify-self: center;
+    margin-right: 5px;
 }
 
 .save-button-inactive {

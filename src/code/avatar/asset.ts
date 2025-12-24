@@ -103,6 +103,80 @@ export const AssetTypes = [
     "DynamicHead",
 ]
 
+export const WearableAssetTypes = [
+    "TShirt",
+    "Hat",
+    "Shirt",
+    "Pants",
+    "Head",
+    "Face",
+    "Gear",
+    "Torso",
+    "RightArm",
+    "LeftArm",
+    "LeftLeg",
+    "RightLeg",
+    "HairAccessory",
+    "FaceAccessory",
+    "NeckAccessory",
+    "ShoulderAccessory",
+    "FrontAccessory",
+    "BackAccessory",
+    "WaistAccessory",
+    "ClimbAnimation",
+    "FallAnimation",
+    "IdleAnimation",
+    "JumpAnimation",
+    "RunAnimation",
+    "SwimAnimation",
+    "WalkAnimation",
+    "TShirtAccessory",
+    "ShirtAccessory",
+    "PantsAccessory",
+    "JacketAccessory",
+    "SweaterAccessory",
+    "ShortsAccessory",
+    "LeftShoeAccessory",
+    "RightShoeAccessory",
+    "DressSkirtAccessory",
+    "EyebrowAccessory",
+    "EyelashAccessory",
+    "MoodAnimation",
+    "DynamicHead",
+
+    "PoseAnimation",
+    "EarAccessory",
+    "EyeAccessory",
+    "DeathAnimation",
+]
+
+export const AccessoryAssetTypes = [
+    "Hat",
+    "HairAccessory",
+    "FaceAccessory",
+    "NeckAccessory",
+    "ShoulderAccessory",
+    "FrontAccessory",
+    "BackAccessory",
+    "WaistAccessory",
+]
+
+export const LayeredAssetTypes = [
+    "TShirtAccessory",
+    "ShirtAccessory",
+    "PantsAccessory",
+    "JacketAccessory",
+    "SweaterAccessory",
+    "ShortsAccessory",
+    "LeftShoeAccessory",
+    "RightShoeAccessory",
+    "DressSkirtAccessory",
+    "EyebrowAccessory",
+    "EyelashAccessory",
+
+    "HairAccessory",
+]
+
 export const MaxOneOfAssetTypes = [
     "TShirt",
     "Shirt",
@@ -126,6 +200,8 @@ export const MaxOneOfAssetTypes = [
     "PoseAnimation",
     "MoodAnimation",
     "DynamicHead",
+    "EyebrowAccessory",
+    "EyelashAccessory",
 ]
 
 export const ToRemoveBeforeBundleType = {

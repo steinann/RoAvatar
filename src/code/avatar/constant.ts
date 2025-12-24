@@ -275,6 +275,9 @@ export const LayeredClothingAssetOrder: {[K in number]: number} = {
   41: 13 // Hair (i.e. Hair Accessory)
 };
 
+/**
+ * @deprecated This is incorrect
+ */
 export const MaxPerAsset: {[K in string]: number} = {
     "Head": 1,
     "TShirt": 1,

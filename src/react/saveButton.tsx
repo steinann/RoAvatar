@@ -10,15 +10,20 @@ export default function SaveButton({historyIndex,historyLength}: {historyIndex: 
 
     const [lastSaveIndex, setLastSaveIndex] = useState(0)
 
+    const validationIssues = outfit.getValidationIssues()
+    const hasIssue = validationIssues.length > 0
+
     useEffect(() => {
         if (historyLength <= lastSaveIndex && historyLength > 0) {
             setLastSaveIndex(-1)
         }
     }, [historyLength, lastSaveIndex])
 
+    const buttonEnabled = lastSaveIndex !== historyIndex && !hasIssue
+
     //TODO: compare the current outfit with the last saved one
-    return <RadialButton effectDisabled={lastSaveIndex === historyIndex} className={`save-button roboto-600${lastSaveIndex === historyIndex ? " save-button-inactive" : ""}`} onClick={() => {
-        if (auth && lastSaveIndex !== historyIndex) {
+    return <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
+        if (auth && buttonEnabled) {
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
                 if (result) {
@@ -26,5 +31,10 @@ export default function SaveButton({historyIndex,historyLength}: {historyIndex: 
                 }
             })
         }
-    }}>Save</RadialButton>
+    }}>
+        <span className="save-button-text">
+            Save
+        </span>
+        {hasIssue ? <span style={{position: "absolute", right: "15px"}} className="material-symbols-outlined" title={validationIssues[0].text}>error</span> : null}
+    </RadialButton>
 }

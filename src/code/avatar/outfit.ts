@@ -5,7 +5,7 @@ import SimpleView from "../lib/simple-view";
 import { BODYCOLOR3 } from "../misc/flags"
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
-import { Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType } from "./asset";
+import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
 import type { AssetJson } from "./asset"
 import { AvatarType, BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin } from "./constant"
 
@@ -14,6 +14,12 @@ function createAccessoryBlob(asset: Asset, assetType: string) {
 }
 
 export type ColorType = "BrickColor" | "Color3"
+type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset"
+type ValidationIssue = {
+    type: ValidationIssueType,
+    text: string,
+    assetIndex?: number,
+}
 
 type ScaleJson = {
     height?: number,
@@ -495,6 +501,9 @@ export class Outfit {
         }
     }
 
+    /**
+     * @deprecated Incorrect, use getValidationIssues() instead
+     */
     isValid() {
         const count: {[K in string]: number} = {}
 
@@ -518,6 +527,127 @@ export class Outfit {
         }
 
         return true
+    }
+
+    getValidationIssues(): ValidationIssue[] {
+        const issues: ValidationIssue[] = []
+
+        const usedIds: number[] = []
+
+        let totalAccessories = 0
+        let totalLayered = 0
+
+        for (let i = 0; i < this.assets.length; i++) {
+            const asset = this.assets[i]
+
+            //check for type
+            if (!(asset instanceof Asset)) {
+                issues.push({
+                    type: "InvalidAsset",
+                    text: "Asset is not of type Asset",
+                    assetIndex: i,
+                })
+                continue;
+            }
+
+            //check for valid structure
+            let structureIsValid = true
+            if (typeof asset.id !== "number" || isNaN(asset.id) || asset.id < 1 || Math.floor(asset.id) !== asset.id) {
+                structureIsValid = false
+            }
+            if (typeof asset.name !== "string") {
+                structureIsValid = false
+            }
+            if (asset.currentVersionId) {
+                if (typeof asset.currentVersionId !== "number") {
+                    structureIsValid = false
+                }
+            }
+
+            if (!structureIsValid) {
+                issues.push({
+                    type: "InvalidAsset",
+                    text: "Asset has invalid structure",
+                    assetIndex: i,
+                })
+                continue;
+            }
+
+            //accessory limit
+            if (AccessoryAssetTypes.includes(asset.assetType.name)) {
+                totalAccessories += 1
+
+                if (totalAccessories > 10) {
+                    issues.push({
+                        type: "AccessoryLimit",
+                        text: "Too many accessories",
+                        assetIndex: i,
+                    })
+                }
+            }
+
+            //layered limit
+            if (LayeredAssetTypes.includes(asset.assetType.name)) {
+                totalLayered += 1
+
+                if (totalLayered > 10) {
+                    issues.push({
+                        type: "LayeredLimit",
+                        text: "Too many layered accessories",
+                        assetIndex: i,
+                    })
+                }
+            }
+
+            //one of type limit
+            if (MaxOneOfAssetTypes.includes(asset.assetType.name)) {
+                for (let j = 0; j < this.assets.length; j++) {
+                    const otherAsset = this.assets[j]
+                    if (otherAsset.assetType.name === asset.assetType.name && j < i) {
+                        issues.push({
+                            type: "OneOfTypeLimit",
+                            text: `${asset.assetType.name} cannot be worn multiple times`,
+                            assetIndex: i,
+                        })
+                    }
+                }
+            }
+
+            //duplicate id
+            if (usedIds.includes(asset.id)) {
+                issues.push({
+                    type: "DuplicateId",
+                    text: "Same asset worn twice",
+                    assetIndex: i,
+                })
+            } else {
+                usedIds.push(asset.id)
+            }
+
+            //not wearable type
+            if (!WearableAssetTypes.includes(asset.assetType.name)) {
+                issues.push({
+                    type: "NotWearable",
+                    text: `${asset.assetType.name} is not wearable`,
+                    assetIndex: i,
+                })
+            }
+
+            //check for layered meta
+            if (!AccessoryAssetTypes.includes(asset.assetType.name) && LayeredAssetTypes.includes(asset.assetType.name)) {
+                if (asset.meta) {
+                    if (typeof asset.meta.order !== "number") {
+                        issues.push({
+                            type: "MissingLayeredMeta",
+                            text: "Layered accessory is missing order",
+                            assetIndex: i,
+                        })
+                    }
+                }
+            }
+        }
+
+        return issues
     }
 
     async toHumanoidDescription(): Promise<Document | null> { //TODO: work with accessory adjustment
