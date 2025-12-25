@@ -85,7 +85,7 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({children, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
+export default function ItemCategory({children, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -201,10 +201,12 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
     //create item cards
     let itemComponents = null
 
+    const isOutfits = categoryType === "Characters" && subCategoryType === "Creations"
+
     if (auth && itemInfos.length > 0) {
         let i = 0;
         itemComponents = <>
-        {categoryType === "Characters" && subCategoryType === "Creations" ?
+        {isOutfits ?
         <>
             <dialog style={outfitDialogOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={createOutfitDialogRef} onCancel={() => {setOutfitDialogOpen(false)}}>
                 <span className="dialog-title roboto-700">Create New Character</span>
@@ -235,13 +237,13 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                     }}>Create</RadialButton>
                 </div>
             </dialog>
-            <ItemCard key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
+            <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
                 setOutfitDialogOpen(true)
             }}/>
         </> : null}
         {
             itemInfos.map((item) => (
-                <ItemCard key={i++} auth={auth} itemInfo={item} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
+                <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
                     onClickFunc(auth, item)
                 }}/>
             ))

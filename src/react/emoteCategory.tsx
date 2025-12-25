@@ -51,7 +51,7 @@ type EmoteInfo = {
     position: number
 }
 
-export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {categoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void}): React.JSX.Element {
+export default function EmoteCategory({categoryType, setOutfit, setAnimName, setAlertText, setAlertEnabled}: {categoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     
     const [currentSlot, setCurrentSlot] = useState(1)
@@ -100,7 +100,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {c
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={7} itemInfo={itemInfos[6]}/>
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
     </BarCategory>
-    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
+    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
         setAnimName(`emote.${item.id}`)
 
         if (!equippedEmotes) return
@@ -127,7 +127,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {c
 
         API.Avatar.EquipEmote(auth, item.id, currentSlot)
     }}>
-        <ItemCard forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
+        <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
             if (!auth) return
             setAnimName(`idle.Animation1`)
 

@@ -1,13 +1,44 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import type { ItemInfo } from "../code/avatar/asset";
 import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
+import { OutfitContext } from "./context/outfit-context";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean, showOrderArrows?: boolean, onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean, showOrderArrows?: boolean, onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void, canEditOutfit?: boolean, refresh?: () => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+    const outfit = useContext(OutfitContext)
+    
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
+    const [editOpen, setEditOpen] = useState(false)
+    const [updateOpen, setUpdateOpen] = useState(false)
+    const [deleteOpen, setDeleteOpen] = useState(false)
+    const [renameOpen, setRenameOpen] = useState(false)
+
     const nameRef = useRef(null)
+    const editRef = useRef<HTMLButtonElement>(null)
+    const updateDialogRef = useRef<HTMLDialogElement>(null)
+    const deleteDialogRef = useRef<HTMLDialogElement>(null)
+    const renameDialogRef = useRef<HTMLDialogElement>(null)
+    const outfitNameInputRef: React.RefObject<HTMLInputElement | null> = useRef(null)
+
+    useEffect(() => {
+        if (updateOpen) {
+            updateDialogRef.current?.showModal()
+        } else {
+            updateDialogRef.current?.close()
+        }
+        if (deleteOpen) {
+            deleteDialogRef.current?.showModal()
+        } else {
+            deleteDialogRef.current?.close()
+        }
+        if (renameOpen) {
+            renameDialogRef.current?.showModal()
+        } else {
+            renameDialogRef.current?.close()
+        }
+    }, [updateOpen, deleteOpen, renameOpen])
 
     //Pre load item
     /*useEffect(() => {
@@ -73,22 +104,113 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
 
     if (auth && itemInfo) {
         
-        return (<a className={actualClassName} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined} onClick={(e) => {
+        return (<>
+        {canEditOutfit ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
+            <span className="dialog-title roboto-700">Update Character</span>
+            <div className="dialog-actions">
+                <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+                    setUpdateOpen(false)
+                }}>Cancel</RadialButton>
+                <RadialButton className="dialog-confirm roboto-600" onClick={() => {
+                    setUpdateOpen(false)
+
+                    const newOutfit = outfit.clone()
+                    newOutfit.name = itemInfo.name
+
+                    API.Avatar.UpdateOutfit(auth, itemInfo.id, newOutfit).then((result) => {
+                        API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
+                        if (result.status === 200 && refresh) {
+                            refresh()
+                        } else if (setAlertText && setAlertEnabled) {
+                            setAlertText("Failed to update character")
+                            setAlertEnabled(true)
+                            setTimeout(() => {
+                                setAlertEnabled(false)
+                            }, 3000)
+                        }
+                    })
+                }}>Update</RadialButton>
+            </div>
+        </dialog> : null}
+        {canEditOutfit ? <dialog style={deleteOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={deleteDialogRef} onCancel={() => {setDeleteOpen(false)}}>
+            <span className="dialog-title roboto-700">Delete Character</span>
+            <div className="dialog-actions">
+                <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+                    setDeleteOpen(false)
+                }}>Cancel</RadialButton>
+                <RadialButton className="dialog-confirm roboto-600" onClick={() => {
+                    setDeleteOpen(false)
+
+                    API.Avatar.DeleteOutfit(auth, itemInfo.id).then((result) => {
+                        API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
+                        if (result.status === 200 && refresh) {
+                            refresh()
+                        } else if (setAlertText && setAlertEnabled) {
+                            setAlertText("Failed to delete character")
+                            setAlertEnabled(true)
+                            setTimeout(() => {
+                                setAlertEnabled(false)
+                            }, 3000)
+                        }
+                    })
+                }}>Delete</RadialButton>
+            </div>
+        </dialog> : null}
+        {canEditOutfit ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
+            <span className="dialog-title roboto-700">Rename Character</span>
+            <input ref={outfitNameInputRef} className="dialog-text-input roboto-300" placeholder="Name"></input>
+            <div className="dialog-actions">
+                <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+                    setRenameOpen(false)
+                }}>Cancel</RadialButton>
+                <RadialButton className="dialog-confirm roboto-600" onClick={() => {
+                    setRenameOpen(false)
+
+                    const nameValue = outfitNameInputRef.current?.value || ""
+
+                    let toUseName = "Untitled Avatar"
+                    if (nameValue.length > 0) {
+                        toUseName = nameValue
+                    }
+
+                    API.Avatar.PatchOutfit(auth, itemInfo.id, {name: toUseName}).then((result) => {
+                        if (result.status === 200 && refresh) {
+                            refresh()
+                        } else if (setAlertText && setAlertEnabled) {
+                            setAlertText("Failed to rename character")
+                            setAlertEnabled(true)
+                            setTimeout(() => {
+                                setAlertEnabled(false)
+                            }, 3000)
+                        }
+                    })
+                }}>Rename</RadialButton>
+            </div>
+        </dialog> : null}
+        <a className={actualClassName} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined} onClick={(e) => {
             e.preventDefault()
             if (itemInfo.itemType === "Asset" && e.target === nameRef.current) {
                 browserOpenURL(`https://www.roblox.com/catalog/${itemInfo.id}`)
             }
         }}>
-            <RadialButton className={actualButtonClassName} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
+            <RadialButton effectDisabled={editOpen} className={actualButtonClassName} onClick={(e) => {e.preventDefault(); if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return; if (onClick) onClick(itemInfo)}}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {showOrderArrows ? <div className="order-arrows">
                     <button className="arrow-up" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, true)}}}><span className="material-symbols-outlined">arrow_upward</span></button>
                     <button className="arrow-down" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, false)}}}><span className="material-symbols-outlined">arrow_downward</span></button>
                 </div> : null}
+                {canEditOutfit ? <button className="edit-outfit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
+                {editOpen ? <div className="edit-outfit-menu">
+                    <button className="roboto-600" onClick={()=>{setUpdateOpen(true)}}>Update</button>
+                    <button className="roboto-600" onClick={()=>{setRenameOpen(true)}}>Rename</button>
+                    <button className="roboto-600" onClick={()=>{setDeleteOpen(true)}}>Delete</button>
+                    <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
+                </div> : null}
                 {cardImage}
             </RadialButton>
             {includeName ? <span ref={nameRef} className="item-name roboto-600">{itemInfo.name}</span> : null}
-        </a>)
+        </a>
+        </>)
     } else {
         const nameStyle = {
             width: "6rem",

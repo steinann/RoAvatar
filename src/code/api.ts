@@ -93,6 +93,9 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
                 } else {
                     resolve(response)
                 }
+            }).catch((error) => {
+                console.warn(error)
+                resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
             })
         } catch (error) {
             console.warn(error)
@@ -131,6 +134,9 @@ async function RBLXGet(url: string, auth?: Authentication, headers?: any): Promi
                 headers: fetchHeaders,
             }).then(response => {
                 resolve(response)
+            }).catch((error) => {
+                console.warn(error)
+                resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
             })
         } catch (error) {
             console.warn(error)
@@ -144,9 +150,10 @@ async function RBLXDelete(url: string, auth: Authentication, body: any, attempt 
     return RBLXPost(url, auth, body, attempt, "DELETE")
 }
 
-/*async function RBLXPatch(url: string, auth: Authentication, body: any, attempt = 0): Promise<Response> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function RBLXPatch(url: string, auth: Authentication, body: any, attempt = 0): Promise<Response> {
     return RBLXPost(url, auth, body, attempt, "PATCH")
-}*/
+}
 
 export function idFromStr(str: string) {
     const numStrs = str.match(/\d+(\.\d+)?/g) || []
@@ -455,6 +462,36 @@ const API = {
 
             return response
         },
+        UpdateOutfit: async function(auth: Authentication, outfitId: number, newOutfit: Outfit) {
+            let requestUrl = "https://avatar.roblox.com/v1/outfits/"
+
+            if (BODYCOLOR3) {
+                requestUrl = "https://avatar.roblox.com/v3/outfits/"
+            }
+            
+            requestUrl += outfitId
+
+            const response = RBLXPatch(requestUrl, auth, JSON.stringify(newOutfit.toCleanJson()))
+
+            return response
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        PatchOutfit: async function(auth: Authentication, outfitId: number, patchData: any) {
+            let requestUrl = "https://avatar.roblox.com/v1/outfits/"
+
+            if (BODYCOLOR3) {
+                requestUrl = "https://avatar.roblox.com/v3/outfits/"
+            }
+            
+            requestUrl += outfitId
+
+            const response = RBLXPatch(requestUrl, auth, JSON.stringify(patchData))
+
+            return response
+        },
+        DeleteOutfit: async function(auth: Authentication, outfitId: number) {
+            return await RBLXPost(`https://avatar.roblox.com/v1/outfits/${outfitId}/delete`, auth, "")
+        },
         GetEmotes: async function(auth: Authentication): Promise<Response> {
             return await RBLXGet("https://avatar.roblox.com/v1/emotes", auth)
         },
@@ -626,6 +663,23 @@ const API = {
                     lastTryTimestamp: 0,
                 })
             })
+        },
+        UncacheThumbnail: function(type: string, id: number, size: string = "150x150") {
+            if (type === "Bundle") {
+                type = "Outfit"
+            }
+
+            const thisThumbnailInfo: ThumbnailInfo = {
+                auth: new Authentication(),
+                type: type,
+                id: id,
+                size: size,
+                attempt: 0,
+                resolves: [],
+                lastTryTimestamp: 0,
+            }
+
+            CACHE.Thumbnails.delete(requestIdFromThumbnailInfo(thisThumbnailInfo))
         }
     }
 }
