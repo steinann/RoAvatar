@@ -11,7 +11,7 @@
         {
             "js": ["inject.js"],
             "matches": ["https://*.roblox.com/my/avatar-plus*"],
-            "run_at": "document_end"
+            "run_at": "document_start"
         }
     ],
     "web_accessible_resources": [
