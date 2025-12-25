@@ -7,11 +7,11 @@ permissions:
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
 
 jobs:
   build:
+    if: >-
+      github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:')
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,6 +20,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # fetch full history so we can find the last tag and generate notes
+          fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -34,11 +37,35 @@ jobs:
       - name: Zip build artifacts
         run: |
           if [ -d dist ]; then
-            zip -r build-artifacts.zip dist
+            zip -r RoAvatar.zip dist
           else
             echo "dist directory not found"
             exit 1
           fi
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # Ensure tags are present
+          git fetch --tags --prune
+
+          # Find last tag; if none, include all commits
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" > release_notes.txt || true
+          else
+            git log --pretty=format:"- %s (%h)" > release_notes.txt || true
+          fi
+
+          # Fallback text if there are no commits
+          if [ ! -s release_notes.txt ]; then
+            echo "No commits found." > release_notes.txt
+          fi
+
+          # Export multi-line RELEASE_BODY for later steps
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+          cat release_notes.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Create GitHub Release (draft)
         if: github.event_name == 'push'
@@ -49,7 +76,7 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           release_name: Build ${{ github.run_number }}
-          body: Automated build artifacts for run ${{ github.run_id }}
+          body: ${{ env.RELEASE_BODY }}
           draft: true
           prerelease: false
 
@@ -60,7 +87,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build-artifacts.zip
-          asset_name: build-artifacts.zip
+          asset_path: ./RoAvatar.zip
+          asset_name: RoAvatar.zip
           asset_content_type: application/zip
-
