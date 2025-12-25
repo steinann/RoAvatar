@@ -2,6 +2,8 @@
 
 A full remake of the Roblox avatar editor with new and improved features
 
+![A screenshot of RoAvatar](https://i.imgur.com/s4XENxg.png)
+
 ## Using the Extension
 
 The extension is currently under development and is not available in any extension stores. You will have to build it yourself OR get it from [releases](https://github.com/Mzigi/RoAvatar/releases).
