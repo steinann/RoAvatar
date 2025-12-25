@@ -127,7 +127,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName}: {c
 
         API.Avatar.EquipEmote(auth, item.id, currentSlot)
     }}>
-        <ItemCard forceImage="../assets/newremove.png" auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
+        <ItemCard forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
             if (!auth) return
             setAnimName(`idle.Animation1`)
 

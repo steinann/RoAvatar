@@ -38,7 +38,7 @@ function BodyPartSelect({className, partName, currentPartNames, setCurrentPartNa
     const colorAsRgb = hexToRgb(outfit.bodyColors.toHexJson()[hexName]) || {r:0,g:0,b:0}
     const averageBrightness = (colorAsRgb.r + colorAsRgb.g + colorAsRgb.b) / 3
 
-    const outlineColor = averageBrightness > 0.8 ? "#7c7c7c" : "#fff"
+    const outlineColor = averageBrightness > 0.8 ? "#7c7c7c" : "var(--body-outline)"
 
     return <button className={`${className}${currentPartNames.includes(partName) ? " bodycolor bodycolor-active": " bodycolor"}`} onClick={() => {
         /*const newCurrentPartNames = [...currentPartNames]

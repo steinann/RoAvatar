@@ -15,6 +15,44 @@
     
     <script src="/draco/draco_decoder.js"></script>
   </head>
+  <style id="style-dark-theme">
+    :root {
+      --item-background: #2b2d33;
+      --body-background: #121215;
+      --button-background: #2a2a2d;
+      --scrollbar-thumb: #0c0c0f;
+      --select-element-hover: #47474b;
+
+      --font-color: #f5f5f5;
+
+      --emote-box-color: #3c3f48;
+      --loading-gradient-2: #626672;
+      --history-button-hover: #0d0d0f;
+      --history-button-active: #16161a;
+      --body-outline: #fff;
+
+      --icon-filter: invert(0);
+    }
+  </style>
+  <style id="style-light-theme">
+    :root {
+      --item-background: #dbdbdc;
+      --body-background: #fff;
+      --button-background: #dadada;
+      --scrollbar-thumb: #777778;
+      --select-element-hover: #bababa;
+      
+      --font-color: #272930;
+
+      --emote-box-color: #f5f5f5;
+      --loading-gradient-2: #fff;
+      --history-button-hover: rgb(197, 197, 197);
+      --history-button-active: rgb(252, 252, 252);
+      --body-outline: #d0d0d0;
+
+      --icon-filter: invert(0.8);
+    }
+  </style>
   <body style="margin: 0; font-size: 12px;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx" defer></script>

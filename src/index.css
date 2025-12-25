@@ -89,7 +89,7 @@
 
 /*Actual css*/
 body {
-    background-color: #121215;
+    background-color: var(--body-background);
 }
 
 .main {
@@ -125,7 +125,7 @@ body {
     height: 48px;
     aspect-ratio: 1;
 
-    color: #f5f5f5;
+    color: var(--font-color);
     background-color: transparent;
     border-style: none;
     border-radius: 100%;
@@ -170,7 +170,7 @@ body {
     height: 3em;
     width: fit-content;
     padding: 5px;
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -202,29 +202,29 @@ body {
     border-radius: .5em;
     padding: .4em 1.2em;
     background-color: transparent;
-    color: #f5f5f5;
+    color: var(--font-color);
     text-align: center;
     cursor: pointer;
 }
 
 .bar-button:hover {
-    background-color: #1212159f;
+    background-color: var(--body-background)9f;
 }
 /*
 .bar-button-selected {
-    background-color: #121215;
+    background-color: var(--body-background);
 }
 .bar-button-selected:hover {
-    background-color: #121215;
+    background-color: var(--body-background);
 }
 */
 .bar-button-selected {
-    background-color: #f5f5f5;
-    color: #2a2a2d;
+    background-color: var(--font-color);
+    color: var(--button-background);
 }
 .bar-button-selected:hover {
-    background-color: #f5f5f5;
-    color: #2a2a2d;
+    background-color: var(--font-color);
+    color: var(--button-background);
 }
 
 .container {
@@ -271,7 +271,7 @@ body {
     cursor: pointer;
 
     border-style: none;
-    background-color: #2b2d33;
+    background-color: var(--item-background);
     padding: 0;
 }
 
@@ -299,24 +299,24 @@ body {
 }
 
 .item-loading {
-    background-color: #2b2d33;
+    background-color: var(--item-background);
     width: 100%;
     aspect-ratio: 1/1;
 
-    background: linear-gradient(-45deg, #2b2d33, #626672, #2b2d33, #626672);
+    background: linear-gradient(-45deg, var(--item-background), var(--loading-gradient-2), var(--item-background), var(--loading-gradient-2));
 	background-size: 400% 400%;
 	animation: loading-gradient 2s ease infinite;
 }
 
 .loading-gradient {
-    background: linear-gradient(-45deg, #2b2d33, #626672, #2b2d33, #626672);
+    background: linear-gradient(-45deg, var(--item-background), var(--loading-gradient-2), var(--item-background), var(--loading-gradient-2));
 	background-size: 400% 400%;
 	animation: loading-gradient 2s ease infinite;
 }
 
 .item-name {
     margin-top: 3px;
-    color: #f5f5f5;
+    color: var(--font-color);
     font-size: 1rem;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -332,7 +332,7 @@ body {
 .worn-item-check {
     position: absolute;
     transform: scale(1.5);
-    color: #f5f5f5;
+    color: var(--font-color);
     left: 10%;
     top: 10%;
 
@@ -358,7 +358,7 @@ body {
     aspect-ratio: 1/1;
 
     border-style: none;
-    background-color: #3c3f48;
+    background-color: var(--emote-box-color);
     padding: 0;
 
     border-radius: 1em;
@@ -374,7 +374,7 @@ body {
 }
 
 .emote-equipped {
-    box-shadow: #f5f5f5 0 0 0 1px inset;
+    box-shadow: var(--font-color) 0 0 0 1px inset;
 }
 
 .emote-box-empty {
@@ -383,7 +383,7 @@ body {
 }
 
 .dark-scrollbar {
-    scrollbar-color: #0c0c0f #2a2a2d
+    scrollbar-color: var(--scrollbar-thumb) var(--button-background)
 }
 
 .save-and-history {
@@ -419,7 +419,7 @@ body {
 
 .save-button-inactive {
     background-color: #335fff67 !important;
-    color: #f5f5f58a;
+    color: #f5f5f5c4;
     cursor: auto;
 }
 
@@ -428,7 +428,7 @@ body {
 }
 
 .undo-redo {
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -444,24 +444,24 @@ body {
     height: 100%;
     border-style: none;
     border-radius: 10000px;
-    background-color: #121215;
-    color: #f5f5f5;
+    background-color: var(--body-background);
+    color: var(--font-color);
     cursor: pointer;
 
     transition-duration: 0.1s;
 }
 
 .history-button:hover {
-    background-color: #0d0d0f;
+    background-color: var(--history-button-hover);
 }
 
 .history-button:active {
-    background-color: #16161a;
+    background-color: var(--history-button-active);
 }
 
 .history-button-inactive {
     background-color: transparent !important;
-    color: #f5f5f580 !important;
+    color: var(--font-color)80 !important;
     cursor: auto;
 }
 
@@ -502,7 +502,7 @@ body {
     flex-direction: column;
     justify-content: center;
 
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
     position: relative;
     cursor: pointer;
     border-radius: 10000px;
@@ -512,7 +512,7 @@ body {
     width: 24px;
     height: 24px;
     position: absolute;
-    background-color: #f5f5f5;
+    background-color: var(--font-color);
     transform: translate(-50%);
     cursor: pointer;
     border-radius: 100%;
@@ -529,7 +529,7 @@ body {
 
 .slider-input-fill {
     height: 100%;
-    background-color: #f5f5f5;
+    background-color: var(--font-color);
     position: relative;
     border-radius: 10000px;
 }
@@ -543,12 +543,12 @@ body {
 }
 
 .scale-name {
-    color: #f5f5f5;
+    color: var(--font-color);
     font-size: 1.5em;
 }
 
 .scale-value {
-    color: #f5f5f5;
+    color: var(--font-color);
     font-size: 1.5em;
 }
 
@@ -561,14 +561,14 @@ body {
     width: 3em;
     border-style: none;
     margin-right: 1px;
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
     font-size: 1.5em;
-    color: #f5f5f5;
+    color: var(--font-color);
     cursor: pointer;
 }
 
 .rig-button-active {
-    outline-color: #f5f5f5;
+    outline-color: var(--font-color);
     outline-width: 1px;
     outline-style: solid;
 }
@@ -670,7 +670,7 @@ body {
 }
 
 .bodycolor-selected span {
-    color: #f5f5f5;
+    color: var(--font-color);
     transform: scale(1.5);
 }
 
@@ -722,8 +722,8 @@ body {
     margin: .2em;
     border-radius: 1em;
     padding: .4em 1.2em;
-    background-color: #2a2a2d;
-    color: #f5f5f5;
+    background-color: var(--button-background);
+    color: var(--font-color);
     text-align: center;
     cursor: pointer;
     position: relative;
@@ -738,7 +738,7 @@ body {
     width: fit-content;
     padding: 0;
     margin: 1.9em 0 0;
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
     left: 0;
     border-radius: 1em;
     overflow: hidden;
@@ -754,8 +754,8 @@ body {
 }
 
 .select ul button {
-    background-color: #2a2a2d;
-    color: #f5f5f5;
+    background-color: var(--button-background);
+    color: var(--font-color);
     border-style: none;
     font-size: 1em;
     text-wrap-mode: nowrap;
@@ -764,7 +764,7 @@ body {
 }
 
 .select ul button:hover {
-    background-color: #47474b;
+    background-color: var(--select-element-hover);
 }
 
 dialog {
@@ -773,22 +773,22 @@ dialog {
     padding: 20px;
     border-radius: 12px;
     border-style: none;
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
     box-shadow: black 0px 0px 20px 0px;
 }
 
 .dialog-title {
     font-size: 2em;
-    color: #f5f5f5;
+    color: var(--font-color);
     margin: 0 0 10px 0;
 }
 
 .dialog-text-input {
     font-size: 1.75em;
-    color: #f5f5f5;
+    color: var(--font-color);
     margin: 0 0 10px;
-    background-color: #2a2a2d;
-    border-color: #f5f5f524;
+    background-color: var(--button-background);
+    border-color: var(--font-color)24;
     border-style: solid;
     border-radius: 12px;
     padding: 9px 10px;
@@ -810,19 +810,19 @@ dialog {
 }
 
 .dialog-cancel {
-    background-color: #2a2a2d;
-    border-color: #f5f5f524;
+    background-color: var(--button-background);
+    border-color: var(--font-color)24;
     border-width: 2px;
     border-style: solid;
-    color: #f5f5f5;
+    color: var(--font-color);
 }
 
 .dialog-confirm {
-    background-color: #f5f5f5;
-    border-color: #f5f5f5;
+    background-color: var(--font-color);
+    border-color: var(--font-color);
     border-width: 2px;
     border-style: solid;
-    color: #2a2a2d;
+    color: var(--button-background);
 }
 
 .menu-icons {
@@ -861,8 +861,8 @@ dialog {
     align-items: center;
     margin: 0;
 
-    background-color: #121215;
-    color: #f5f5f5;
+    background-color: var(--body-background);
+    color: var(--font-color);
     border-radius: 12px;
 
     transition: 0.1s;
@@ -878,8 +878,8 @@ dialog {
     overflow: hidden;
     padding: 5px 0;
 
-    background-color: #121215;
-    color: #f5f5f5;
+    background-color: var(--body-background);
+    color: var(--font-color);
     border-radius: 12px;
 
     display: flex;
@@ -907,6 +907,7 @@ dialog {
     border-radius: 100%;
     justify-content: center;
     align-items: center;
+    color: #fff;
 }
 
 .adjustment-icon.x {
@@ -953,7 +954,7 @@ dialog {
     width: 30px;
     border-style: none;
     background-color: transparent;
-    color: #f5f5f5;
+    color: var(--font-color);
     cursor: pointer;
     display: flex;
     justify-content: center;
@@ -967,8 +968,8 @@ dialog {
 }
 
 .inner-menu-icons {
-    background-color: #121215;
-    color: #f5f5f5;
+    background-color: var(--body-background);
+    color: var(--font-color);
     border-radius: 100000000px;
 
     overflow: hidden;
@@ -1028,7 +1029,7 @@ dialog {
     border-radius: 100%;
 
     background-color: transparent;
-    color: #f5f5f5;
+    color: var(--font-color);
     
     cursor: pointer;
 
@@ -1037,8 +1038,8 @@ dialog {
 }
 
 .menu-icon-active {
-    background-color: #f5f5f5;
-    color: #121215;
+    background-color: var(--font-color);
+    color: var(--body-background);
 }
 
 .menu-icon-inactive {
@@ -1046,15 +1047,15 @@ dialog {
 }
 
 .menu-icon:hover {
-    background-color: #2a2a2d;
+    background-color: var(--button-background);
 }
 
 .menu-icon-active:hover {
-    background-color: #f5f5f5;
+    background-color: var(--font-color);
 }
 
 .adjust-asset {
-    box-shadow: inset #f5f5f5 0px 0px 0px 1px;
+    box-shadow: inset var(--font-color) 0px 0px 0px 1px;
 }
 
 .preview-info {

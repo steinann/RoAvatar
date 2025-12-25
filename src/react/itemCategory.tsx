@@ -235,7 +235,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                     }}>Create</RadialButton>
                 </div>
             </dialog>
-            <ItemCard key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
+            <ItemCard key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
                 setOutfitDialogOpen(true)
             }}/>
         </> : null}

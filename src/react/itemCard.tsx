@@ -4,7 +4,7 @@ import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false,}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     const nameRef = useRef(null)
@@ -66,7 +66,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
     }, [auth, forceImage, imageUrl, itemInfo])
 
-    const cardImage = imageUrl !== "loading" ? (<img className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
+    const cardImage = imageUrl !== "loading" ? (<img style={imageAffectedByTheme ? {filter:"var(--icon-filter)"} : {}} className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 
     const actualClassName = `item${className ? ` ${className}` : ""}`
     const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}`
