@@ -40,30 +40,6 @@ jobs:
             exit 1
           fi
 
-      - name: Generate release notes
-        id: release_notes
-        run: |
-          # Ensure tags are present
-          git fetch --tags --prune
-
-          # Find last tag; if none, include all commits
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$LAST_TAG" ]; then
-            git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" > release_notes.txt || true
-          else
-            git log --pretty=format:"- %s (%h)" > release_notes.txt || true
-          fi
-
-          # Fallback text if there are no commits
-          if [ ! -s release_notes.txt ]; then
-            echo "No commits found." > release_notes.txt
-          fi
-
-          # Export multi-line RELEASE_BODY for later steps
-          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
-          cat release_notes.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Create GitHub Release (draft)
         if: github.event_name == 'push'
         id: create_release
