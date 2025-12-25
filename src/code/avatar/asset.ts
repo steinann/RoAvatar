@@ -171,9 +171,16 @@ export const LayeredAssetTypes = [
     "LeftShoeAccessory",
     "RightShoeAccessory",
     "DressSkirtAccessory",
+
     "EyebrowAccessory",
     "EyelashAccessory",
 
+    "HairAccessory",
+]
+
+export const SpecialLayeredAssetTypes = [
+    "EyebrowAccessory",
+    "EyelashAccessory",
     "HairAccessory",
 ]
 
@@ -420,6 +427,14 @@ class Asset {
             this.meta = new AssetMeta()
             this.meta.fromJson(assetJson.meta)
         }
+    }
+
+    setOrder(order: number) {
+        if (!this.meta) {
+            this.meta = new AssetMeta()
+        }
+
+        this.meta.order = order
     }
 }
 

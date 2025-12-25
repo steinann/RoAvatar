@@ -4,7 +4,7 @@ import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false,}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean, showOrderArrows?: boolean, onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
     const nameRef = useRef(null)
@@ -81,6 +81,10 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }}>
             <RadialButton className={actualButtonClassName} onClick={(e) => {e.preventDefault(); if (onClick) onClick(itemInfo)}}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
+                {showOrderArrows ? <div className="order-arrows">
+                    <button className="arrow-up" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, true)}}}><span className="material-symbols-outlined">arrow_upward</span></button>
+                    <button className="arrow-down" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, false)}}}><span className="material-symbols-outlined">arrow_downward</span></button>
+                </div> : null}
                 {cardImage}
             </RadialButton>
             {includeName ? <span ref={nameRef} className="item-name roboto-600">{itemInfo.name}</span> : null}

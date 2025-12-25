@@ -4,7 +4,7 @@ import ItemCard from "./itemCard";
 import { OutfitContext } from "./context/outfit-context";
 import { accessoryRefinementLowerBounds, accessoryRefinementTypes, accessoryRefinementUpperBounds } from "../code/avatar/constant";
 import { AuthContext } from "./context/auth-context";
-import { Asset, AssetMeta, ItemInfo } from "../code/avatar/asset";
+import { Asset, AssetMeta, ItemInfo, LayeredAssetTypes, SpecialLayeredAssetTypes } from "../code/avatar/asset";
 import type { Outfit } from "../code/avatar/outfit";
 import { mapNum } from "../code/misc/misc";
 
@@ -75,12 +75,16 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
 
     const [open, _setOpen] = useState(false)
     const [adjustOpen, _setAdjustOpen] = useState(false)
+    const [orderOpen, _setOrderOpen] = useState(false)
+
     const [adjustType, setAdjustType] = useState<AdjustType>("position")
 
     const [adjustAssetId, setAdjustAssetId] = useState<number | undefined>(undefined)
     const [adjustAsset, setAdjustAsset] = useState<Asset | undefined>(undefined)
 
     const menuRef = useRef<HTMLUListElement>(null)
+
+    const buttonOpen = adjustOpen || orderOpen
 
     function setAdjustOpen(open: boolean) {
         if (open === false) {
@@ -91,24 +95,36 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         _setAdjustOpen(open)
     }
 
+    function setOrderOpen(open: boolean) {
+        _setOrderOpen(open)
+    }
+
     function setOpen(open: boolean) {
+        setOrderOpen(false)
         setAdjustOpen(false)
         _setOpen(open)
     }
 
     const adjustableAssets: number[] = []
+    const orderableAssets: number[] = []
+    const idToOrder = new Map<number,number>()
+
     for (const asset of outfit.assets) {
         if (accessoryRefinementTypes.includes(asset.assetType.id)) {
             adjustableAssets.push(asset.id)
+        } else if (LayeredAssetTypes.includes(asset.assetType.name) && !SpecialLayeredAssetTypes.includes(asset.assetType.name)) {
+            orderableAssets.push(asset.id)
+            idToOrder.set(asset.id, asset.meta?.order || 0)
         }
     }
+    orderableAssets.sort((a, b) => (idToOrder.get(b) || 0) - (idToOrder.get(a) || 0))
 
     //close when click outside preview
     useEffect(() => {
         const menuElement = menuRef.current
 
         const mouseUpListener = (e: MouseEvent) => {
-            if (menuElement && !menuElement.contains(e.target as HTMLElement) && !adjustOpen) {
+            if (menuElement && !menuElement.contains(e.target as HTMLElement) && !buttonOpen) {
                 setOpen(false)
             }
         }
@@ -165,9 +181,10 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         <ul ref={menuRef} className='menu-icons'>
             {/*Hamburger menu*/}
             <ul className='inner-menu-icons first-menu-icons'>
-                <button title={open ? "Close Menu" : "Open Menu"} className={`menu-icon menu-open${adjustOpen ? " menu-icon-inactive":""}`} onClick={() => {setOpen(!open)}}><span className='material-symbols-outlined'>{open ? "close" : "menu"}</span></button>
+                <button title={open ? "Close Menu" : "Open Menu"} className={`menu-icon menu-open${buttonOpen ? " menu-icon-inactive":""}`} onClick={() => {setOpen(!open)}}><span className='material-symbols-outlined'>{open ? "close" : "menu"}</span></button>
                 <ul className={`small-menu-icons${open ? "" : " icons-collapsed"}`}>
-                    <button title="Accessory Adjustment" className={`menu-icon menu-adjust${adjustOpen ? " menu-icon-active" : ""}`} onClick={() => {setAdjustOpen(!adjustOpen)}}><span className='material-symbols-outlined'>eyeglasses_2</span></button>
+                    <button title="Accessory Adjustment" className={`menu-icon menu-adjust${adjustOpen ? " menu-icon-active" : ""}${buttonOpen && !adjustOpen ? " menu-icon-inactive":""}`} onClick={() => {setAdjustOpen(!adjustOpen)}}><span className='material-symbols-outlined'>eyeglasses_2</span></button>
+                    <button title="Layered Clothing Order" className={`menu-icon menu-adjust${orderOpen ? " menu-icon-active" : ""}${buttonOpen && !orderOpen ? " menu-icon-inactive":""}`} onClick={() => {setOrderOpen(!orderOpen)}}><span className='material-symbols-outlined'>apparel</span></button>
                 </ul>
             </ul>
             {/*Accessory adjustment buttons*/}
@@ -178,9 +195,9 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
             </ul>
         </ul>
 
-        {/*Choose accessory*/}
-        <ul className={`accessory-select${adjustOpen ? "" : " icons-collapsed"}`}>
-            {adjustableAssets.map((assetId) => {
+        {/*Accessory list on right*/}
+        <ul className={`accessory-select${adjustOpen || orderOpen ? "" : " icons-collapsed"}`}>
+            {(adjustOpen ? adjustableAssets : orderableAssets).map((assetId) => {
                 let asset = undefined
                 for (const outfitAsset of outfit.assets) {
                     if (outfitAsset.id === assetId) {
@@ -192,8 +209,30 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
 
                 const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)
                 const className = adjustAsset?.id === assetId ? "adjust-asset" : undefined
-                return <ItemCard buttonClassName={className} key={asset.id}  auth={auth} includeName={false} itemInfo={itemInfo} onClick={() => {
-                    setAdjustAssetId(assetId)
+                return <ItemCard showOrderArrows={orderOpen} buttonClassName={className} key={asset.id}  auth={auth} includeName={false} itemInfo={itemInfo} onClick={() => {
+                    if (adjustOpen) {
+                        setAdjustAssetId(assetId)
+                    }
+                }} onArrowClick={(itemInfo, isUp) => {
+                    const index = orderableAssets.indexOf(itemInfo.id)
+                    if ((index > 0 || !isUp) && (index < orderableAssets.length - 1 || isUp)) {
+                        const previousIndex = index + (isUp ? -1 : 1)
+                        const previousId = orderableAssets[previousIndex]
+
+                        const previousOrder = idToOrder.get(previousId)
+                        const selfOrder = idToOrder.get(itemInfo.id)
+
+                        if (previousOrder && selfOrder) {
+                            const newOutfit = outfit.clone()
+                            const previousAsset = newOutfit.getAssetId(previousId)
+                            const selfAsset = newOutfit.getAssetId(itemInfo.id)
+                            if (previousAsset && selfAsset) {
+                                previousAsset.setOrder(selfOrder)
+                                selfAsset.setOrder(previousOrder)
+                                setOutfit(newOutfit)
+                            }
+                        }
+                    }
                 }}/>
             })}
         </ul>

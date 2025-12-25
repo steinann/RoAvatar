@@ -1018,6 +1018,14 @@ export class Outfit {
         return true
     }
 
+    getAssetId(assetId: number): Asset | undefined {
+        for (const asset of this.assets) {
+            if (asset.id === assetId) {
+                return asset
+            }
+        }
+    }
+
     async fromBuffer(buffer: ArrayBuffer, auth: Authentication) {
         const view = new SimpleView(buffer)
 
