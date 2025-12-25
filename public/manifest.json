@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "RoAvatar",
     "description": "A remake of the Roblox avatar editor with new and improved features",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "permissions": [
         "cookies",
         "storage"
@@ -11,6 +11,11 @@
         {
             "js": ["inject.js"],
             "matches": ["https://*.roblox.com/my/avatar-plus*"],
+            "run_at": "document_start"
+        },
+        {
+            "js": ["editor-inject.js"],
+            "matches": ["https://*.roblox.com/my/avatar*"],
             "run_at": "document_start"
         }
     ],
