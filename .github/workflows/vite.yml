@@ -20,9 +20,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          # fetch full history so we can find the last tag and generate notes
-          fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -76,7 +73,7 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           release_name: Build ${{ github.run_number }}
-          body: ${{ env.RELEASE_BODY }}
+          body: Automated release for run ${{ github.run_id }}
           draft: true
           prerelease: false
 
