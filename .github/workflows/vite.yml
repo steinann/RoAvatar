@@ -1,5 +1,9 @@
 name: NodeJS with Vite
 
+permissions:
+  contents: write
+  id-token: write
+
 on:
   push:
     branches: ["main"]
@@ -59,3 +63,4 @@ jobs:
           asset_path: ./build-artifacts.zip
           asset_name: build-artifacts.zip
           asset_content_type: application/zip
+
