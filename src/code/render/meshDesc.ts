@@ -271,11 +271,6 @@ export class MeshDesc {
     mesh?: string
     hasSkinning: boolean = false
 
-    //adjustment
-    adjustPosition = new Vector3(0,0,0)
-    adjustRotation = new Vector3(0,0,0)
-    adjustScale = new Vector3(1,1,1)
-
     //layering
     layerDesc?: WrapLayerDesc
 
@@ -296,10 +291,7 @@ export class MeshDesc {
     isSame(other: MeshDesc) {
         const singularTrue = //this.size.isSame(other.size) &&
             this.scaleIsRelative === other.scaleIsRelative &&
-            this.mesh === other.mesh &&
-            this.adjustPosition.isSame(other.adjustPosition) &&
-            this.adjustRotation.isSame(other.adjustRotation) &&
-            this.adjustScale.isSame(other.adjustScale)
+            this.mesh === other.mesh
         
         if (!singularTrue) {
             return singularTrue

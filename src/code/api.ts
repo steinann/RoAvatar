@@ -1,3 +1,4 @@
+import type { BundleDetails_Result, GetTopics_Payload, GetTopics_Result, NavigationMenuItems, Search_Payload, Search_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
@@ -186,7 +187,8 @@ const CACHE = {
     "RBX": new Map<string,RBX>(),
     "Mesh": new Map<string,FileMesh>(),
     "Image": new Map<string,HTMLImageElement | undefined>(),
-    "Thumbnails": new Map<string,string | undefined>()
+    "Thumbnails": new Map<string,string | undefined>(),
+    "ItemOwned": new Map<string,[boolean,number]>()
 }
 
 type ThumbnailInfo = {
@@ -591,6 +593,79 @@ const API = {
             }
         }
     },
+    "Catalog": {
+        GetNavigationMenuItems: async function(auth: Authentication) {
+            const response = await RBLXGet("https://catalog.roblox.com/v1/search/navigation-menu-items", auth)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as NavigationMenuItems
+        },
+        GetTopics: async function(auth: Authentication, body: GetTopics_Payload) {
+            const response = await RBLXPost("https://catalog.roblox.com/v1/search/navigation-menu-items", auth, body)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as GetTopics_Result
+        },
+        Search: async function(auth: Authentication, {taxonomy, salesTypeFilter = 1, sortType, categoryFilter, keyword, topics, creatorName, minPrice, maxPrice, includeNotForSale, limit = 120}: Search_Payload, cursor?: string) {
+            /*https://catalog.roblox.com/v2/search/items/details?
+            keyword=mariah&
+            TriggeredByTopicDiscovery=true&
+            topics=steven&
+            taxonomy=u5jaNLyf2ZhvR95GS37ui5&
+            creatorName=roblox&
+            minPrice=1&
+            salesTypeFilter=2&
+            sortType=3&
+            includeNotForSale=true&
+            limit=120*/
+            let url = `https://catalog.roblox.com/v2/search/items/details?taxonomy=${taxonomy}&salesTypeFilter=${salesTypeFilter}&`
+            if (sortType !== undefined) url += `sortType=${sortType}&`
+            if (categoryFilter !== undefined) url += `categoryFilter=${categoryFilter}&`
+            if (keyword !== undefined) url += `keyword=${keyword}&`
+            if (topics !== undefined) {
+                let topicsStr = ""
+
+                for (const topic of topics) {
+                    if (topicsStr.length < 1) {
+                        topicsStr += topic
+                    } else {
+                        topicsStr += " " + topic
+                    }
+                }
+
+                url += `topics=${topicsStr}&`
+            }
+            if (creatorName !== undefined) url += `creatorName=${creatorName}&`
+            if (minPrice !== undefined) url += `minPrice=${minPrice}&`
+            if (maxPrice !== undefined) url += `maxPrice=${maxPrice}&`
+            if (includeNotForSale !== undefined) url += `includeNotForSale=${includeNotForSale}&`
+            if (cursor !== undefined) url += `cursor=${cursor}&`
+            url += `limit=${limit}`
+
+            const response = await RBLXGet(url, auth)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as Search_Result
+        },
+        GetBundleDetails: async function(auth: Authentication, bundleId: number) {
+            const response = await RBLXGet(`https://catalog.roblox.com/v1/catalog/items/${bundleId}/details?itemType=Bundle`, auth)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as BundleDetails_Result
+        }
+    },
     "Inventory": {
         GetInventory: async function(auth: Authentication, assetTypes: string[], cursor?: string) {
             let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?assetTypes="
@@ -607,6 +682,30 @@ const API = {
             }
 
             return RBLXGet(requestUrl, auth)
+        },
+        IsItemOwned: async function(auth: Authentication, userId: number, itemType: string, assetId: number) {
+            const cacheResult = CACHE.ItemOwned.get(`${userId}.${itemType}.${assetId}`)
+            if (cacheResult) {
+                if (cacheResult[0]) return true
+
+                if ((new Date().getTime() - cacheResult[1]) < 5) return false
+            }
+
+            const response = await RBLXGet(`https://inventory.roblox.com/v1/users/${userId}/items/${itemType}/${assetId}/is-owned`, auth)
+         
+            if (response.status !== 200) {
+                return response
+            }
+
+            const responseBool = await response.json()
+
+            if (responseBool) {
+                CACHE.ItemOwned.set(`${userId}.${itemType}.${assetId}`, [true, 0])
+            } else {
+                CACHE.ItemOwned.set(`${userId}.${itemType}.${assetId}`, [false, new Date().getTime() / 1000])
+            }
+
+            return responseBool
         }
     },
     "Users": {
@@ -623,10 +722,6 @@ const API = {
     },
     "Thumbnails": {
         GetThumbnail: function(auth: Authentication, type: string, id: number, size: string = "150x150"): Promise<string | undefined> {
-            if (type === "Bundle") {
-                type = "Outfit"
-            }
-
             const thisThumbnailInfo: ThumbnailInfo = {
                 auth: auth,
                 type: type,
@@ -665,10 +760,6 @@ const API = {
             })
         },
         UncacheThumbnail: function(type: string, id: number, size: string = "150x150") {
-            if (type === "Bundle") {
-                type = "Outfit"
-            }
-
             const thisThumbnailInfo: ThumbnailInfo = {
                 auth: new Authentication(),
                 type: type,
@@ -727,6 +818,10 @@ function BatchThumbnails() {
 
         thumbnailInfo.lastTryTimestamp = Date.now() / 1000
         thumbnailInfo.attempt++
+
+        if (body.length >= 30) {
+            break
+        }
     }
 
     if (body.length > 0 && auth) {

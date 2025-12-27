@@ -1,10 +1,13 @@
 import type { Outfit } from "../code/avatar/outfit"
+import type { SpecialInfo } from "../code/avatar/sorts"
 import BodyColorCategory from "./bodyColorCategory"
 import EmoteCategory from "./emoteCategory"
 import ScaleCategory from "./scaleCategory"
 
-export default function SpecialCategory({categoryType, subCategoryType, setOutfit, setAnimName, _setOutfit}: {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, _setOutfit: (a: Outfit) => void}): React.JSX.Element {
-    switch (subCategoryType) {
+export default function SpecialCategory({specialInfo, categoryType, setOutfit, setAnimName, _setOutfit}: {specialInfo: SpecialInfo, categoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, _setOutfit: (a: Outfit) => void}): React.JSX.Element {
+    
+    
+    switch (specialInfo.type) {
         case "Emotes":
             return <EmoteCategory categoryType={categoryType} setOutfit={setOutfit} setAnimName={setAnimName}/>
         case "Scale":

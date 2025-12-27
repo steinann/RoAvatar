@@ -1,10 +1,10 @@
 import type { CategoryDictionary } from "../code/avatar/sorts"
 import BarButton from "./barButton"
 
-export default function BarCategory({ children, source, currentCategory, setCurrentCategory, className = "" }: { children?: React.JSX.Element[], source?: typeof CategoryDictionary | typeof CategoryDictionary.Inventory | typeof CategoryDictionary.Inventory.Recent, currentCategory?: string, setCurrentCategory?: (a: string) => void, className?: string } ): React.JSX.Element {
+export default function BarCategory({children, source, currentCategory, setCurrentCategory, className = "" }: React.PropsWithChildren & { source?: typeof CategoryDictionary | typeof CategoryDictionary.Inventory | typeof CategoryDictionary.Inventory.Recent, currentCategory?: string, setCurrentCategory?: (a: string) => void, className?: string } ): React.JSX.Element {
     const realChildren = []
-    
-    if (source && currentCategory && setCurrentCategory) {
+
+    if (source && setCurrentCategory) {
         for (const key of Object.keys(source)) {
             if (!key.startsWith("_")) {
                 realChildren.push(
@@ -14,7 +14,7 @@ export default function BarCategory({ children, source, currentCategory, setCurr
         }
     }
 
-    return <div className={`bar-category ${className}`}>
+    return <div className={`dark-scrollbar bar-category ${className}`}>
         {realChildren}
         {children}
     </div>

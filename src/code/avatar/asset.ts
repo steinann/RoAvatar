@@ -252,12 +252,22 @@ export const BundleTypes = [
     "AnimationPack"
 ]
 
-type ItemType = "Asset" | "Bundle" | "None"
+export const CatalogBundleTypes = [
+    "",
+    "Character",
+    "AnimationPack",
+    "Shoes",
+    "DynamicHead"
+]
+
+type ItemType = "Asset" | "Bundle" | "Outfit" | "None"
 export class ItemInfo {
     itemType: ItemType
     type: string
     id: number
     name: string
+
+    price?: number
     
     constructor(itemType: ItemType, type: string, id: number, name: string) {
         this.itemType = itemType

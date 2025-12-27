@@ -19,6 +19,7 @@ export default defineConfig({
         chunkFileNames: "react/[name].js",
         assetFileNames: "react/[name].css"
       }
-    }
+    },
+    minify: false
   }
 })

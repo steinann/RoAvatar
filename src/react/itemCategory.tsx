@@ -4,10 +4,10 @@ import { OutfitContext } from "./context/outfit-context"
 import { Outfit } from "../code/avatar/outfit"
 import { API, Authentication } from "../code/api"
 import ItemCard from "./itemCard"
-import { AssetTypes, BundleTypes, ItemInfo, ToRemoveBeforeBundleType } from "../code/avatar/asset"
+import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
 import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
-import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant"
 import RadialButton from "./generic/radialButton"
+import { defaultOnClick } from "./categoryShared"
 
 let lastCategory = ""
 let lastSubCategory = ""
@@ -132,11 +132,11 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
     //create item infos based on response
     const itemInfos: ItemInfo[] = []
     for (const item of items) {
-        const itemType = item.itemCategory.itemType === 1 ? "Asset" : "Bundle"
+        const itemType = item.itemCategory.itemType === 1 ? "Asset" : "Outfit"
         let itemSubType: string = "undefined"
         if (itemType === "Asset") {
             itemSubType = AssetTypes[item.itemCategory.itemSubType]
-        } else if (itemType === "Bundle") {
+        } else if (itemType === "Outfit") {
             itemSubType = BundleTypes[item.itemCategory.itemSubType]
         }
 
@@ -145,58 +145,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
     }
 
     //determine on click function for itemcards
-    const defaultOnClick = (auth: Authentication, item: ItemInfo) => {
-        if (!outfit.containsAsset(item.id) && item.itemType === "Asset") {
-            const newOutfit = outfit.clone(); 
-            newOutfit.addAsset(item.id, item.type, item.name);
-            if (item.type.endsWith("Animation")) {
-                const entry = DefaultAnimations[item.type as AnimationProp]
-                const mainName = entry[0]
-                const subArr = entry[1]
-                const sub0 = subArr[0]
-                if (sub0) {
-                    const sub0Name = sub0[0]
-
-                    setAnimName(`${mainName}.${sub0Name}`)
-                }
-            } else {
-                setAnimName(`idle.Animation1`)
-            }
-            setOutfit(newOutfit)
-        } else if (item.itemType === "Asset") {
-            const newOutfit = outfit.clone(); 
-            newOutfit.removeAsset(item.id);
-            setOutfit(newOutfit)
-        } else if (item.itemType === "Bundle" && (item.type === "Outfit" || item.type === "Character")) {
-            API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
-                if (result instanceof Outfit) {
-                    if (item.type === "Character") {
-                        result.bodyColors = outfit.bodyColors.clone()
-                    }
-
-                    setOutfit(result)
-                }
-            })
-        } else if (item.itemType === "Bundle" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack")) {
-            const newOutfit = outfit.clone()
-
-            const toRemove = ToRemoveBeforeBundleType[item.type]
-            for (const type of toRemove) {
-                newOutfit.removeAssetType(type)
-            }
-
-            API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
-                if (result instanceof Outfit) {
-                    for (const asset of result.assets) {
-                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
-                    }
-
-                    setOutfit(newOutfit)
-                }
-            })
-        }
-    }
-    const onClickFunc = onClickItem || defaultOnClick
+    const onClickFunc = onClickItem
 
     //create item cards
     let itemComponents = null
@@ -244,7 +193,11 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
         {
             itemInfos.map((item) => (
                 <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
-                    onClickFunc(auth, item)
+                    if (onClickFunc) {
+                        onClickFunc(auth, item)
+                    } else {
+                        defaultOnClick(auth, item, outfit, setAnimName, setOutfit)
+                    }
                 }}/>
             ))
         }</>

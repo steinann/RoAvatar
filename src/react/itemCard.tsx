@@ -5,10 +5,12 @@ import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean, showOrderArrows?: boolean, onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void, canEditOutfit?: boolean, refresh?: () => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean, showOrderArrows?: boolean, onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void, canEditOutfit?: boolean, refresh?: () => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void, showViewButton?: boolean}): React.JSX.Element {
     const outfit = useContext(OutfitContext)
     
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
+
+    const [mouseOver, setMouseOver] = useState(false)
 
     const [editOpen, setEditOpen] = useState(false)
     const [updateOpen, setUpdateOpen] = useState(false)
@@ -80,12 +82,13 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
 
         if (auth && itemInfo) {
             if (imageUrl === "loading") {
-                API.Thumbnails.GetThumbnail(auth, itemInfo.itemType, itemInfo.id, "150x150").then((result) => {
+                const thumbnailType = itemInfo.itemType === "Bundle" ? "BundleThumbnail" : itemInfo.itemType
+                API.Thumbnails.GetThumbnail(auth, thumbnailType, itemInfo.id, "150x150").then((result) => {
                     if (!result) {
-                        if (itemInfo.itemType === "Asset") {
-                            setImageUrl("../assets/error.svg")
-                        } else if (itemInfo.itemType === "Bundle") {
+                        if (itemInfo.itemType === "Bundle" || itemInfo.itemType === "Outfit") {
                             setImageUrl("../assets/broken-avatar-200px.png")
+                        } else {
+                            setImageUrl("../assets/error.svg")
                         }
                     } else {
                         setImageUrl(result)
@@ -102,8 +105,15 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const actualClassName = `item${className ? ` ${className}` : ""}`
     const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}`
 
-    if (auth && itemInfo) {
+    if (auth && itemInfo) { //loaded item
         
+        let url = undefined
+        if (itemInfo.itemType === "Asset") {
+            url = `https://www.roblox.com/catalog/${itemInfo.id}`
+        } else if (itemInfo.itemType === "Bundle")  {
+            url = `https://www.roblox.com/bundles/${itemInfo.id}`
+        }
+
         return (<>
         {canEditOutfit ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
             <span className="dialog-title roboto-700">Update Character</span>
@@ -187,13 +197,19 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 }}>Rename</RadialButton>
             </div>
         </dialog> : null}
-        <a className={actualClassName} title={itemInfo.name} href={itemInfo.itemType === "Asset" ? `https://www.roblox.com/catalog/${itemInfo.id}` : undefined} onClick={(e) => {
+        
+        <a className={actualClassName} title={itemInfo.name} href={url} onClick={(e) => {
             e.preventDefault()
-            if (itemInfo.itemType === "Asset" && e.target === nameRef.current) {
-                browserOpenURL(`https://www.roblox.com/catalog/${itemInfo.id}`)
+            if (url && e.target === nameRef.current) {
+                browserOpenURL(url)
             }
         }}>
-            <RadialButton effectDisabled={editOpen} className={actualButtonClassName} onClick={(e) => {e.preventDefault(); if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return; if (onClick) onClick(itemInfo)}}>
+            <RadialButton effectDisabled={editOpen} className={actualButtonClassName} onMouseEnter={() => {setMouseOver(true)}} onMouseLeave={() => {setMouseOver(false)}} onClick={(e) => {
+                    e.preventDefault();
+                    if ((e.target as HTMLButtonElement).classList.contains("item-view")) return;
+                    if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return;
+                    if (onClick) onClick(itemInfo)
+                }}>
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
                 {showOrderArrows ? <div className="order-arrows">
                     <button className="arrow-up" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, true)}}}><span className="material-symbols-outlined">arrow_upward</span></button>
@@ -206,12 +222,20 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     <button className="roboto-600" onClick={()=>{setDeleteOpen(true)}}>Delete</button>
                     <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
                 </div> : null}
+                {showViewButton && mouseOver ? <button className="item-view roboto-600" onClick={() => {
+                    if (url) {
+                        browserOpenURL(url)
+                    }
+                }}>
+                    View
+                </button> : null}
                 {cardImage}
             </RadialButton>
             {includeName ? <span ref={nameRef} className="item-name roboto-600">{itemInfo.name}</span> : null}
+            {itemInfo.price ? <span className="item-price roboto-600"><span className="icon-robux-16x16"></span>{itemInfo.price}</span> : null}
         </a>
         </>)
-    } else {
+    } else { //loading item
         const nameStyle = {
             width: "6rem",
             height: "1rem",
