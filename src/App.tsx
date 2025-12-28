@@ -19,6 +19,7 @@ import { arrayBufferToBase64, base64ToArrayBuffer } from './code/misc/misc'
 import AvatarAdjustment from './react/avatarAdjustment'
 import { type NavigationMenuItems, type Search_Payload } from './code/api-constant'
 import MarketplaceCategory from './react/marketplaceCategory'
+import { HAIR_IS_BODYPART } from './code/misc/flags'
 //import { arrayBufferToBase64 } from './code/misc/misc'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
@@ -199,6 +200,53 @@ function App() {
           setNavigationMenuItems(result)
 
           const marketplaceSource: {[k in string]: {[k in string]: SpecialInfo}} = {}
+
+          //move hair to accessories
+          if (!HAIR_IS_BODYPART) {
+            //find body category
+            let bodyCategory = undefined
+            for (const category of result.categories) {
+              if (category.category === "Body") { //.category is always english, only .name is translated
+                bodyCategory = category
+              }
+            }
+
+            if (bodyCategory) {
+              //find hair subcategory
+              let hairSubcategory = undefined
+              for (const subcategory of bodyCategory.subcategories) {
+                if (subcategory.subcategory === "HairAccessories") {
+                  hairSubcategory = subcategory
+                }
+              }
+
+              if (hairSubcategory) {
+                //find accessories subcategory and move hair to there
+                for (const category of result.categories) {
+                  if (category.category === "Accessories") {
+                    category.subcategories.unshift(hairSubcategory)
+                    
+                    const hairIndex = bodyCategory.subcategories.indexOf(hairSubcategory)
+                    if (hairIndex >= 0) {
+                      bodyCategory.subcategories.splice(hairIndex, 1)
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          //remove redundant "Accessory" from names of subcategories in Accessories
+          //find accessories subcategory and move hair to there
+          for (const category of result.categories) {
+            if (category.category === "Accessories") {
+              for (const subcategory of category.subcategories) {
+                if (subcategory.name.endsWith(" Accessory")) {
+                  subcategory.name = subcategory.name.replace(" Accessory","")
+                }
+              }
+            }
+          }
 
           for (const category of result.categories) {
             //flip order so classic clothing is first
