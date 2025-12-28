@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import { API, type Authentication } from "../code/api"
 import { ItemInfo } from "../code/avatar/asset"
 import type { Outfit } from "../code/avatar/outfit"
@@ -94,21 +94,10 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
         }
     }
 
-    let contents = null
-    contents = (<>
-    <BarCategory className={"emote-bar align-center"}>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={1} itemInfo={itemInfos[0]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={2} itemInfo={itemInfos[1]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={3} itemInfo={itemInfos[2]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={4} itemInfo={itemInfos[3]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={5} itemInfo={itemInfos[4]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={6} itemInfo={itemInfos[5]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={7} itemInfo={itemInfos[6]}/>
-        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
-    </BarCategory>
-    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
-        //equip emote
-        setAnimName(`emote.${item.id}`)
+    //unequip emote function
+    const unequipEmote = useCallback(() => {
+        if (!auth) return
+        setAnimName(`idle.Animation1`)
 
         if (!equippedEmotes) return
 
@@ -124,28 +113,43 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
             }
         }
 
-        newEquippedEmottes.push({
-            assetId: item.id,
-            assetName: item.name,
-            position: currentSlot,
-        })
-
         setEquippedEmotes(newEquippedEmottes)
 
-        API.Avatar.EquipEmote(auth, item.id, currentSlot)
-    }}>
-        <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
-            //unequip emote
-            if (!auth) return
-            setAnimName(`idle.Animation1`)
+        API.Avatar.UnequipEmote(auth, currentSlot)
+    }, [auth, currentSlot, equippedEmotes, setAnimName])
 
-            if (!equippedEmotes) return
+    let contents = null
+    contents = (<>
+    <BarCategory className={"emote-bar align-center"}>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={1} itemInfo={itemInfos[0]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={2} itemInfo={itemInfos[1]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={3} itemInfo={itemInfos[2]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={4} itemInfo={itemInfos[3]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={5} itemInfo={itemInfos[4]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={6} itemInfo={itemInfos[5]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={7} itemInfo={itemInfos[6]}/>
+        <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
+    </BarCategory>
+    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
+        if (!equippedEmotes) return
 
-            const newEquippedEmottes = []
+        let isEmoteEquipped = false
+
+        for (const emoteInfo of equippedEmotes) {
+            if (emoteInfo.assetId === item.id && emoteInfo.position === currentSlot) {
+                isEmoteEquipped = true
+                break
+            }
+        }
+
+        if (!isEmoteEquipped) {
+            //equip emote
+            setAnimName(`emote.${item.id}`)
+            const newEquippedEmotes = []
 
             for (const emoteInfo of equippedEmotes) {
                 if (emoteInfo.position !== currentSlot) {
-                    newEquippedEmottes.push({
+                    newEquippedEmotes.push({
                         assetId: emoteInfo.assetId,
                         assetName: emoteInfo.assetName,
                         position: emoteInfo.position,
@@ -153,9 +157,22 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
                 }
             }
 
-            setEquippedEmotes(newEquippedEmottes)
+            newEquippedEmotes.push({
+                assetId: item.id,
+                assetName: item.name,
+                position: currentSlot,
+            })
 
-            API.Avatar.UnequipEmote(auth, currentSlot)
+            setEquippedEmotes(newEquippedEmotes)
+
+            API.Avatar.EquipEmote(auth, item.id, currentSlot)
+        } else {
+            unequipEmote()
+        }
+    }}>
+        <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
+            //unequip emote
+            unequipEmote()
         }}/>
     </ItemCategory>
     </>)
