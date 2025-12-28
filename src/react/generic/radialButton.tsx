@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 
+//fancy button that has a circle come from the mouse on click
 export default function RadialButton({ children, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave }: React.PropsWithChildren & {className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void}): React.JSX.Element {
     const circleRef = useRef(null);
     const buttonRef = useRef(null);

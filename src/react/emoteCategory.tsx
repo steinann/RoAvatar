@@ -8,13 +8,16 @@ import { AuthContext } from "./context/auth-context"
 import React from "react"
 import ItemCard from "./itemCard"
 
+//Box that represents slot in emote wheel
 function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemInfo }: {setAnimName: (a: string) => void, setCurrentSlot: (a: number) => void, currentSlot: number, slot: number, auth?: Authentication, itemInfo?: ItemInfo}): React.JSX.Element {
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
+    //when emote inside changes, remove image
     useEffect(() => {
         setImageUrl("loading")
     }, [itemInfo])
 
+    //load image
     useEffect(() => {
         if (auth && itemInfo) {
             if (imageUrl === "loading") {
@@ -57,6 +60,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
     const [currentSlot, setCurrentSlot] = useState(1)
     const [equippedEmotes, setEquippedEmotes] = useState<EmoteInfo[] | undefined>(undefined)
 
+    //load equipped emotes
     useEffect(() => {
         if (!equippedEmotes && auth) {
             API.Avatar.GetEmotes(auth).then((result) => {
@@ -75,8 +79,10 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
         }
     })
 
+    //list of emote asset ids
     const wornEmotes = []
 
+    //get emote itemInfos and push to wornEmotes
     const itemInfos = new Array(8).fill(undefined)
     if (equippedEmotes) {
         for (const emoteInfo of equippedEmotes) {
@@ -101,6 +107,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
     </BarCategory>
     <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
+        //equip emote
         setAnimName(`emote.${item.id}`)
 
         if (!equippedEmotes) return
@@ -128,6 +135,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
         API.Avatar.EquipEmote(auth, item.id, currentSlot)
     }}>
         <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
+            //unequip emote
             if (!auth) return
             setAnimName(`idle.Animation1`)
 

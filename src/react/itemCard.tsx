@@ -5,7 +5,25 @@ import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false}: {auth?: Authentication, itemInfo?: ItemInfo, isWorn?: boolean, onClick?: (itemInfo: ItemInfo) => void, className?: string, buttonClassName?: string, includeName?: boolean, forceImage?: string, imageAffectedByTheme?: boolean, showOrderArrows?: boolean, onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void, canEditOutfit?: boolean, refresh?: () => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void, showViewButton?: boolean}): React.JSX.Element {
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false}: 
+    {
+        auth?: Authentication,
+        itemInfo?: ItemInfo,
+        isWorn?: boolean,
+        onClick?: (itemInfo: ItemInfo) => void,
+        className?: string,
+        buttonClassName?: string,
+        includeName?: boolean,
+        forceImage?: string,
+        imageAffectedByTheme?: boolean,
+        showOrderArrows?: boolean,
+        onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void,
+        canEditOutfit?: boolean, 
+        refresh?: () => void,
+        setAlertText?: (a: string) => void,
+        setAlertEnabled?: (a: boolean) => void,
+        showViewButton?: boolean
+    }): React.JSX.Element {
     const outfit = useContext(OutfitContext)
     
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
@@ -24,6 +42,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const renameDialogRef = useRef<HTMLDialogElement>(null)
     const outfitNameInputRef: React.RefObject<HTMLInputElement | null> = useRef(null)
 
+    //update open state of outfit dialogs
     useEffect(() => {
         if (updateOpen) {
             updateDialogRef.current?.showModal()
@@ -74,6 +93,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
     }, [auth,itemInfo])*/
 
+    //load item image
     useEffect(() => {
         if (forceImage && imageUrl !== forceImage) {
             setImageUrl(forceImage)
@@ -106,7 +126,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}`
 
     if (auth && itemInfo) { //loaded item
-        
+        //get url
         let url = undefined
         if (itemInfo.itemType === "Asset") {
             url = `https://www.roblox.com/catalog/${itemInfo.id}`
@@ -115,7 +135,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
 
         return (<>
-        {canEditOutfit ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
+        {/*Update outfit dialot*/
+        canEditOutfit ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
             <span className="dialog-title roboto-700">Update Character</span>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
@@ -142,7 +163,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 }}>Update</RadialButton>
             </div>
         </dialog> : null}
-        {canEditOutfit ? <dialog style={deleteOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={deleteDialogRef} onCancel={() => {setDeleteOpen(false)}}>
+        {/*Delete outfit dialog*/
+        canEditOutfit ? <dialog style={deleteOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={deleteDialogRef} onCancel={() => {setDeleteOpen(false)}}>
             <span className="dialog-title roboto-700">Delete Character</span>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
@@ -166,7 +188,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 }}>Delete</RadialButton>
             </div>
         </dialog> : null}
-        {canEditOutfit ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
+        {//Rename outfit dialog
+        canEditOutfit ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
             <span className="dialog-title roboto-700">Rename Character</span>
             <input ref={outfitNameInputRef} className="dialog-text-input roboto-300" placeholder="Name"></input>
             <div className="dialog-actions">
@@ -198,6 +221,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             </div>
         </dialog> : null}
         
+        {/*Actual item element*/}
         <a className={actualClassName} title={itemInfo.name} href={url} onClick={(e) => {
             e.preventDefault()
             if (url && e.target === nameRef.current) {
@@ -205,23 +229,32 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             }
         }}>
             <RadialButton effectDisabled={editOpen} className={actualButtonClassName} onMouseEnter={() => {setMouseOver(true)}} onMouseLeave={() => {setMouseOver(false)}} onClick={(e) => {
+                    //on item clicked
                     e.preventDefault();
                     if ((e.target as HTMLButtonElement).classList.contains("item-view")) return;
                     if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return;
                     if (onClick) onClick(itemInfo)
                 }}>
+                {/*Worn item icon*/}
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
+                {/*Orders for layered clothing ordering*/}
                 {showOrderArrows ? <div className="order-arrows">
                     <button className="arrow-up" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, true)}}}><span className="material-symbols-outlined">arrow_upward</span></button>
                     <button className="arrow-down" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, false)}}}><span className="material-symbols-outlined">arrow_downward</span></button>
                 </div> : null}
-                {canEditOutfit ? <button className="edit-outfit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
-                {editOpen ? <div className="edit-outfit-menu">
+                {/*Edit outfit button*/
+                canEditOutfit ? <button className="edit-outfit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
+                {/*Manage outfit buttons*/
+                editOpen ? <div className="edit-outfit-menu">
                     <button className="roboto-600" onClick={()=>{setUpdateOpen(true)}}>Update</button>
                     <button className="roboto-600" onClick={()=>{setRenameOpen(true)}}>Rename</button>
                     <button className="roboto-600" onClick={()=>{setDeleteOpen(true)}}>Delete</button>
                     <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
                 </div> : null}
+                {/*Item tags*/}
+                {itemInfo.limitedType === "Limited" ? <span className="tag-limited"></span> : null}
+                {itemInfo.limitedType === "LimitedUnique" ? <span className="tag-limited-unique"></span> : null}
+                {/*View button*/}
                 {showViewButton && mouseOver ? <button className="item-view roboto-600" onClick={() => {
                     if (url) {
                         browserOpenURL(url)
@@ -229,10 +262,11 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 }}>
                     View
                 </button> : null}
+                {/*Image*/}
                 {cardImage}
             </RadialButton>
             {includeName ? <span ref={nameRef} className="item-name roboto-600">{itemInfo.name}</span> : null}
-            {itemInfo.price ? <span className="item-price roboto-600"><span className="icon-robux-16x16"></span>{itemInfo.price}</span> : null}
+            {itemInfo.price ? <span className="item-price roboto-600"><span className="icon-robux-16x16"></span>{new Intl.NumberFormat('no').format(itemInfo.price)}</span> : null}
         </a>
         </>)
     } else { //loading item

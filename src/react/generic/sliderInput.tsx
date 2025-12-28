@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { mapNum } from "../../code/misc/misc"
 
+//slider input that takes value from 0 to 1 and calls setValue with value from 0 to 1
 export default function SliderInput({value, setValue}: {value: number, setValue: (value: number, mouseUp: boolean) => void}): React.JSX.Element {
     const [isDragging, setIsDragging] = useState(false)
 

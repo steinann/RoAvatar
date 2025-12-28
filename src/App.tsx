@@ -141,6 +141,7 @@ function App() {
       return
     }
 
+    //update animation based on subcategory
     _setSubCategoryType(newSubCategoryType)
     switch (newSubCategoryType) {
       case "Idle": 
@@ -171,6 +172,7 @@ function App() {
   }
 
   useEffect(() => {
+    //create auth
     if (!auth) {
       const newAuth = new Authentication()
 
@@ -182,10 +184,12 @@ function App() {
       })
     }
 
+    //create outfit
     if (!outfit) {
       setOutfit(new Outfit())
     }
 
+    //create marketplace data
     if (auth && !navigationMenuItems) {
       API.Catalog.GetNavigationMenuItems(auth).then((result) => {
         if (result instanceof Response) {
@@ -197,6 +201,12 @@ function App() {
           const marketplaceSource: {[k in string]: {[k in string]: SpecialInfo}} = {}
 
           for (const category of result.categories) {
+            //flip order so classic clothing is first
+            if (category.name === "Clothing") {
+              category.subcategories = category.subcategories.reverse()
+            }
+
+            //create category data in sorts.ts
             const categoryData: {[k in string]: SpecialInfo} = {}
             for (const subCategory of category.subcategories) {
               categoryData[subCategory.name] = new SpecialInfo("Marketplace")
@@ -210,10 +220,12 @@ function App() {
     }
   }, [auth, outfit, setOutfit, navigationMenuItems])
 
+  //update searchData to match selected filters
   useEffect(() => {
     let marketplaceCategoryData: NavigationMenuItems["categories"][0] | undefined = undefined
     let marketplaceSubcategoryData: NavigationMenuItems["categories"][0]["subcategories"][0] | undefined = undefined
 
+    //get appropriate categorydata and subcategorydata based on selection
     if (navigationMenuItems) {
       for (const category of navigationMenuItems.categories) {
         if (category.name === categoryType) {
@@ -230,6 +242,7 @@ function App() {
       }
     }
 
+    //get taxonomy
     let taxonomy = ""
     if (marketplaceCategoryData) {
       taxonomy = marketplaceCategoryData.taxonomy
@@ -237,12 +250,15 @@ function App() {
     if (marketplaceSubcategoryData) {
       taxonomy = marketplaceSubcategoryData.taxonomy
     }
+
+    //create search data
     const newSearchData: Search_Payload = {
       taxonomy: taxonomy,
       salesTypeFilter: 1,
       keyword: searchKeyword,
     }
 
+    //this makes the All category more personalized but only works if there are no filters
     if (categoryType === "All" && !searchKeyword) {
       newSearchData.categoryFilter = 6
     }
@@ -260,15 +276,23 @@ function App() {
             <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}`} onMouseEnter={() => {setAlertEnabled(false)}}>
               {alertText}
             </div>
+
+            {/*LEFT SIDE*/}
             <div className='main-left division-down'>
               <BarCategory className="background-transparent bar-double-margin"></BarCategory>
+
+              {/*avatar preview*/}
               <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>
                 <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
               </AvatarPreview>
+
+              {/*save and undo*/}
               <div className="save-and-history">
                 <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length} setAlertEnabled={setAlertEnabled} setAlertText={setAlertText}/>
                 <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
               </div>
+
+              {/*worn items list*/}
               <div className='worn-items dark-scrollbar'>
                 {outfit.assets.map(asset => {
                   return <ItemCard auth={auth} key={asset.id} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
@@ -278,10 +302,14 @@ function App() {
                   }}/>
                 })}
               </div>
-              {/*<Test_AvatarPreview/>*/}
             </div>
+
+            {/*RIGHT SIDE*/}
             <div className='main-right division-down'>
+              {/*category source (inventory/marketplace)*/}
               <BarCategory className="align-center" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
+
+              {/*category picker*/}
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}>
                 {categorySource === "Marketplace" ? 
                 <form onChange={() => {
@@ -294,12 +322,16 @@ function App() {
                   setSearchKeyword(newValue && newValue.length > 0 ? newValue : undefined)
                 }}>
                   <input value={tempSearchKeyword} ref={searchRef} className='marketplace-search' placeholder='Search'></input>
+                  <button type="submit" className='search-button'><span className='material-symbols-outlined'>search</span></button>
                 </form>
                  : null}
               </BarCategory>
+
+              {/*subcategorycategory picker*/}
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource][categoryType]} currentCategory={subCategoryType} setCurrentCategory={setSubCategoryType}/>
-              {/*<SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>*/}
-              {subCategoryType ? <>
+              {/*old subcategory picker Unused <SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>*/}
+              {/*appropriate category element for inventory*/
+              subCategoryType ? <>
                 {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
                 (<ItemCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}>
 
@@ -308,7 +340,8 @@ function App() {
                 <SpecialCategory specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
                 }
               </> : null}
-              {categorySource === "Marketplace" && taxonomy.length > 0 ? <>
+              {/*Marketplace category element*/
+              categorySource === "Marketplace" && taxonomy.length > 0 ? <>
                 <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}/>
               </> : null}
             </div>

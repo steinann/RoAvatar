@@ -21,6 +21,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
         lastLoadId++
     }
 
+    //refresh if searchData has changed
     useEffect(() => {
         if (searchData.taxonomy !== lastSearchData?.taxonomy ||
             searchData.salesTypeFilter !== lastSearchData.salesTypeFilter ||
@@ -51,16 +52,34 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                 if (loadId !== lastLoadId) return
                 if (!(response instanceof Response)) {
                     if (loadId !== lastLoadId) return
-                    //console.log(body)
+                    //update page token
                     const pageToken = response.nextPageCursor
                     if (pageToken && pageToken.length > 0) {
                         setNextPageToken(pageToken)
                     } else {
                         setNextPageToken(null)
                     }
-                    
+
+                    //add all new items to the items list
                     const newItems: AvatarInventoryItem[] = []
                     for (const item of response.data) {
+                        //price
+                        let itemPrice = undefined
+                        if (!item.isOffSale) {
+                            itemPrice = item.price
+                        } else if (item.hasResellers) {
+                            itemPrice = item.lowestResalePrice
+                        }
+
+                        //limitedType
+                        let limitedType: undefined | "Limited" | "LimitedUnique" = undefined
+                        if (item.itemRestrictions.includes("Limited")) {
+                            limitedType = "Limited"
+                        } else if (item.itemRestrictions.includes("LimitedUnique")) {
+                            limitedType = "LimitedUnique"
+                        }
+
+                        //push item data
                         newItems.push({
                             itemName: item.name,
                             itemId: item.id,
@@ -68,7 +87,8 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                                 itemType: item.itemType === "Asset" ? 1 : 0,
                                 itemSubType: (item.itemType === "Asset" ? item.assetType : item.bundleType) || 0
                             },
-                            price: !item.isOffSale ? item.price : undefined
+                            price: itemPrice,
+                            limitedType: limitedType,
                         })
                     }
                     
@@ -89,6 +109,7 @@ type AvatarInventoryItem = {
     itemId: number,
     itemCategory: {itemType: number, itemSubType: number},
     price?: number,
+    limitedType?: "Limited" | "LimitedUnique",
 }
 
 export default function MarketplaceCategory({children, searchData, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
@@ -99,12 +120,14 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
 
     const {items, isLoading, loadMore, hasLoadedAll, refresh } = useMarketplaceItems(auth, searchData)
 
+    //scroll to start when searchData changes
     useEffect(() => {
         if (scrollDivRef.current) {
             scrollDivRef.current.scrollTo(0,0)
         }
     }, [searchData])
 
+    //load more if nothing has been loaded yet
     useEffect(() => {
         if (!hasLoadedAll && items.length <= 0) {
             loadMore()
@@ -114,6 +137,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
         }
     })
 
+    //check if it should load more on scroll
     function onScroll() {
         if (scrollDivRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
@@ -136,12 +160,12 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
 
         const itemInfo = new ItemInfo(itemType, itemSubType, item.itemId, item.itemName)
         itemInfo.price = item.price
+        itemInfo.limitedType = item.limitedType
 
         itemInfos.push(itemInfo)
     }
 
     //determine on click function for itemcards
-    
     const onClickFunc = onClickItem
 
     //create item cards
@@ -161,7 +185,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
                 }}/>
             ))
         }</>
-    } else if (!hasLoadedAll) {
+    } else if (!hasLoadedAll) { //fake items while loading
         itemComponents = <>{
             new Array(20).fill(0).map(() => (
                 <ItemCard/>

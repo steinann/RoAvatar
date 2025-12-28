@@ -6,6 +6,8 @@ import { AvatarType } from "../code/avatar/constant"
 import SliderInput from "./generic/sliderInput"
 
 //TODO: Make changing scale less laggy by not requiring mesh compilation for skinnedmeshes
+
+//Slider-like input but specifically for scale
 function ScaleInput({outfit, setOutfit, _setOutfit, scale, scaleName, min, max}: {outfit: Outfit, setOutfit: (a: Outfit) => void, _setOutfit: (a: Outfit) => void, scale: ScaleName, scaleName: string, min: number, max: number}): React.JSX.Element {
     return <>
         <div className="scale-info">
@@ -30,9 +32,11 @@ export default function ScaleCategory({setOutfit, _setOutfit}: {setOutfit: (a: O
     const outfit = useContext(OutfitContext)
 
     return <div className="scale-category">
+        {/*R6 or R15*/}
         <div className="scale-info">
             <span className="scale-name roboto-600">Rig</span>
         </div>
+
         <div className="rig-select">
             <button className={`rig-button rig-button-left roboto-600${outfit.playerAvatarType === AvatarType.R6 ? " rig-button-active" : ""}`} onClick={() => {
                 if (outfit.playerAvatarType !== AvatarType.R6) {
@@ -49,6 +53,8 @@ export default function ScaleCategory({setOutfit, _setOutfit}: {setOutfit: (a: O
                 }
             }}>R15</button>
         </div>
+
+        {/*Scale*/}
         <ScaleInput outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit} scale="height" scaleName="Height" min={0.9} max={1.05}/>
         <ScaleInput outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit} scale="width" scaleName="Width" min={0.7} max={1}/>
         <ScaleInput outfit={outfit} setOutfit={setOutfit} _setOutfit={_setOutfit} scale="head" scaleName="Head" min={0.95} max={1}/>

@@ -60,6 +60,49 @@
   'opsz' 48
 }
 
+.icon-robux-16x16 {
+    background-image: url(/public/assets/economy.svg);
+    background-position: 0 -20px;
+    margin-bottom: 2px;
+    margin-right: -2px;
+    background-repeat: no-repeat;
+    background-size: auto auto;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.tag-limited {
+    background-image: url(../assets/itemtags.svg);
+    background-position: 0 -54px;
+    vertical-align: middle;
+    background-repeat: no-repeat;
+    background-size: auto;
+    width: 123px;
+    height: 18px;
+    display: inline-block;
+
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+}
+
+.tag-limited-unique {
+    background-image: url(../assets/itemtags.svg);
+    background-position: 0 -126px;
+    vertical-align: middle;
+    background-repeat: no-repeat;
+    background-size: auto;
+    width: 123px;
+    height: 18px;
+    display: inline-block;
+
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+}
+
 /*Loader source: https://cssloaders.github.io/ */
 .loader {
   width: 16px;
@@ -1265,15 +1308,28 @@ dialog::backdrop {
     border-color: var(--font-color);
 }
 
-.icon-robux-16x16 {
-    background-image: url(/public/assets/economy.svg);
-    background-position: 0 -20px;
-    margin-bottom: 2px;
-    margin-right: -2px;
-    background-repeat: no-repeat;
-    background-size: auto auto;
-    width: 20px;
-    height: 20px;
-    display: inline-block;
-    vertical-align: middle;
+form {
+    flex-grow: 1;
+    display: flex;
+}
+
+.marketplace-search {
+    background-color: #191b1d;
+    padding: 0.35em;
+    font-size: 1.5em;
+    width: calc(100% - 1.5em - 2em);
+    display: block;
+    border-color: #131414;
+    border-radius: 12px;
+    color: aliceblue;
+    border-style: solid;
+}
+
+.search-button {
+    height: 100%;
+    aspect-ratio: 1;
+    background: transparent;
+    border: none;
+    color: var(--font-color);
+    cursor: pointer;
 }

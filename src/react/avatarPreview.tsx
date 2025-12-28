@@ -290,12 +290,14 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
             setCameraLocked(false)
         }
     }}>
+        {/*Recenter camera button*/}
         <button className={`avatar-preview-focus${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
             e.preventDefault()
             setCameraLocked(true)
         }}>
             <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
         </button>
+        {/*Error/warning text*/}
         <div className={`preview-info ${previewInfoClass}`}>
             <div className="preview-info-icon">
                 <span title="Warning" className='material-symbols-outlined warning'>warning</span>

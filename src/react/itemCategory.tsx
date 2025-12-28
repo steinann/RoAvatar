@@ -97,6 +97,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
 
     const {items, isLoading, loadMore, hasLoadedAll, refresh } = useItems(auth, categoryType, subCategoryType)
 
+    //manage open state of create outfit dialog
     useEffect(() => {
         if (outfitDialogOpen) {
             createOutfitDialogRef.current?.showModal()
@@ -105,12 +106,14 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
         }
     }, [outfitDialogOpen])
 
+    //scroll to start when searchData changes
     useEffect(() => {
         if (scrollDivRef.current) {
             scrollDivRef.current.scrollTo(0,0)
         }
     }, [categoryType, subCategoryType])
 
+    //load more if nothing has been loaded yet
     useEffect(() => {
         if (!hasLoadedAll && items.length <= 0) {
             loadMore()
@@ -120,6 +123,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
         }
     })
 
+    //check if it should load more on scroll
     function onScroll() {
         if (scrollDivRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
@@ -155,7 +159,8 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
     if (auth && itemInfos.length > 0) {
         let i = 0;
         itemComponents = <>
-        {isOutfits ?
+        {/*CREATE OUTFIT DIALOG */
+        isOutfits ?
         <>
             <dialog style={outfitDialogOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={createOutfitDialogRef} onCancel={() => {setOutfitDialogOpen(false)}}>
                 <span className="dialog-title roboto-700">Create New Character</span>
@@ -201,7 +206,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                 }}/>
             ))
         }</>
-    } else if (!hasLoadedAll) {
+    } else if (!hasLoadedAll) { //fake items while loading
         itemComponents = <>{
             new Array(20).fill(0).map(() => (
                 <ItemCard/>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 
+//custom select input
 export default function SelectInput({value, setValue, alternatives}: {value: string, setValue: (a: string) => void, alternatives: string[]}): React.JSX.Element {
     const [open, setOpen] = useState(false)
     

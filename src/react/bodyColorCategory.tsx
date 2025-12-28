@@ -6,6 +6,7 @@ import { FullBodyColors, RegularBodyColors } from "../code/avatar/constant";
 import SelectInput from "./generic/selectInput";
 import RadialButton from "./generic/radialButton";
 
+//convert name of part to name used by BodyColors (kinda)
 function partNameToHexName(partName: string) {
     let hexName: "headColor" | "torsoColor" | "rightArmColor" | "leftArmColor" | "rightLegColor" | "leftLegColor" = "headColor"
     switch (partName) {
@@ -61,6 +62,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
     const [partNames, _setPartNames] = useState<string[]>(AllPartNames)
     const [selectPart, _setSelectPart] = useState<string>("All")
 
+    //set selected partNames[] based on value in Select component (string)
     function setSelectPart(val: string) {
         switch (val) {
             case "All":
@@ -93,6 +95,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
             return
         }
 
+        //set string in Select element based on partNames[]
         switch (val[0]) {
             case "Head":
                 _setSelectPart("Head")
@@ -112,11 +115,13 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
             case "LeftLeg":
                 _setSelectPart("Left Leg")
                 break
+            // All is not here because that can only happen through the Select element, not the body parts
         }
 
         _setPartNames(val)
     }
 
+    //paint the avatar body parts that should be painted
     function paint(color: string) {
         console.log(_setOutfit)
 
@@ -193,6 +198,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
     }
 
     return <div className="bodycolor-category">
+        {/*Body part selector*/}
         <div className="bodypart-select">
             <SelectInput value={selectPart} setValue={setSelectPart} alternatives={["All", "Head", "Torso", "Right Arm", "Left Arm", "Right Leg", "Left Leg"]}/>
             <div className="bodycolor-section bodycolor-section-top">
@@ -208,6 +214,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
                 <BodyPartSelect className="bodycolor-limb" partName="LeftLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
             </div>
         </div>
+        {/*Preset body colors*/}
         <div className="bodycolor-select dark-scrollbar">
             {bodyColors.map((color) => {
                 const isSelected = allColorsSame && color.toUpperCase() === currentColors[0].toUpperCase()

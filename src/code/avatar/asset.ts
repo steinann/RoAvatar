@@ -268,6 +268,8 @@ export class ItemInfo {
     name: string
 
     price?: number
+    limitedType?: "Limited" | "LimitedUnique"
+    offsale?: boolean
     
     constructor(itemType: ItemType, type: string, id: number, name: string) {
         this.itemType = itemType

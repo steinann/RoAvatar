@@ -99,12 +99,14 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         _setOrderOpen(open)
     }
 
+    //hamburger menu
     function setOpen(open: boolean) {
         setOrderOpen(false)
         setAdjustOpen(false)
         _setOpen(open)
     }
 
+    //get list of orderableAssets or adjustableAssets for item list
     const adjustableAssets: number[] = []
     const orderableAssets: number[] = []
     const idToOrder = new Map<number,number>()
@@ -136,6 +138,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         }
     })
 
+    //update adjustAsset based on id of adjustAsset
     useEffect(() => {
         for (const asset of outfit.assets) {
             if (asset.id === adjustAssetId && adjustAsset !== asset) {
@@ -144,6 +147,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         }
     }, [adjustAsset, adjustAssetId, setAdjustAsset, outfit.assets])
 
+    //reset adjustment to initial, based on current type (position/rotation/scale)
     function clearAdjust() {
         if (!outfit.containsAsset(adjustAssetId || 0)) return
 
@@ -195,8 +199,9 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
             </ul>
         </ul>
 
-        {/*Accessory list on right*/}
+        {/*Accessory list on right, used for adjust list and order list*/}
         <ul className={`accessory-select${adjustOpen || orderOpen ? "" : " icons-collapsed"}`}>
+            {/*Per asset*/}
             {(adjustOpen ? adjustableAssets : orderableAssets).map((assetId) => {
                 let asset = undefined
                 for (const outfitAsset of outfit.assets) {
@@ -210,10 +215,12 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
                 const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)
                 const className = adjustAsset?.id === assetId ? "adjust-asset" : undefined
                 return <ItemCard showOrderArrows={orderOpen} buttonClassName={className} key={asset.id}  auth={auth} includeName={false} itemInfo={itemInfo} onClick={() => {
+                    //open adjust if set to adjust mode
                     if (adjustOpen) {
                         setAdjustAssetId(assetId)
                     }
                 }} onArrowClick={(itemInfo, isUp) => {
+                    //order item
                     const index = orderableAssets.indexOf(itemInfo.id)
                     
                     if ((index > 0 || !isUp) && (index < orderableAssets.length - 1 || isUp)) {
@@ -238,7 +245,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
             })}
         </ul>
 
-        {/*Adjustment sliders*/}
+        {/*Adjustment sliders for rotation/position*/}
         {adjustOpen && adjustType !== "scale" && outfit.containsAsset(adjustAssetId || 0) && adjustAsset ? 
             <div className={`adjustment-menu`}>
                 <div className="adjustment-top">
@@ -259,6 +266,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
                 </div>
             </div>
         : null}
+        {/*Adjustment slider for scale*/}
         {adjustOpen && adjustType === "scale" && outfit.containsAsset(adjustAssetId || 0) && adjustAsset ?
             <div className={`adjustment-menu`}>
                 <div className="adjustment-top">
