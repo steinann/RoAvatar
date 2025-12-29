@@ -6,7 +6,7 @@ import { type Connection, type Instance } from '../rblx/rbx';
 import type { Authentication } from '../api';
 import { RenderedClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
-import { getSkeletonFromHumanoid, setFACSMeshForHumanoid, updateSkeletonFromHumanoid } from './skeleton';
+import { getSkeletonFromHumanoid, setFACSMeshForHumanoid, updateSkeletonFromHumanoid } from './legacy-skeleton';
 
 // MAIN DATA FOR THE RENDERER (i should have really made this a class...)
 const isRenderingMesh = new Map<Instance,boolean>()

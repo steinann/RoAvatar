@@ -6,7 +6,7 @@ import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
 import { deformReferenceToBaseBodyParts, layerClothingChunked, offsetMesh } from '../rblx/mesh-deform'
 import { USE_VERTEX_COLOR } from '../misc/flags'
-import { BoneNameToIndex } from './skeleton'
+import { BoneNameToIndex } from './legacy-skeleton'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -282,7 +282,7 @@ export class MeshDesc {
     //size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
     mesh?: string
-    hasSkinning: boolean = false
+    canHaveSkinning: boolean = true
 
     //layering
     layerDesc?: WrapLayerDesc
@@ -305,7 +305,8 @@ export class MeshDesc {
     isSame(other: MeshDesc) {
         const singularTrue = //this.size.isSame(other.size) &&
             this.scaleIsRelative === other.scaleIsRelative &&
-            this.mesh === other.mesh
+            this.mesh === other.mesh &&
+            this.canHaveSkinning === other.canHaveSkinning
         
         if (!singularTrue) {
             return singularTrue
@@ -466,7 +467,7 @@ export class MeshDesc {
 
         this.fileMesh = mesh
 
-        const geometry = fileMeshToTHREEGeometry(mesh, true)
+        const geometry = fileMeshToTHREEGeometry(mesh, this.canHaveSkinning)
 
         //create and add mesh to scene
         let threeMesh = undefined
@@ -516,6 +517,8 @@ export class MeshDesc {
     }
 
     fromPart(child: Instance) {
+        this.canHaveSkinning = false
+
         const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
         if (specialMesh) {
             //this.size = specialMesh.Property("Scale") as Vector3
@@ -570,6 +573,8 @@ export class MeshDesc {
     }
 
     fromMeshPart(child: Instance) {
+        this.canHaveSkinning = true
+
         const meshIdStr = child.Property("MeshId") as string
 
         this.mesh = meshIdStr
