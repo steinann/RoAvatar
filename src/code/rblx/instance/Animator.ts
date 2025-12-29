@@ -68,6 +68,11 @@ export default class AnimatorWrapper extends InstanceWrapper {
                 }
                 track.setTime(track.timePosition + addTime)
 
+                if (track.timePosition >= track.length) {
+                    this.playAnimation("idle.Animation1")
+                    return
+                }
+
                 if (id !== lastId) {
                     this.instance.setProperty("_Weight", Math.min(1,weight + addTime * weightMult))
                 }
@@ -194,7 +199,6 @@ export default class AnimatorWrapper extends InstanceWrapper {
 
     playAnimation(name: string): boolean {
         console.log("playing",name)
-        
 
         const nameIdMap = this.instance.Prop("_NameIdMap") as Map<string,bigint>
         const trackMap = this.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>
@@ -212,6 +216,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
 
             const track = trackMap.get(id)
             if (track) {
+                console.log(track)
                 //track.resetMotorTransforms()
                 //track.setTime(0)
                 track.timePosition = 0

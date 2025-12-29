@@ -3,6 +3,7 @@ import { CFrame, Instance } from '../rblx/rbx';
 import { deg, lerp, mapNum, rad } from '../misc/misc';
 import type { Vec3 } from '../rblx/mesh';
 import SimpleView from '../lib/simple-view';
+import FaceControlsWrapper from './instance/FaceControls';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -281,23 +282,36 @@ function lerpCFrame(oldCFrame: CFrame, newCFrame: CFrame, easedTime: number) {
     return cf
 }*/
 
-class PartKeyframe {
+class BaseKeyframe {
     time: number
-    cframe: CFrame
     easingDirection = EasingDirection.In
     easingStyle = PoseEasingStyle.Linear
 
-    constructor(time: number, cframe: CFrame) {
+    constructor(time: number) {
         this.time = time
+    }
+}
+
+class PartKeyframe extends BaseKeyframe {
+    cframe: CFrame
+
+    constructor(time: number, cframe: CFrame) {
+        super(time)
         this.cframe = cframe
     }
 }
 
-class PartKeyframeGroup {
-    motorParent = "LowerTorso"
-    motorName = "Root"
+class FaceKeyframe extends BaseKeyframe {
+    value: number
+    
+    constructor(time: number, value: number) {
+        super(time)
+        this.value = value
+    }
+}
 
-    keyframes: PartKeyframe[] = []
+class BaseKeyframeGroup {
+    keyframes: BaseKeyframe[] = []
 
     getLowerKeyframe(time: number) {
         let resultKeyframe = null
@@ -321,6 +335,40 @@ class PartKeyframeGroup {
         }
 
         return null
+    }
+}
+
+class PartKeyframeGroup extends BaseKeyframeGroup {
+    motorParent = "LowerTorso"
+    motorName = "Root"
+
+    keyframes: PartKeyframe[] = []
+
+    getHigherKeyframe(time: number): PartKeyframe | null {
+        const keyframe = super.getHigherKeyframe(time)
+        return keyframe ? keyframe as PartKeyframe : null
+    }
+
+    getLowerKeyframe(time: number): PartKeyframe | null {
+        const keyframe = super.getLowerKeyframe(time)
+        return keyframe ? keyframe as PartKeyframe : null
+    }
+}
+
+class FaceKeyframeGroup extends BaseKeyframeGroup {
+    controlName: string = "Corrugator"
+    parentName: string = "Head"
+
+    keyframes: FaceKeyframe[] = []
+
+    getHigherKeyframe(time: number): FaceKeyframe | null {
+        const keyframe = super.getHigherKeyframe(time)
+        return keyframe ? keyframe as FaceKeyframe : null
+    }
+
+    getLowerKeyframe(time: number): FaceKeyframe | null {
+        const keyframe = super.getLowerKeyframe(time)
+        return keyframe ? keyframe as FaceKeyframe : null
     }
 }
 
@@ -449,6 +497,13 @@ class PartCurve {
     rotation?: FloatCurve3
 }
 
+class FaceCruve {
+    controlName = "Corrugator"
+    parentName = "Head"
+
+    value?: FloatCurve
+}
+
 function getCurveValue(time: number, lowerKey: FloatCurveKey, higherKey: FloatCurveKey) {
     const lowerX = lowerKey
     const higherX = higherKey
@@ -478,8 +533,8 @@ function getCurveValue(time: number, lowerKey: FloatCurveKey, higherKey: FloatCu
 class AnimationTrack {
     //data
     trackType: AnimationTrackType = "Sequence"
-    keyframeGroups: PartKeyframeGroup[] = [] //one group per motor6D, only if trackType = "Sequence"
-    partCurves: PartCurve[] = [] //only if trackType = "Curve"
+    keyframeGroups: (PartKeyframeGroup | FaceKeyframeGroup)[] = [] //one group per motor6D, only if trackType = "Sequence"
+    curves: (PartCurve | FaceCruve)[] = [] //only if trackType = "Curve"
     
     //playing info
     isPlaying = false
@@ -525,9 +580,19 @@ class AnimationTrack {
         return undefined
     }
 
-    findKeyframeGroup(motorName: string, motorParentName: string) {
+    findPartKeyframeGroup(motorName: string, motorParentName: string) {
         for (const group of this.keyframeGroups) {
-            if (group.motorParent === motorParentName && group.motorName === motorName) {
+            if (group instanceof PartKeyframeGroup && group.motorParent === motorParentName && group.motorName === motorName) {
+                return group
+            }
+        }
+
+        return undefined
+    }
+
+    findFaceKeyframeGroup(controlName: string) {
+        for (const group of this.keyframeGroups) {
+            if (group instanceof FaceKeyframeGroup && group.controlName === controlName) {
                 return group
             }
         }
@@ -540,7 +605,7 @@ class AnimationTrack {
             return
         }
 
-        let group = this.findKeyframeGroup(motorName, motorParentName)
+        let group = this.findPartKeyframeGroup(motorName, motorParentName)
         if (!group) {
             group = new PartKeyframeGroup()
             group.motorParent = motorParentName
@@ -606,6 +671,39 @@ class AnimationTrack {
         return [motorName, motorParentName, partKeyframe]
     }
 
+    addFaceKeyframe(controlName: string, parentName: string, keyframe: FaceKeyframe) {
+        if (!keyframe) {
+            return
+        }
+
+        let group = this.findFaceKeyframeGroup(controlName)
+        if (!group) {
+            group = new FaceKeyframeGroup()
+            group.controlName = controlName
+            group.parentName = parentName
+            this.keyframeGroups.push(group)
+        }
+
+        group.keyframes.push(keyframe)
+    }
+
+    createFaceKeyframe(keyframe: Instance, pose: Instance): FaceKeyframe | undefined {
+        if (!pose.HasProperty("Value") || !keyframe.HasProperty("Time")) return
+
+        const time = keyframe.Prop("Time") as number
+        const value = pose.Prop("Value") as number
+
+        const faceKeyframe = new FaceKeyframe(time, value)
+        if (pose.HasProperty("EasingDirection")) {
+            faceKeyframe.easingDirection = pose.Prop("EasingDirection") as number
+        }
+        if (pose.HasProperty("EasingStyle")) {
+            faceKeyframe.easingStyle = pose.Prop("EasingStyle") as number
+        }
+
+        return faceKeyframe
+    }
+
     createPartCurve(motor: string, motorParent: string, child: Instance) {
         const partCurve = new PartCurve()
         partCurve.motorName = motor
@@ -663,6 +761,17 @@ class AnimationTrack {
         return partCurve
     }
 
+    createFaceCurve(controlName: string, parentName: string, control: Instance) {
+        const faceCurve = new FaceCruve()
+        faceCurve.controlName = controlName
+        faceCurve.parentName = parentName
+
+        const floatCurveBuffer = control.Prop("ValuesAndTimes") as ArrayBuffer
+        faceCurve.value = new FloatCurve().fromBuffer(floatCurveBuffer)
+
+        return faceCurve
+    }
+
     addKeyframe(keyframe: Instance) {
         //traverse keyframe tree
         let children = keyframe.GetChildren()
@@ -671,18 +780,28 @@ class AnimationTrack {
             const validChildren = []
 
             for (const child of children) {
-                if (child.className === "Pose") { //its a valid keyframe
+                if (child.className === "Pose" || child.className === "NumberPose") { //its a valid keyframe
                     validChildren.push(child)
 
                     if (child.Prop("Weight") as number >= 0.999) {//if this is actually a keyframe that affects the current part
-                        const [motorName, motorParentName, partKeyframe] = this.createPartKeyframe(keyframe, child)
-                        if (motorName && motorParentName && partKeyframe) {
-                            this.addPartKeyframe(motorName, motorParentName, partKeyframe)
+                        if (child.className === "Pose") {
+                            const [motorName, motorParentName, partKeyframe] = this.createPartKeyframe(keyframe, child)
+                            if (motorName && motorParentName && partKeyframe) {
+                                this.addPartKeyframe(motorName, motorParentName, partKeyframe)
+                            }
+                        } else {
+                            const faceKeyframe = this.createFaceKeyframe(keyframe, child)
+                            if (faceKeyframe && child.parent && child.parent.parent) {
+                                this.addFaceKeyframe(child.Prop("Name") as string, child.parent.parent.Prop("Name") as string, faceKeyframe)
+                            } else {
+                                console.warn(`Missing something required to add FaceKeyframe:`, faceKeyframe, child.parent, child.parent?.parent)
+                            }
                         }
                     }
+                } else if (child.className === "Folder" && child.Prop("Name") === "FaceControls") {
+                    validChildren.push(child)
                 } else {
-                    //Removed warning because it causes an insane amount of lag
-                    //console.warn(`Unknown animation child with className: ${child.className}`, child)
+                    console.warn(`Unknown animation child with className: ${child.className}`, child)
                 }
             }
 
@@ -739,12 +858,20 @@ class AnimationTrack {
 
             for (const child of animation.GetDescendants()) {
                 if (child.className === "Folder") {
-                    const motorParent = child.Prop("Name") as string
-                    const motor = PartToMotorName[motorParent]
-                    if (motor) {
-                        const partCurve = this.createPartCurve(motor, motorParent, child)
+                    if (child.Prop("Name") === "FaceControls") {
+                        if (child.parent) {
+                            for (const control of child.GetChildren()) {
+                                this.curves.push(this.createFaceCurve(control.Prop("Name") as string, child.parent.Prop("Name") as string, control))
+                            }
+                        }
+                    } else {
+                        const motorParent = child.Prop("Name") as string
+                        const motor = PartToMotorName[motorParent]
+                        if (motor) {
+                            const partCurve = this.createPartCurve(motor, motorParent, child)
 
-                        this.partCurves.push(partCurve)
+                            this.curves.push(partCurve)
+                        }
                     }
                 }
             }
@@ -762,9 +889,16 @@ class AnimationTrack {
 
         const descendants = this.rig.GetDescendants()
 
-        for (const motor of descendants) {
-            if (motor.className === "Motor6D") {
-                motor.setProperty("Transform", new CFrame(0,0,0))
+        for (const child of descendants) {
+            if (child.className === "Motor6D") {
+                child.setProperty("Transform", new CFrame(0,0,0))
+            } else if (child.className === "FaceControls") {
+                const propertyNames = child.getPropertyNames()
+                for (const propertyName of propertyNames) {
+                    if (propertyName !== "Name" && FaceControlsWrapper.requiredProperties.includes(propertyName)) {
+                        child.setProperty(propertyName, 0)
+                    }
+                }
             }
         }
     }
@@ -775,78 +909,131 @@ class AnimationTrack {
 
         if (this.trackType === "Sequence") {
             for (const group of this.keyframeGroups) {
-                const motor = this.getNamedMotor(group.motorName, group.motorParent)
-                if (motor) {
-                    //console.log(group.motorParent, "updating")
+                if (group instanceof PartKeyframeGroup) {
+                    const motor = this.getNamedMotor(group.motorName, group.motorParent)
+                    if (motor) {
+                        //console.log(group.motorParent, "updating")
 
-                    const lowerKeyframe = group.getLowerKeyframe(time)
-                    const higherKeyframe = group.getHigherKeyframe(time)
+                        const lowerKeyframe = group.getLowerKeyframe(time)
+                        const higherKeyframe = group.getHigherKeyframe(time)
 
-                    if (lowerKeyframe && higherKeyframe) {
-                        const higherTime = higherKeyframe.time - lowerKeyframe.time
-                        const fromLowerTime = time - lowerKeyframe.time
-                        const keyframeTime = fromLowerTime / higherTime
+                        if (lowerKeyframe && higherKeyframe) {
+                            const higherTime = higherKeyframe.time - lowerKeyframe.time
+                            const fromLowerTime = time - lowerKeyframe.time
+                            const keyframeTime = fromLowerTime / higherTime
 
-                        const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
+                            const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
 
-                        const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
-                        const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
-                        motor.setProperty("Transform", transformCF)
-                    } else if (lowerKeyframe) {
-                        const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
-                        const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
-                        motor.setProperty("Transform", transformCF)
+                            const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                            const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
+                            motor.setProperty("Transform", transformCF)
+                        } else if (lowerKeyframe) {
+                            const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                            const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
+                            motor.setProperty("Transform", transformCF)
+                        }
+                    }
+                } else if (group instanceof FaceKeyframeGroup && this.rig) {
+                    const part = this.rig.FindFirstChild(group.parentName)
+                    if (part) {
+                        const faceControls = part.FindFirstChildOfClass("FaceControls")
+                        if (faceControls) {
+                            new FaceControlsWrapper(faceControls)
+
+                            const lowerKeyframe = group.getLowerKeyframe(time)
+                            const higherKeyframe = group.getHigherKeyframe(time)
+
+                            if (lowerKeyframe && higherKeyframe) {
+                                const higherTime = higherKeyframe.time - lowerKeyframe.time
+                                const fromLowerTime = time - lowerKeyframe.time
+                                const keyframeTime = fromLowerTime / higherTime
+
+                                const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
+
+                                const oldValue = faceControls.Prop(group.controlName) as number
+                                const value = lerp(oldValue, lerp(lowerKeyframe.value, higherKeyframe.value, easedTime), this.weight)
+                                
+                                faceControls.setProperty(group.controlName, value)
+                            } else if (lowerKeyframe) {
+                                const oldValue = faceControls.Prop(group.controlName) as number
+                                const value = lerp(oldValue, (lowerKeyframe.value), this.weight)
+                                
+                                faceControls.setProperty(group.controlName, value)
+                            }
+                        }
                     }
                 }
             }
         } else if (this.trackType === "Curve") {
-            for (const partCurve of this.partCurves) {
-                const motor = this.getNamedMotor(partCurve.motorName, partCurve.motorParent)
-                if (motor) {
-                    const cf = new CFrame()
+            for (const curve of this.curves) {
+                if (curve instanceof PartCurve) {
+                    const motor = this.getNamedMotor(curve.motorName, curve.motorParent)
+                    if (motor) {
+                        const cf = new CFrame()
 
-                    if (partCurve.position) {
-                        const lowerX = partCurve.position[0].getLowerKey(time)
-                        const higherX = partCurve.position[0].getHigherKey(time)
-                        if (lowerX) cf.Position[0] = lowerX.value
-                        if (lowerX && higherX) cf.Position[0] = getCurveValue(time, lowerX, higherX)
+                        if (curve.position) {
+                            const lowerX = curve.position[0].getLowerKey(time)
+                            const higherX = curve.position[0].getHigherKey(time)
+                            if (lowerX) cf.Position[0] = lowerX.value
+                            if (lowerX && higherX) cf.Position[0] = getCurveValue(time, lowerX, higherX)
 
-                        const lowerY = partCurve.position[1].getLowerKey(time)
-                        const higherY = partCurve.position[1].getHigherKey(time)
-                        if (lowerY) cf.Position[1] = lowerY.value
-                        if (lowerY && higherY) cf.Position[1] = getCurveValue(time, lowerY, higherY)
+                            const lowerY = curve.position[1].getLowerKey(time)
+                            const higherY = curve.position[1].getHigherKey(time)
+                            if (lowerY) cf.Position[1] = lowerY.value
+                            if (lowerY && higherY) cf.Position[1] = getCurveValue(time, lowerY, higherY)
 
-                        const lowerZ = partCurve.position[2].getLowerKey(time)
-                        const higherZ = partCurve.position[2].getHigherKey(time)
-                        if (lowerZ) cf.Position[2] = lowerZ.value
-                        if (lowerZ && higherZ) cf.Position[2] = getCurveValue(time, lowerZ, higherZ)
+                            const lowerZ = curve.position[2].getLowerKey(time)
+                            const higherZ = curve.position[2].getHigherKey(time)
+                            if (lowerZ) cf.Position[2] = lowerZ.value
+                            if (lowerZ && higherZ) cf.Position[2] = getCurveValue(time, lowerZ, higherZ)
+                        }
+
+                        if (curve.rotation) {
+                            const euler = new THREE.Euler(0,0,0, RotationOrderToRotationOrderName[curve.rotationOrder])
+
+                            const lowerX = curve.rotation[0].getLowerKey(time)
+                            const higherX = curve.rotation[0].getHigherKey(time)
+                            if (lowerX) euler.x = lowerX.value
+                            if (lowerX && higherX) euler.x = getCurveValue(time, lowerX, higherX)
+
+                            const lowerY = curve.rotation[1].getLowerKey(time)
+                            const higherY = curve.rotation[1].getHigherKey(time)
+                            if (lowerY) euler.y = lowerY.value
+                            if (lowerY && higherY) euler.y = getCurveValue(time, lowerY, higherY)
+
+                            const lowerZ = curve.rotation[2].getLowerKey(time)
+                            const higherZ = curve.rotation[2].getHigherKey(time)
+                            if (lowerZ) euler.z = lowerZ.value
+                            if (lowerZ && higherZ) euler.z = getCurveValue(time, lowerZ, higherZ)
+
+                            const newEuler = euler.reorder("YXZ")
+                            cf.Orientation = [deg(newEuler.x), deg(newEuler.y), deg(newEuler.z)]
+                        }
+
+                        const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                        const transformCF = lerpCFrame(oldTransformCF, (cf).inverse(), this.weight)
+                        motor.setProperty("Transform", transformCF)
                     }
+                } else if (curve instanceof FaceCruve && this.rig && curve.value) {
+                    const part = this.rig.FindFirstChild(curve.parentName)
+                    if (part) {
+                        const faceControls = part.FindFirstChildOfClass("FaceControls")
 
-                    if (partCurve.rotation) {
-                        const euler = new THREE.Euler(0,0,0, RotationOrderToRotationOrderName[partCurve.rotationOrder])
+                        if (faceControls) {
+                            new FaceControlsWrapper(faceControls)
 
-                        const lowerX = partCurve.rotation[0].getLowerKey(time)
-                        const higherX = partCurve.rotation[0].getHigherKey(time)
-                        if (lowerX) euler.x = lowerX.value
-                        if (lowerX && higherX) euler.x = getCurveValue(time, lowerX, higherX)
+                            let value = 0
 
-                        const lowerY = partCurve.rotation[1].getLowerKey(time)
-                        const higherY = partCurve.rotation[1].getHigherKey(time)
-                        if (lowerY) euler.y = lowerY.value
-                        if (lowerY && higherY) euler.y = getCurveValue(time, lowerY, higherY)
+                            const lowerValue = curve.value.getLowerKey(time)
+                            const higherValue = curve.value.getHigherKey(time)
+                            if (lowerValue) value = lowerValue.value
+                            if (lowerValue && higherValue) value = getCurveValue(time, lowerValue, higherValue)
 
-                        const lowerZ = partCurve.rotation[2].getLowerKey(time)
-                        const higherZ = partCurve.rotation[2].getHigherKey(time)
-                        if (lowerZ) euler.z = lowerZ.value
-                        if (lowerZ && higherZ) euler.z = getCurveValue(time, lowerZ, higherZ)
-
-                        const newEuler = euler.reorder("YXZ")
-                        cf.Orientation = [deg(newEuler.x), deg(newEuler.y), deg(newEuler.z)]
+                            const oldValue = faceControls.Prop(curve.controlName) as number
+                            const newValue = lerp(oldValue, (value), this.weight)
+                            faceControls.setProperty(curve.controlName, newValue)
+                        }
                     }
-
-                    const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
-                    const transformCF = lerpCFrame(oldTransformCF, (cf).inverse(), this.weight)
-                    motor.setProperty("Transform", transformCF)
                 }
             }
         }
