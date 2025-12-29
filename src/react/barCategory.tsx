@@ -14,6 +14,10 @@ export default function BarCategory({children, source, currentCategory, setCurre
         }
     }
 
+    if (realChildren.length <= 0 && !children) {
+        return <></>
+    }
+
     return <div className={`dark-scrollbar bar-category ${className}`}>
         {realChildren}
         {children}

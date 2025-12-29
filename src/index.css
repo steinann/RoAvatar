@@ -233,6 +233,11 @@ body {
     background-color: transparent;
 }
 
+.background-transparent .bar-button {
+    cursor: auto;
+    opacity: 0;
+}
+
 .bar-double-margin {
     margin: 5px 15px 10px 15px;
 }

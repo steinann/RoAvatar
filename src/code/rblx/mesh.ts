@@ -262,6 +262,100 @@ class SKINNING {
     }
 }
 
+class QuantizedMatrix {
+    rows: number
+    columns: number
+
+    matrix: number[] //always stored as v1 after read
+
+    //only used when reading from file
+    version: number
+    v2_min?: number
+    v2_max?: number
+
+    constructor(version: number, rows: number, columns: number) {
+        this.version = version
+        this.rows = rows
+        this.columns = columns
+        this.matrix = new Array(rows * columns)
+    }
+
+    clone() {
+        const copy = new QuantizedMatrix(this.version, this.rows, this.columns)
+        
+        for (let i = 0; i < this.matrix.length; i++) {
+            copy.matrix[i] = this.matrix[i]
+        }
+
+        copy.v2_min = this.v2_min
+        copy.v2_max = this.v2_max
+
+        return copy
+    }
+}
+
+class QuantizedTransform {
+    px: QuantizedMatrix
+    py: QuantizedMatrix
+    pz: QuantizedMatrix
+
+    rx: QuantizedMatrix
+    ry: QuantizedMatrix
+    rz: QuantizedMatrix
+
+    constructor(px: QuantizedMatrix, py: QuantizedMatrix, pz: QuantizedMatrix, rx: QuantizedMatrix, ry: QuantizedMatrix, rz: QuantizedMatrix) {
+        this.px = px
+        this.py = py
+        this.pz = pz
+
+        this.rx = rx
+        this.ry = ry
+        this.rz = rz
+    }
+
+    clone() {
+        return new QuantizedTransform(this.px.clone(), this.py.clone(), this.pz.clone(), this.rx.clone(), this.ry.clone(), this.rz.clone())
+    }
+}
+
+type TwoPoseCorrective = Vec2
+type ThreePoseCorrective = Vec3
+
+class FACS {
+    faceBoneNames: string[] = []
+    faceControlNames: string[] = []
+    quantizedTransforms: QuantizedTransform[] = []
+
+    twoPoseCorrectives: TwoPoseCorrective[] = []
+    threePoseCorrectives: ThreePoseCorrective[] = []
+
+    clone() {
+        const copy = new FACS()
+
+        for (const name of this.faceBoneNames) {
+            copy.faceBoneNames.push(name)
+        }
+
+        for (const name of this.faceControlNames) {
+            copy.faceControlNames.push(name)
+        }
+
+        for (const quantizedTransform of this.quantizedTransforms) {
+            copy.quantizedTransforms.push(quantizedTransform.clone())
+        }
+
+        for (const twoPoseCorrective of this.twoPoseCorrectives) {
+            copy.twoPoseCorrectives.push([twoPoseCorrective[0], twoPoseCorrective[1]])
+        }
+
+        for (const threePoseCorrective of this.threePoseCorrectives) {
+            copy.threePoseCorrectives.push([threePoseCorrective[0], threePoseCorrective[1], threePoseCorrective[2]])
+        }
+
+        return copy
+    }
+}
+
 function readSubset(view: SimpleView) {
     const subset = new FileMeshSubset()
 
@@ -346,12 +440,98 @@ function readFace(view: SimpleView) {
     return new FileMeshFace(a,b,c)
 }
 
+function readQuantizedMatrix(view: SimpleView) {
+    const version = view.readUint16()
+    const rows = view.readUint32()
+    const cols = view.readUint32()
+
+    const quantizedMatrix = new QuantizedMatrix(version, rows, cols)
+
+    switch (version) {
+        case 1:
+            for (let i = 0; i < rows * cols; i++) {
+                quantizedMatrix.matrix[i] = view.readFloat32()
+            }
+            break
+        case 2:
+        {
+            const v2_min = view.readFloat32()
+            const v2_max = view.readFloat32()
+
+            quantizedMatrix.v2_min = v2_min
+            quantizedMatrix.v2_max = v2_max
+
+            const precision = (v2_max - v2_min) / 65535
+
+            for (let i = 0; i < rows * cols; i++) {
+                quantizedMatrix.matrix[i] = v2_min + (view.readUint16() * precision)
+            }
+
+            break
+        }
+        default:
+            throw new Error(`Unknown QuantizedMatrix version: ${version}`)
+    }
+
+    return quantizedMatrix
+}
+
+function readQuantizedTransform(view: SimpleView) {
+    const px = readQuantizedMatrix(view)
+    const py = readQuantizedMatrix(view)
+    const pz = readQuantizedMatrix(view)
+
+    const rx = readQuantizedMatrix(view)
+    const ry = readQuantizedMatrix(view)
+    const rz = readQuantizedMatrix(view)
+
+    return new QuantizedTransform(px, py, pz, rx, ry, rz)
+}
+
+function readFACS(view: SimpleView) {
+    const facs = new FACS()
+
+    const sizeof_faceBoneNamesBlob = view.readUint32()
+    const sizeof_faceControlNamesBlob = view.readUint32()
+    const sizeof_quantizedTransforms = view.readUint64()
+
+    const sizeof_twoPoseCorrectives = view.readUint32()
+    const sizeof_threePoseCorrectives = view.readUint32()
+
+    const faceBoneNamesBlob = view.readUtf8String(sizeof_faceBoneNamesBlob)
+    const faceControlNamesBlob = view.readUtf8String(sizeof_faceControlNamesBlob)
+
+    facs.faceBoneNames = faceBoneNamesBlob.split("\0")
+    facs.faceControlNames = faceControlNamesBlob.split("\0")
+    facs.faceBoneNames.pop()
+    facs.faceControlNames.pop()
+    
+    const startOfQuantizedTransform = view.viewOffset
+
+    while (view.viewOffset < BigInt(startOfQuantizedTransform) + sizeof_quantizedTransforms) {
+        facs.quantizedTransforms.push(readQuantizedTransform(view))
+    }
+
+    for (let i = 0; i < sizeof_twoPoseCorrectives / 4; i++) {
+        facs.twoPoseCorrectives.push([view.readUint16(), view.readUint16()])
+    }
+
+    for (let i = 0; i < sizeof_threePoseCorrectives / 6; i++) {
+        facs.threePoseCorrectives.push([view.readUint16(), view.readUint16(), view.readUint16()])
+    }
+    
+    return facs
+}
+
 export class FileMesh {
     version!: string //version (at start of file, including \n)
+    facsDataFormat: number = 0
+    sizeOfFacsData: number = 0
     
     coreMesh!: COREMESH //COREMESH
     lods!: LODS //LODS
     skinning!: SKINNING //SKINNING
+    facs?: FACS
 
     _bounds?: [Vec3,Vec3]
     _size?: Vec3 = undefined
@@ -407,9 +587,14 @@ export class FileMesh {
     clone() {
         const copy = new FileMesh()
         copy.version = this.version
+
+        copy.facsDataFormat = this.facsDataFormat
+        copy.sizeOfFacsData = this.sizeOfFacsData
+
         copy.coreMesh = this.coreMesh.clone()
         copy.lods = this.lods.clone()
         copy.skinning = this.skinning.clone()
+        copy.facs = this.facs ? this.facs.clone() : undefined
 
         if (this._size) {
             copy._size = clonePrimitiveArray(this._size) as Vec3
@@ -420,9 +605,14 @@ export class FileMesh {
 
     reset() {
         this.version = "version 1.0.0\n"
+
+        this.facsDataFormat = 0
+        this.sizeOfFacsData = 0
+
         this.coreMesh = new COREMESH()
         this.lods = new LODS()
         this.skinning = new SKINNING()
+        this.facs = undefined
     }
 
     recalculateNormals() {
@@ -493,6 +683,9 @@ export class FileMesh {
                 break
             case "LODS\0\0\0\0":
                 this.readChunkLODS(view, chunkVersion)
+                break
+            case "FACS\0\0\0\0":
+                this.readChunkFACS(view, chunkVersion)
                 break
         }
         console.log(this)
@@ -661,6 +854,13 @@ export class FileMesh {
         }
     }
 
+    readChunkFACS(view: SimpleView, version: number) {
+        if (version !== 1) return
+
+        view.readUint32() //size of facs data
+        this.facs = readFACS(view)
+    }
+
     async fromBuffer(buffer: ArrayBuffer) {
         this.reset()
 
@@ -775,7 +975,8 @@ export class FileMesh {
                 view.readInt8() //padding?
 
                 if (version === "version 5.00\n") {
-                    view.viewOffset += 8
+                    this.facsDataFormat = view.readUint32()
+                    this.sizeOfFacsData = view.readUint32()
                 }
                 
                 //verts
@@ -820,6 +1021,11 @@ export class FileMesh {
                 //subsets
                 for (let i = 0; i < this.skinning.numSubsets; i++) {
                     this.skinning.subsets.push(readSubset(view))
+                }
+
+                //facs
+                if (version === "version 5.00\n" && this.facsDataFormat === 1 && this.sizeOfFacsData > 0) {
+                    this.facs = readFACS(view)
                 }
 
                 break

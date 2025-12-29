@@ -20,6 +20,7 @@ import AvatarAdjustment from './react/avatarAdjustment'
 import { type NavigationMenuItems, type Search_Payload } from './code/api-constant'
 import MarketplaceCategory from './react/marketplaceCategory'
 import { HAIR_IS_BODYPART } from './code/misc/flags'
+import BarButton from './react/barButton'
 //import { arrayBufferToBase64 } from './code/misc/misc'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
@@ -327,7 +328,7 @@ function App() {
 
             {/*LEFT SIDE*/}
             <div className='main-left division-down'>
-              <BarCategory className="background-transparent bar-double-margin"></BarCategory>
+              <BarCategory className="background-transparent bar-double-margin"><BarButton category='|' setCategory={(a) => {return a}}></BarButton></BarCategory>
 
               {/*avatar preview*/}
               <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>
