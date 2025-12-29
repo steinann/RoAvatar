@@ -6,7 +6,7 @@ A full remake of the Roblox avatar editor with new and improved features
 
 ## Using the Extension
 
-The extension is currently under development and is not available in any extension stores. You will have to build it yourself OR get it from [releases](https://github.com/Mzigi/RoAvatar/releases).
+The extension is currently under development and is not available in any extension stores. You will have to build the newest version yourself OR get the latest stable version from [releases](https://github.com/Mzigi/RoAvatar/releases).
 
 Instructions on building:
 - Install npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
