@@ -324,7 +324,7 @@ type ThreePoseCorrective = Vec3
 class FACS {
     faceBoneNames: string[] = []
     faceControlNames: string[] = []
-    quantizedTransforms: QuantizedTransform[] = []
+    quantizedTransforms?: QuantizedTransform
 
     twoPoseCorrectives: TwoPoseCorrective[] = []
     threePoseCorrectives: ThreePoseCorrective[] = []
@@ -340,8 +340,8 @@ class FACS {
             copy.faceControlNames.push(name)
         }
 
-        for (const quantizedTransform of this.quantizedTransforms) {
-            copy.quantizedTransforms.push(quantizedTransform.clone())
+        if (this.quantizedTransforms) {
+            copy.quantizedTransforms = this.quantizedTransforms.clone()
         }
 
         for (const twoPoseCorrective of this.twoPoseCorrectives) {
@@ -493,7 +493,7 @@ function readFACS(view: SimpleView) {
 
     const sizeof_faceBoneNamesBlob = view.readUint32()
     const sizeof_faceControlNamesBlob = view.readUint32()
-    const sizeof_quantizedTransforms = view.readUint64()
+    /*const sizeof_quantizedTransforms =*/ view.readUint64()
 
     const sizeof_twoPoseCorrectives = view.readUint32()
     const sizeof_threePoseCorrectives = view.readUint32()
@@ -505,12 +505,8 @@ function readFACS(view: SimpleView) {
     facs.faceControlNames = faceControlNamesBlob.split("\0")
     facs.faceBoneNames.pop()
     facs.faceControlNames.pop()
-    
-    const startOfQuantizedTransform = view.viewOffset
 
-    while (view.viewOffset < BigInt(startOfQuantizedTransform) + sizeof_quantizedTransforms) {
-        facs.quantizedTransforms.push(readQuantizedTransform(view))
-    }
+    facs.quantizedTransforms = readQuantizedTransform(view)
 
     for (let i = 0; i < sizeof_twoPoseCorrectives / 4; i++) {
         facs.twoPoseCorrectives.push([view.readUint16(), view.readUint16()])
@@ -518,6 +514,15 @@ function readFACS(view: SimpleView) {
 
     for (let i = 0; i < sizeof_threePoseCorrectives / 6; i++) {
         facs.threePoseCorrectives.push([view.readUint16(), view.readUint16(), view.readUint16()])
+    }
+
+    //add corrective poses to names list
+    for (const twoPoseCorrective of facs.twoPoseCorrectives) {
+        facs.faceControlNames.push(`${facs.faceControlNames[twoPoseCorrective[0]]} ${facs.faceControlNames[twoPoseCorrective[1]]}`)
+    }
+
+    for (const threePoseCorrective of facs.threePoseCorrectives) {
+        facs.faceControlNames.push(`${facs.faceControlNames[threePoseCorrective[0]]} ${facs.faceControlNames[threePoseCorrective[1]]} ${facs.faceControlNames[threePoseCorrective[2]]}`)
     }
     
     return facs

@@ -1051,6 +1051,7 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 
 		oldBodyPart.Destroy()
 	}
+	console.log(child)
 	child.setParent(rig)
 }
 

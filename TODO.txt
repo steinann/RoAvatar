@@ -14,6 +14,7 @@ ISSUES (Relating to renderer inaccuracy):
     -Vertex colors are used when they shouldn't be, see 17399885483 as an example (DO NOTE: vertex colors are currently disabled FULLY because i dont think anything really needs it)
     -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
     -Inaccurate skinning when a bundle has a weird rest pose, see bundle 197642307876020 as an example
+        -skeleton.ts does not use the FileMesh bone rest pose as the actual skeleton rest pose, this is probably the cause
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration

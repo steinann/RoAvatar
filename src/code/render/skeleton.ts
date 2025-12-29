@@ -1,8 +1,11 @@
 import * as THREE from 'three';
-import { rad } from "../misc/misc"
-import { CFrame, Connection, type Instance } from "../rblx/rbx"
-import { calculateMotor6Doffset, traverseRigCFrame } from "../rblx/scale"
+import { rad, rotationMatrixToEulerAngles } from "../misc/misc"
+import { CFrame, Connection, Vector3, type Instance } from "../rblx/rbx"
+import { calculateMotor6Doffset } from "../rblx/scale"
 import { removeInstance } from './renderer';
+import { AbbreviationToFaceControlProperty, FaceBoneNames } from '../rblx/constant';
+import FaceControlsWrapper from '../rblx/instance/FaceControls';
+import type { FileMesh } from '../rblx/mesh';
 
 export const BoneNameToIndex: {[K in string]: number} = {
     "Root": 0,
@@ -22,6 +25,15 @@ export const BoneNameToIndex: {[K in string]: number} = {
     "LeftLowerLeg": 14,
     "LeftFoot": 15,
     "Head": 16,
+    "DynamicHead": 17,
+}
+
+const HumanoidToFACSMesh = new Map<Instance, FileMesh>()
+
+let i = 18
+for (const faceBoneName of FaceBoneNames) {
+    BoneNameToIndex[faceBoneName] = i;
+    i += 1
 }
 
 function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
@@ -32,9 +44,16 @@ function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     bone.rotation.z = rad(cf.Orientation[2])
 }
 
-function getCFrameForBone(humanoid: Instance, name: string, includeTransform: boolean = false) {
+function getCFrameForBone(humanoid: Instance, name: string, includeTransform: boolean = false): CFrame {
+    if (name === "DynamicHead") {
+        return new CFrame()
+    }
+
     const rig = humanoid.parent
     if (rig) {
+        const head = rig.FindFirstChild("Head")
+        const facsMesh = HumanoidToFACSMesh.get(humanoid)
+
         const child = rig.FindFirstChild(name)
         if (child && (child.className === "MeshPart" || child.className === "Part")) {
             const motor = child.FindFirstChildOfClass("Motor6D")
@@ -45,33 +64,123 @@ function getCFrameForBone(humanoid: Instance, name: string, includeTransform: bo
                 return child.Prop("CFrame") as CFrame
             }
         }
+
+        if (!child && FaceBoneNames.includes(name)) {
+            if (head && facsMesh) {
+                const facs = facsMesh.facs
+                const faceControls = head.FindFirstChildOfClass("FaceControls")
+                if (faceControls && facs && facs.quantizedTransforms) {
+                    new FaceControlsWrapper(faceControls)
+
+                    for (let j = 0; j < facs.faceBoneNames.length; j++) {
+                        const boneName = facs.faceBoneNames[j]
+
+                        if (boneName === name) {
+                            const jointCF = new CFrame()
+                            for (let k = 0; k < facsMesh.skinning.bones.length; k++) {
+                                const meshBone = facsMesh.skinning.bones[k]
+                                if (facsMesh.skinning.nameTable[k] === boneName) {
+                                    const m = meshBone.rotationMatrix
+                                    jointCF.Orientation = rotationMatrixToEulerAngles([
+                                        m[0],m[1],m[2],
+                                        m[3],m[4],m[5],
+                                        m[6],m[7],m[8]
+                                    ])
+                                    jointCF.Position = [...meshBone.position]
+                                }
+                            }
+
+                            if (includeTransform) {
+                                let totalPosition = new Vector3()
+                                let totalRotation = new Vector3()
+
+                                for (let i = 0; i < facs.faceControlNames.length; i++) {
+                                    const faceControlName = facs.faceControlNames[i]
+
+                                    const col = i
+                                    const row = j
+                                    //const rows = facs.faceBoneNames.length
+                                    const cols = facs.faceControlNames.length
+
+                                    const index = row * cols + col
+
+                                    //const index = i * facs.faceBoneNames.length + j
+
+                                    const posX = facs.quantizedTransforms.px.matrix[index]
+                                    const posY = facs.quantizedTransforms.py.matrix[index]
+                                    const posZ = facs.quantizedTransforms.pz.matrix[index]
+
+                                    const rotX = facs.quantizedTransforms.rx.matrix[index]
+                                    const rotY = facs.quantizedTransforms.ry.matrix[index]
+                                    const rotZ = facs.quantizedTransforms.rz.matrix[index]
+
+                                    const pos = new Vector3(posX, posY, posZ)
+                                    const rot = new Vector3(rotX, rotY, rotZ)
+
+                                    let weight = 0
+
+                                    if (faceControlName.includes(" ")) { //if it is a corrective pose
+                                        weight = 1
+                                        for (const faceControlSubname of faceControlName.split(" ")) {
+                                            const propertyName = AbbreviationToFaceControlProperty[faceControlSubname]
+                                            weight *= faceControls.Prop(propertyName) as number
+                                        }
+                                    } else {
+                                        const propertyName = AbbreviationToFaceControlProperty[faceControlName]
+                                        if (propertyName === undefined) {
+                                            console.log(faceControlName)
+                                        }
+                                        weight = faceControls.Prop(propertyName) as number
+                                    }
+
+                                    totalPosition = totalPosition.add(pos.multiply(new Vector3(weight,weight,weight)))
+                                    totalRotation = totalRotation.add(rot.multiply(new Vector3(weight,weight,weight)))
+                                }
+
+                                const resultCF = new CFrame()
+
+                                const euler = new THREE.Euler(rad(totalRotation.X), rad(totalRotation.Y), rad(totalRotation.Z), "XYZ")
+                                euler.reorder("YXZ")
+
+                                resultCF.Orientation = [euler.x, euler.y, euler.z]
+                                resultCF.Position = totalPosition.toVec3()
+
+                                return jointCF.multiply(resultCF)
+                            }
+
+                            return jointCF
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return new CFrame()
 }
 
 
-export function getBoneMatrix(humanoid: Instance, name: string) {
+/*export function getBoneMatrix(humanoid: Instance, name: string) {
     const rig = humanoid.parent
     if (rig) {
         const child = rig.FindFirstChild(name)
         if (child && (child.className === "MeshPart" || child.className === "Part")) {
-            /*const motor = child.FindFirstChildOfClass("Motor6D")
-            if (motor) {
-                return new THREE.Matrix4().fromArray(calculateMotor6Doffset(motor, false).getMatrix()).invert()
-            } else {
-                return new THREE.Matrix4().fromArray(new CFrame().getMatrix()).invert()
-                //return child.Prop("CFrame") as CFrame
-            }*/
+            //const motor = child.FindFirstChildOfClass("Motor6D")
+            //if (motor) {
+            //    return new THREE.Matrix4().fromArray(calculateMotor6Doffset(motor, false).getMatrix()).invert()
+            //} else {
+            //    return new THREE.Matrix4().fromArray(new CFrame().getMatrix()).invert()
+            //    //return child.Prop("CFrame") as CFrame
+            //}
            return new THREE.Matrix4().fromArray(traverseRigCFrame(child).getMatrix())
         }
     }
 
     return new THREE.Matrix4().fromArray(new CFrame().getMatrix()).invert()
-}
+}*/
 
 export function updateSkeletonFromHumanoid(instance: Instance, skeleton: THREE.Skeleton) {
-    const boneNames = ["LowerTorso", "UpperTorso", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperLeg", "RightLowerLeg", "RightFoot", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "Head"]
+    const boneNames = ["LowerTorso", "UpperTorso", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperLeg", "RightLowerLeg", "RightFoot", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "Head", "DynamicHead", ...FaceBoneNames]
     
     //update rest position
     const bone = skeleton.getBoneByName("HumanoidRootNode")
@@ -101,6 +210,10 @@ export function updateSkeletonFromHumanoid(instance: Instance, skeleton: THREE.S
             setBoneToCFrame(bone, getCFrameForBone(instance, boneName, true))
         }
     }
+}
+
+export function setFACSMeshForHumanoid(humanoid: Instance, mesh: FileMesh) {
+    HumanoidToFACSMesh.set(humanoid, mesh)
 }
 
 export function getSkeletonFromHumanoid(instance: Instance, skeletons: Map<Instance,THREE.Skeleton>, scene: THREE.Scene, destroyConnections: Map<Instance,Connection>): THREE.Skeleton {
@@ -142,6 +255,11 @@ export function getSkeletonFromHumanoid(instance: Instance, skeletons: Map<Insta
         HeadBone.name = "Head"
         setBoneToCFrame(HeadBone, getCFrameForBone(instance, "Head"))
         UpperTorsoBone.add(HeadBone)
+        
+        const DynamicHeadBone = new THREE.Bone()
+        DynamicHeadBone.name = "DynamicHead"
+        setBoneToCFrame(DynamicHeadBone, getCFrameForBone(instance, "DynamicHead"))
+        HeadBone.add(DynamicHeadBone)
 
         //right arm
         const RightUpperArmBone = new THREE.Bone()
@@ -207,7 +325,17 @@ export function getSkeletonFromHumanoid(instance: Instance, skeletons: Map<Insta
         setBoneToCFrame(LeftFootBone, getCFrameForBone(instance, "LeftFoot"))
         LeftLowerLegBone.add(LeftFootBone)
 
-        skeleton = new THREE.Skeleton([RootBone, HumanoidRootNodeBone, LowerTorsoBone, UpperTorsoBone, RightUpperArmBone, RightLowerArmBone, RightHandBone, LeftUpperArmBone, LeftLowerArmBone, LeftHandBone, RightUpperLegBone, RightLowerLegBone, RightFootBone, LeftUpperLegBone, LeftLowerLegBone, LeftFootBone, HeadBone])
+        //face bones
+        const faceBones: THREE.Bone[] = []
+        for (const faceBoneName of FaceBoneNames) {
+            const bone = new THREE.Bone()
+            bone.name = faceBoneName
+            setBoneToCFrame(bone, getCFrameForBone(instance, faceBoneName))
+            DynamicHeadBone.add(bone)
+            faceBones.push(bone)
+        }
+
+        skeleton = new THREE.Skeleton([RootBone, HumanoidRootNodeBone, LowerTorsoBone, UpperTorsoBone, RightUpperArmBone, RightLowerArmBone, RightHandBone, LeftUpperArmBone, LeftLowerArmBone, LeftHandBone, RightUpperLegBone, RightLowerLegBone, RightFootBone, LeftUpperLegBone, LeftLowerLegBone, LeftFootBone, HeadBone, DynamicHeadBone, ...faceBones])
         //[getBoneMatrix(instance, "Root"), getBoneMatrix(instance, "HumanoidRootPart"), getBoneMatrix(instance, "LowerTorso"), getBoneMatrix(instance, "UpperTorso"), getBoneMatrix(instance, "RightUpperArm"), getBoneMatrix(instance, "RightLowerArm"), getBoneMatrix(instance, "RightHand"), getBoneMatrix(instance, "LeftUpperArm"), getBoneMatrix(instance, "LeftLowerArm"), getBoneMatrix(instance, "LeftHand"), getBoneMatrix(instance, "RightUpperLeg"), getBoneMatrix(instance, "RightLowerLeg"), getBoneMatrix(instance, "RightFoot"), getBoneMatrix(instance, "LeftUpperLeg"), getBoneMatrix(instance, "LeftLowerLeg"), getBoneMatrix(instance, "LeftFoot")]
         console.log(skeleton)
         //const skeletonHelper = new THREE.SkeletonHelper(RootBone)

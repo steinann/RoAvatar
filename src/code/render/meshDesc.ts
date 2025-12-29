@@ -201,6 +201,19 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
                 skinIndices[i * 4 + 2] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[2]]]]
                 skinIndices[i * 4 + 3] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[3]]]]
 
+                if (skinIndices[i * 4 + 0] === 0) {
+                    skinIndices[i * 4 + 0] = BoneNameToIndex["Head"]
+                }
+                if (skinIndices[i * 4 + 1] === 0) {
+                    skinIndices[i * 4 + 1] = BoneNameToIndex["Head"]
+                }
+                if (skinIndices[i * 4 + 2] === 0) {
+                    skinIndices[i * 4 + 2] = BoneNameToIndex["Head"]
+                }
+                if (skinIndices[i * 4 + 3] === 0) {
+                    skinIndices[i * 4 + 3] = BoneNameToIndex["Head"]
+                }
+
                 //TODO: fix whatever is wrong above
                 
                 /*const resultingIndex = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
@@ -283,6 +296,7 @@ export class MeshDesc {
     //result data
     compilationTimestamp: number = -1
     instance?: Instance
+    fileMesh?: FileMesh
 
     dispose() {
         this.instance = undefined
@@ -445,12 +459,14 @@ export class MeshDesc {
             layerClothingChunked(mesh, ref_mesh, dist_mesh, `${this.mesh}-${this.layerDesc.reference}`)
         }
 
-        let canIncludeSkinning = true
-        if (this.instance?.Prop("Name") === "Head") {
-            canIncludeSkinning = false
-        }
+        //let canIncludeSkinning = true
+        //if (this.instance?.Prop("Name") === "Head") {
+        //    canIncludeSkinning = false
+        //}
 
-        const geometry = fileMeshToTHREEGeometry(mesh, canIncludeSkinning)
+        this.fileMesh = mesh
+
+        const geometry = fileMeshToTHREEGeometry(mesh, true)
 
         //create and add mesh to scene
         let threeMesh = undefined

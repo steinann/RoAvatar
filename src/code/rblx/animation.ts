@@ -4,6 +4,7 @@ import { deg, lerp, mapNum, rad } from '../misc/misc';
 import type { Vec3 } from '../rblx/mesh';
 import SimpleView from '../lib/simple-view';
 import FaceControlsWrapper from './instance/FaceControls';
+import { FaceControlNames } from './constant';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -895,7 +896,7 @@ class AnimationTrack {
             } else if (child.className === "FaceControls") {
                 const propertyNames = child.getPropertyNames()
                 for (const propertyName of propertyNames) {
-                    if (propertyName !== "Name" && FaceControlsWrapper.requiredProperties.includes(propertyName)) {
+                    if (FaceControlNames.includes(propertyName)) {
                         child.setProperty(propertyName, 0)
                     }
                 }
