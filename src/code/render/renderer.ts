@@ -210,7 +210,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                                     const humanoid = instance.parent.FindFirstChildOfClass("Humanoid")
                                     if (humanoid) {
                                         const facsMesh = newDesc.meshDesc.fileMesh
-                                        if (facsMesh) {
+                                        if (facsMesh && instance.Prop("Name") === "Head") {
                                             setFACSMeshForHumanoid(humanoid, facsMesh)
                                         }
                                         skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
@@ -218,7 +218,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                                         const humanoid = instance.parent.parent.FindFirstChildOfClass("Humanoid")
                                         if (humanoid) {
                                             const facsMesh = newDesc.meshDesc.fileMesh
-                                            if (facsMesh) {
+                                            if (facsMesh && instance.Prop("Name") === "Head") {
                                                 setFACSMeshForHumanoid(humanoid, facsMesh)
                                             }
                                             skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
