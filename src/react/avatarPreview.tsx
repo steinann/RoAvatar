@@ -10,6 +10,7 @@ import { Outfit } from "../code/avatar/outfit"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import AnimatorWrapper from "../code/rblx/instance/Animator"
 import { base64ToArrayBuffer } from "../code/misc/misc"
+import { LOAD_TEST_PLACE } from '../code/misc/flags';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -54,6 +55,18 @@ let failedLastDescription = false
 function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: string | undefined) => void) {
     if (!currentlyUpdatingPreview) {
         currentlyUpdatingPreview = true
+
+        if (LOAD_TEST_PLACE) {
+            API.Asset.GetRBX("../assets/Mesh Deformation Test.rbxl").then((result) => {
+                if (result instanceof RBX) {
+                    const root = result.generateTree()
+                    currentRig = root
+                    addInstance(root, auth)
+                }
+            })
+
+            return
+        }
 
         //update rig
         const newRigType: AvatarType = outfit.playerAvatarType

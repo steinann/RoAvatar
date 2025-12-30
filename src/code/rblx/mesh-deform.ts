@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "./rbx"
-import { ENABLE_LC_WEIGHT_CACHE } from '../misc/flags';
+import { ENABLE_LC_WEIGHT_CACHE, INFLATE_LAYERED_CLOTHING } from '../misc/flags';
 
 const WeightCache = new Map<string,WeightChunk[]>()
 
@@ -95,6 +95,7 @@ export function deformReferenceToBaseBodyParts(reference: FileMesh, targetCages:
     for (let i = 0; i < targetCages.length; i++) {
         const loadedMesh = targetCages[i]
         if (loadedMesh && targetSizes && targetCFrames) {
+            console.log("targetScale", targetSizes[i].divide(new Vector3().fromVec3(loadedMesh.size)))
             mergeTargetWithReference(reference, loadedMesh, targetSizes[i].divide(new Vector3().fromVec3(loadedMesh.size)), targetCFrames[i])
         }
     }
@@ -579,22 +580,24 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
     //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
     //console.time("inflation")
-    /*
-    for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
-        const ref_vert = ref_mesh.coreMesh.verts[i]
-        const dist_vert = dist_mesh.coreMesh.verts[i]
+    
+    //for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
+    //    const ref_vert = ref_mesh.coreMesh.verts[i]
+    //    const dist_vert = dist_mesh.coreMesh.verts[i]
+    //
+    //    const xSim = mapNum(ref_vert.normal[0] * dist_vert.normal[0], -1, 1, 1, 0)
+    //    const ySim = mapNum(ref_vert.normal[1] * dist_vert.normal[1], -1, 1, 1, 0)
+    //    const zSim = mapNum(ref_vert.normal[2] * dist_vert.normal[2], -1, 1, 1, 0)
+    //
+    //    dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.05, 0.05, 0.05]))
+    //    dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.5 * xSim,0.5 * ySim,0.5 * zSim]))
+    //}
+    
 
-        const xSim = mapNum(ref_vert.normal[0] * dist_vert.normal[0], -1, 1, 1, 0)
-        const ySim = mapNum(ref_vert.normal[1] * dist_vert.normal[1], -1, 1, 1, 0)
-        const zSim = mapNum(ref_vert.normal[2] * dist_vert.normal[2], -1, 1, 1, 0)
-
-        dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.05, 0.05, 0.05]))
-        dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.5 * xSim,0.5 * ySim,0.5 * zSim]))
-    }
-    */
-
-    for (const vert of dist_mesh.coreMesh.verts) {
-        vert.position = add(vert.position, multiply(vert.normal, [0.05,0.05,0.05]))
+    if (INFLATE_LAYERED_CLOTHING) {
+        for (const vert of dist_mesh.coreMesh.verts) {
+            vert.position = add(vert.position, multiply(vert.normal, [INFLATE_LAYERED_CLOTHING,INFLATE_LAYERED_CLOTHING,INFLATE_LAYERED_CLOTHING]))
+        }
     }
     //console.timeEnd("inflation")
 
@@ -641,7 +644,6 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
     console.timeEnd("total")
 }
-
 
 //ANOTHER experimental algorithm that didnt work well
 /*
@@ -882,9 +884,9 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 }
 */
 
-//Experimental algorithm that uses normals (it didnt work well, im not sure why)
-/*
-export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh) {
+//Experimental algorithm that uses normals (it didnt work well, im not sure why) WRITTEN WAY LATER: actually this algorithm is way better at preserving shape BUT buggy (sections may be missing)
+//Maybe the solution is to describe the coordinates of each mesh_vert with (the rotated normal of a refmesh_vert + position of a refmesh_vert), kinda like baycentric coordinates
+export function layerClothingChunkedNormals(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
     console.time("total")
 
     //console.time("normals")
@@ -896,7 +898,16 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
     const offsetArray = getOffsetArray(ref_mesh, dist_mesh)
     console.timeEnd("offsetArray")
     console.time("weights")
-    const allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+    let allWeights = undefined
+    if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
+        allWeights = WeightCache.get(cacheId)
+    }
+    if (!allWeights) {
+        allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+        if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
+            WeightCache.set(cacheId, allWeights)
+        }
+    }
     console.timeEnd("weights")
 
     console.time("offset")
@@ -938,4 +949,3 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
     console.timeEnd("total")
 }
-*/

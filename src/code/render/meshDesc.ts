@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { AllBodyParts, BodyPartEnumToNames, BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
-import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
+import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
+import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
 import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
-import { deformReferenceToBaseBodyParts, layerClothingChunked, offsetMesh } from '../rblx/mesh-deform'
-import { USE_VERTEX_COLOR } from '../misc/flags'
+import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
+import { LAYERED_CLOTHING_ALGORITHM, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
@@ -100,7 +100,7 @@ function arrIsSameWrapLayer(arr0: WrapLayerDesc[], arr1: WrapLayerDesc[]) {
     return true
 }
 
-function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
+function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
     const geometry = new THREE.BufferGeometry()
 
     //position
@@ -141,11 +141,16 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true) {
     //colors
     const colors = new Float32Array(mesh.coreMesh.verts.length * 4)
     for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-        if (USE_VERTEX_COLOR) {
+        if (USE_VERTEX_COLOR && !forceVertexColor) {
             colors[i * 4 + 0] = mesh.coreMesh.verts[i].color[0] / 255
             colors[i * 4 + 1] = mesh.coreMesh.verts[i].color[1] / 255
             colors[i * 4 + 2] = mesh.coreMesh.verts[i].color[2] / 255
             colors[i * 4 + 3] = mesh.coreMesh.verts[i].color[3] / 255
+        } else if (forceVertexColor) {
+            colors[i * 4 + 0] = forceVertexColor.X
+            colors[i * 4 + 1] = forceVertexColor.Y
+            colors[i * 4 + 2] = forceVertexColor.Z
+            colors[i * 4 + 3] = 1
         } else {
             colors[i * 4 + 0] = 1
             colors[i * 4 + 1] = 1
@@ -283,6 +288,7 @@ export class MeshDesc {
     scaleIsRelative: boolean = false
     mesh?: string
     canHaveSkinning: boolean = true
+    forceVertexColor: Vector3 | undefined
 
     //layering
     layerDesc?: WrapLayerDesc
@@ -332,6 +338,10 @@ export class MeshDesc {
             return false
         }
 
+        if ((!this.forceVertexColor && other.forceVertexColor) || (this.forceVertexColor && !other.forceVertexColor)) {
+            return false
+        }
+
         if (this.layerDesc && other.layerDesc) {
             if (!this.layerDesc.isSame(other.layerDesc)) {
                 return false
@@ -358,6 +368,12 @@ export class MeshDesc {
 
         if (this.enclosedLayers && other.enclosedLayers) {
             if (!arrIsSameWrapLayer(this.enclosedLayers, other.enclosedLayers)) {
+                return false
+            }
+        }
+
+        if (this.forceVertexColor && other.forceVertexColor) {
+            if (!this.forceVertexColor.isSame(other.forceVertexColor)) {
                 return false
             }
         }
@@ -457,7 +473,18 @@ export class MeshDesc {
             */
 
             //layer the clothing
-            layerClothingChunked(mesh, ref_mesh, dist_mesh, `${this.mesh}-${this.layerDesc.reference}`)
+            const layeredClothingCacheId = `${this.mesh}-${this.layerDesc.reference}`
+
+            switch (LAYERED_CLOTHING_ALGORITHM) {
+                case "linearnormal":
+                    layerClothingChunkedNormals(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
+                    break
+                case "linear":
+                default:
+                    layerClothingChunked(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
+                    break
+            }
+
         }
 
         //let canIncludeSkinning = true
@@ -467,7 +494,7 @@ export class MeshDesc {
 
         this.fileMesh = mesh
 
-        const geometry = fileMeshToTHREEGeometry(mesh, this.canHaveSkinning)
+        const geometry = fileMeshToTHREEGeometry(mesh, this.canHaveSkinning, this.forceVertexColor)
 
         //create and add mesh to scene
         let threeMesh = undefined
@@ -538,6 +565,12 @@ export class MeshDesc {
                     break
                 }
             }
+
+            const textureId = specialMesh.Prop("TextureId") as string
+            if (textureId.length > 0) {
+                const vertexColor = specialMesh.Prop("VertexColor") as Vector3
+                this.forceVertexColor = vertexColor.clone()
+            }
         } else {
             const affectedByHumanoid = isAffectedByHumanoid(child)
             if (affectedByHumanoid && child.Prop("Name") !== "Head") { //clothing and stuff
@@ -581,80 +614,82 @@ export class MeshDesc {
         //this.size = child.Property("Size") as Vector3
         this.scaleIsRelative = true
 
-        //humanoid layered clothing
-        if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {
-            const rig = child.parent.parent
+        //check for surface appearance
+        const surfaceAppearance = child.FindFirstChildOfClass("SurfaceAppearance")
+        if (surfaceAppearance && surfaceAppearance.HasProperty("Color")) {
+            const color = surfaceAppearance.Prop("Color") as Color3
+            const colorMap = surfaceAppearance.Prop("ColorMap") as string
 
-            //wrap layer
-            const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
-
-            if (wrapLayer) {
-                this.scaleIsRelative = false
-                //this.size = new Vector3(1,1,1)
-
-                const selfLayerOrder = wrapLayer.Prop("Order") as number
-
-                const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
-                const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
-                const deformationCage = wrapLayer.Prop("CageMeshId") as string
-                const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
-
-                this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
-
-                this.targetCages = []
-                this.targetCFrames = []
-                this.targetSizes = []
-
-                //wrap targets
-                for (const bodyPartEnum of AllBodyParts) {
-                    for (const bodyPartName of BodyPartEnumToNames[bodyPartEnum]) {
-                        const bodyPart = rig.FindFirstChild(bodyPartName)
-                        if (bodyPart) {
-                            const bodyPartWrapTarget = bodyPart.FindFirstChildOfClass("WrapTarget")
-                            if (bodyPartWrapTarget) {
-                                const bodyPartCage = bodyPartWrapTarget.Prop("CageMeshId") as string
-
-                                const bodyPartCageOrigin = bodyPartWrapTarget.Prop("CageOrigin") as CFrame
-                                const bodyPartCFrame = traverseRigCFrame(bodyPart)
-                                const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
-
-                                const bodyPartSize = bodyPart.Prop("Size") as Vector3
-
-                                this.targetCages.push(bodyPartCage)
-                                this.targetCFrames.push(bodyPartTargetCFrame)
-                                this.targetSizes.push(bodyPartSize)
-                            }
-                        }
-                    }
-                }
-
-                //underneath wrap layers
-                const underneathLayers: WrapLayerDesc[] = []
-
-                for (const accessory of rig.GetChildren()) {
-                    if (accessory.className === "Accessory") {
-                        const handle = accessory.FindFirstChildOfClass("MeshPart")
-                        if (handle) {
-                            const wrapLayer = handle.FindFirstChildOfClass("WrapLayer")
-                            if (wrapLayer) {
-                                const layerOrder = wrapLayer.Prop("Order") as number
-                                if (layerOrder < selfLayerOrder) {
-                                    const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
-                                    const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
-                                    const deformationCage = wrapLayer.Prop("CageMeshId") as string
-                                    const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
-
-                                    const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
-                                    underneathLayer.order = layerOrder
-                                    underneathLayers.push(underneathLayer)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                this.enclosedLayers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
+            if (colorMap.length > 0) {
+                this.forceVertexColor = new Vector3(color.R, color.G, color.B)
             }
+        }
+
+        //wrap layer
+        const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+
+        let model = undefined
+        if (child.parent?.className === "Model") {
+            model = child.parent
+        }
+        if (child.parent?.parent?.className === "Model") {
+            model = child.parent.parent
+        }
+
+        if (wrapLayer && model) {
+            this.scaleIsRelative = false
+            //this.size = new Vector3(1,1,1)
+
+            const selfLayerOrder = wrapLayer.Prop("Order") as number
+
+            const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
+            const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
+            const deformationCage = wrapLayer.Prop("CageMeshId") as string
+            const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
+
+            this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+
+            this.targetCages = []
+            this.targetCFrames = []
+            this.targetSizes = []
+
+            //wrap targets
+            for (const wrapTarget of model.GetDescendants()) {
+                if (wrapTarget.className === "WrapTarget" && wrapTarget.parent && wrapTarget.parent.className === "MeshPart") {
+                    const bodyPartCage = wrapTarget.Prop("CageMeshId") as string
+
+                    const bodyPartCageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+                    const bodyPartCFrame = traverseRigCFrame(wrapTarget.parent)
+                    const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
+
+                    const bodyPartSize = wrapTarget.parent.Prop("Size") as Vector3
+
+                    this.targetCages.push(bodyPartCage)
+                    this.targetCFrames.push(bodyPartTargetCFrame)
+                    this.targetSizes.push(bodyPartSize)
+                }
+            }
+
+            //underneath wrap layers
+            const underneathLayers: WrapLayerDesc[] = []
+
+            for (const otherWrapLayer of model.GetDescendants()) {
+                if (otherWrapLayer.className === "WrapLayer" && otherWrapLayer !== wrapLayer) {
+                    const layerOrder = otherWrapLayer.Prop("Order") as number
+                    if (layerOrder < selfLayerOrder) {
+                        const deformationReference = otherWrapLayer.Prop("ReferenceMeshId") as string
+                        const referenceOrigin = otherWrapLayer.Prop("ReferenceOrigin") as CFrame
+                        const deformationCage = otherWrapLayer.Prop("CageMeshId") as string
+                        const cageOrigin = otherWrapLayer.Prop("CageOrigin") as CFrame
+
+                        const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+                        underneathLayer.order = layerOrder
+                        underneathLayers.push(underneathLayer)
+                    }
+                }
+            }
+
+            this.enclosedLayers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
         }
     }
 }

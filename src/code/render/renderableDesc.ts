@@ -51,7 +51,7 @@ export class RenderableDesc {
             return false
         }
 
-        return (!this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!this.size.isSame(other.size) && (this.isSkinned || other.isSkinned)))
+        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
     }
 
     fromRenderableDesc(other: RenderableDesc) {
@@ -136,14 +136,19 @@ export class RenderableDesc {
             case "MeshPart": {
                 this.size = child.Property("Size") as Vector3
 
-                //humanoid layered clothing
-                if (child.parent && child.parent.parent && child.parent.parent.FindFirstChildOfClass("Humanoid")) {
-                    //wrap layer
-                    const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+                //wrap layer
+                const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
 
-                    if (wrapLayer) {
-                        this.size = new Vector3(1,1,1)
-                    }
+                let model = undefined
+                if (child.parent?.className === "Model") {
+                    model = child.parent
+                }
+                if (child.parent?.parent?.className === "Model") {
+                    model = child.parent.parent
+                }
+
+                if (wrapLayer && model) {
+                    this.size = new Vector3(1,1,1)
                 }
 
                 break
