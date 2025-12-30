@@ -54,7 +54,7 @@ export class RenderableDesc {
             return false
         }
 
-        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) //|| (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
+        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
     }
 
     fromRenderableDesc(other: RenderableDesc) {
