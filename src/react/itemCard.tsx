@@ -266,7 +266,11 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 {cardImage}
             </RadialButton>
             {includeName ? <span ref={nameRef} className="item-name roboto-600">{itemInfo.name}</span> : null}
-            {itemInfo.price ? <span className="item-price roboto-600"><span className="icon-robux-16x16"></span>{new Intl.NumberFormat('no').format(itemInfo.price)}</span> : null}
+            {itemInfo.price !== undefined ? 
+                <span className="item-price roboto-600">
+                    {itemInfo.price > 0 ? <><span className="icon-robux-16x16"></span>{new Intl.NumberFormat('no').format(itemInfo.price)}</> : "Free"}
+                </span>
+            : null}
         </a>
         </>)
     } else { //loading item
