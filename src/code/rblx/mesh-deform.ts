@@ -95,7 +95,6 @@ export function deformReferenceToBaseBodyParts(reference: FileMesh, targetCages:
     for (let i = 0; i < targetCages.length; i++) {
         const loadedMesh = targetCages[i]
         if (loadedMesh && targetSizes && targetCFrames) {
-            console.log("targetScale", targetSizes[i].divide(new Vector3().fromVec3(loadedMesh.size)))
             mergeTargetWithReference(reference, loadedMesh, targetSizes[i].divide(new Vector3().fromVec3(loadedMesh.size)), targetCFrames[i])
         }
     }

@@ -6,6 +6,7 @@ import { rad } from '../misc/misc';
 import type { Authentication } from '../api';
 import { traverseRigCFrame } from '../rblx/scale';
 import { MeshType } from '../rblx/constant';
+import { SkeletonDesc } from './skeletonDesc';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -18,8 +19,10 @@ function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
 export class RenderableDesc {
     cframe: CFrame = new CFrame()
     size: Vector3 = new Vector3(1,1,1)
+    
     meshDesc: MeshDesc = new MeshDesc()
     materialDesc: MaterialDesc = new MaterialDesc()
+    skeletonDesc?: SkeletonDesc
 
     //skinning
     isBodyPart: boolean = false
@@ -51,7 +54,7 @@ export class RenderableDesc {
             return false
         }
 
-        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
+        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) //|| (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
     }
 
     fromRenderableDesc(other: RenderableDesc) {
@@ -171,7 +174,11 @@ export class RenderableDesc {
                 mesh.geometry.dispose()
             }
             scene.remove(mesh)
-
+        }
+        if (this.skeletonDesc) {
+            this.skeletonDesc.dispose(scene)
+        }
+        if (mesh) {
             renderer.renderLists.dispose()
         }
     }
@@ -180,6 +187,7 @@ export class RenderableDesc {
         const originalResult = this.result
         this.result = undefined
 
+        //compile dependencies
         const promises: [Promise<THREE.Mesh | Response | undefined>, Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial>] = [
             this.meshDesc.compileMesh(auth),
             this.materialDesc.compileMaterial()
@@ -190,6 +198,7 @@ export class RenderableDesc {
             return threeMesh
         }
 
+        //material
         if (threeMesh instanceof THREE.SkinnedMesh) {
             (threeMaterial as unknown as {[skinning: string]: boolean}).skinning = true
             this.isSkinned = true
@@ -199,6 +208,8 @@ export class RenderableDesc {
         threeMaterial.needsUpdate = true
 
         this.result = threeMesh
+        
+        //scale
         this.originalScale = threeMesh.scale.clone()
         
         if (!this.meshDesc.scaleIsRelative) {
@@ -206,6 +217,11 @@ export class RenderableDesc {
         } else {
             const oldSize = this.originalScale
             threeMesh.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+        }
+
+        //skeleton
+        if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
+            this.skeletonDesc = new SkeletonDesc(this.meshDesc, scene)
         }
 
         this.dispose(renderer, scene, originalResult)

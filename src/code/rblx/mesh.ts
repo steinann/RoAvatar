@@ -447,6 +447,8 @@ function readQuantizedMatrix(view: SimpleView) {
 
     const quantizedMatrix = new QuantizedMatrix(version, rows, cols)
 
+    console.log("QM VERSION", version)
+
     switch (version) {
         case 1:
             for (let i = 0; i < rows * cols; i++) {
@@ -690,6 +692,7 @@ export class FileMesh {
                 this.readChunkLODS(view, chunkVersion)
                 break
             case "FACS\0\0\0\0":
+                console.log("READING FACS v6/7")
                 this.readChunkFACS(view, chunkVersion)
                 break
         }
@@ -747,6 +750,7 @@ export class FileMesh {
 
     async readChunkCOREMESH(view: SimpleView, version: number) {
         if (version === 1) {
+            console.log("COREMESH v1")
             this.coreMesh.numverts = view.readUint32()
             for (let i = 0; i < this.coreMesh.numverts; i++) {
                 this.coreMesh.verts.push(readVert(view))
@@ -757,6 +761,7 @@ export class FileMesh {
                 this.coreMesh.faces.push(readFace(view))
             }
         } else if (version === 2) {
+            console.log("COREMESH v2")
             const dracoBitStreamSize = view.readUint32()
             const buffer = (view.buffer.slice(view.viewOffset, view.viewOffset + dracoBitStreamSize))
             //console.log(dracoBitStreamSize, DracoDecoderModule)
@@ -1030,6 +1035,7 @@ export class FileMesh {
 
                 //facs
                 if (version === "version 5.00\n" && this.facsDataFormat === 1 && this.sizeOfFacsData > 0) {
+                    console.log("READING FACS v5")
                     this.facs = readFACS(view)
                 }
 

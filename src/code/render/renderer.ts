@@ -7,12 +7,13 @@ import type { Authentication } from '../api';
 import { RenderedClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { getSkeletonFromHumanoid, setFACSMeshForHumanoid, updateSkeletonFromHumanoid } from './legacy-skeleton';
+import { USE_LEGACY_SKELETON } from '../misc/flags';
 
 // MAIN DATA FOR THE RENDERER (i should have really made this a class...)
 const isRenderingMesh = new Map<Instance,boolean>()
 const renderables = new Map<Instance,RenderableDesc>()
 const destroyConnections = new Map<Instance,Connection>()
-const skeletons = new Map<Instance,THREE.Skeleton>()
+const skeletons = new Map<Instance,THREE.Skeleton>() //only used when USE_LEGACY_SKELETON is enabled
 
 // SETTING UP THREE JS SCENE
 //const lookAwayVector = [-0.406, 0.406, -0.819]
@@ -158,13 +159,16 @@ export function removeInstance(instance: Instance) {
 
     renderables.delete(instance)
     isRenderingMesh.delete(instance)
-    const skeleton = skeletons.get(instance)
-    skeletons.delete(instance)
-    if (skeleton) {
-        for (let i = 0; i < skeleton.bones.length; i++) {
-            const bone = skeleton.bones[i];
-            if (bone.parent) {
-                bone.removeFromParent();
+
+    if (USE_LEGACY_SKELETON) {
+        const skeleton = skeletons.get(instance)
+        skeletons.delete(instance)
+        if (skeleton) {
+            for (let i = 0; i < skeleton.bones.length; i++) {
+                const bone = skeleton.bones[i];
+                if (bone.parent) {
+                    bone.removeFromParent();
+                }
             }
         }
     }
@@ -206,24 +210,28 @@ export function addInstance(instance: Instance, auth: Authentication) {
                             if (result instanceof THREE.SkinnedMesh) {
                                 let skeleton = undefined
 
-                                if (instance.parent) {
-                                    const humanoid = instance.parent.FindFirstChildOfClass("Humanoid")
-                                    if (humanoid) {
-                                        const facsMesh = newDesc.meshDesc.fileMesh
-                                        if (facsMesh && instance.Prop("Name") === "Head") {
-                                            setFACSMeshForHumanoid(humanoid, facsMesh)
-                                        }
-                                        skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
-                                    } else if (instance.parent.parent) {
-                                        const humanoid = instance.parent.parent.FindFirstChildOfClass("Humanoid")
+                                if (USE_LEGACY_SKELETON) { //LEGACY SKELETON LOGIC
+                                    if (instance.parent) {
+                                        const humanoid = instance.parent.FindFirstChildOfClass("Humanoid")
                                         if (humanoid) {
                                             const facsMesh = newDesc.meshDesc.fileMesh
                                             if (facsMesh && instance.Prop("Name") === "Head") {
                                                 setFACSMeshForHumanoid(humanoid, facsMesh)
                                             }
                                             skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
+                                        } else if (instance.parent.parent) {
+                                            const humanoid = instance.parent.parent.FindFirstChildOfClass("Humanoid")
+                                            if (humanoid) {
+                                                const facsMesh = newDesc.meshDesc.fileMesh
+                                                if (facsMesh && instance.Prop("Name") === "Head") {
+                                                    setFACSMeshForHumanoid(humanoid, facsMesh)
+                                                }
+                                                skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
+                                            }
                                         }
                                     }
+                                } else { //NEW SKELETON LOGIC
+                                    skeleton = newDesc.skeletonDesc?.skeleton
                                 }
                                 
                                 if (skeleton) {
@@ -255,9 +263,11 @@ export function addInstance(instance: Instance, auth: Authentication) {
             }))
         }
     } else if (instance.className === "Humanoid") {
-        const humanoidSkeleton = skeletons.get(instance)
-        if (humanoidSkeleton) {
-            updateSkeletonFromHumanoid(instance, humanoidSkeleton)
+        if (USE_LEGACY_SKELETON) {
+            const humanoidSkeleton = skeletons.get(instance)
+            if (humanoidSkeleton) {
+                updateSkeletonFromHumanoid(instance, humanoidSkeleton)
+            }
         }
     }
 

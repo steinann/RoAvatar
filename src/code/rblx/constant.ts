@@ -299,6 +299,76 @@ export const FaceBoneNames = [
     "RightUpperOuterMouth"
 ]
 
+const ExtraFaceBoneNames = [
+    "TongueBase",
+    "RightLowerOuterMouth",
+    "RightUpperOuterEyelid",
+    "joint27",
+    "RightOuterBrow",
+    "RightEyeRoot",
+    "LeftLowerEyelid",
+    "joint2",
+    "joint17",
+    "LeftLowerOuterMouth",
+    "RightLowerOuterEyelid",
+    "LeftLowerCornerMouth",
+    "LeftUpperOuterEyelid",
+    "joint28",
+    "joint15",
+    "joint25",
+    "LeftUpperOuterMouth",
+    "joint18",
+    "joint26",
+    "RightLowerInnerEyelid",
+    "joint23",
+    "joint24",
+    "RightUpperEyelid",
+    "Chin",
+    "joint19",
+    "joint21",
+    "joint9",
+    "LeftCheek",
+    "joint22",
+    "Jaw",
+    "LeftOuterBrow",
+    "RightLowerCornerMouth",
+    "LeftLowerOuterEyelid",
+    "joint4",
+    "joint11",
+    "joint3",
+    "joint16",
+    "joint1",
+    "LeftUpperInnerEyelid",
+    "joint14",
+    "LeftUpperEyelid",
+    "joint8",
+    "joint20",
+    "RightUpperOuterMouth",
+    "joint7",
+    "joint12",
+    "joint6",
+    "joint13",
+    "joint5",
+    "joint10",
+    "LeftLowerInnerEyelid",
+    "TongueRoot",
+    "RightInnerBrow",
+    "TongueTip",
+    "RightUpperInnerEyelid",
+    "LowerTeethRoot",
+    "LeftEyeRoot",
+    "RightCheek",
+    "LeftInnerBrow",
+    "RightLowerEyelid",
+    "UpperTeethRoot"
+]
+
+for (const extraBoneName of ExtraFaceBoneNames) {
+    if (!FaceBoneNames.includes(extraBoneName)) {
+        FaceBoneNames.push(extraBoneName)
+    }
+}
+
 export const AbbreviationToFaceControlProperty: {[K in string]: string} = {
     "c_COR": "Corrugator",
     "c_CR": "ChinRaiser",

@@ -195,6 +195,33 @@ export class CFrame {
         return this
     }
 
+    fromRotationMatrix(r00: number, r01: number, r02: number, r10: number, r11: number, r12: number, r20: number, r21: number, r22: number) {
+        /*const matrix = new Array(9)
+        let i = 0
+        for (let x = 0; x < 3; x++) {
+            for (let y = 0; y < 3; y++) {
+                matrix[x + y*3] = [
+                    r00,
+                    r01,
+                    r02,
+                    r10,
+                    r11,
+                    r12,
+                    r20,
+                    r21,
+                    r22,
+                ][i]
+                i++
+            }
+        }*/
+
+        this.Orientation = rotationMatrixToEulerAngles([
+            r00, r10, r20,
+            r01, r11, r21,
+            r02, r12, r22
+        ])
+    }
+
     inverse() {
         const thisM = new THREE.Matrix4().fromArray(this.getMatrix())
         const inverse = thisM.clone()

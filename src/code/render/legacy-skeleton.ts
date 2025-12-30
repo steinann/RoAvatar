@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { rad, rotationMatrixToEulerAngles } from "../misc/misc"
-import { CFrame, Connection, Vector3, type Instance } from "../rblx/rbx"
+import { deg, rad, rotationMatrixToEulerAngles } from "../misc/misc"
+import { CFrame, Connection, Instance, Vector3 } from "../rblx/rbx"
 import { calculateMotor6Doffset } from "../rblx/scale"
 import { removeInstance } from './renderer';
 import { AbbreviationToFaceControlProperty, FaceBoneNames } from '../rblx/constant';
@@ -68,7 +68,12 @@ function getCFrameForBone(humanoid: Instance, name: string, includeTransform: bo
         if (!child && FaceBoneNames.includes(name)) {
             if (head && facsMesh) {
                 const facs = facsMesh.facs
-                const faceControls = head.FindFirstChildOfClass("FaceControls")
+                let faceControls = head.FindFirstChildOfClass("FaceControls")
+                if (!faceControls) {
+                    faceControls = new Instance("FaceControls")
+                    faceControls.setParent(head)
+                }
+                
                 if (faceControls && facs && facs.quantizedTransforms) {
                     new FaceControlsWrapper(faceControls)
 
@@ -142,7 +147,7 @@ function getCFrameForBone(humanoid: Instance, name: string, includeTransform: bo
                                 const euler = new THREE.Euler(rad(totalRotation.X), rad(totalRotation.Y), rad(totalRotation.Z), "XYZ")
                                 euler.reorder("YXZ")
 
-                                resultCF.Orientation = [euler.x, euler.y, euler.z]
+                                resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
                                 resultCF.Position = totalPosition.toVec3()
 
                                 return jointCF.multiply(resultCF)
@@ -180,6 +185,8 @@ function getCFrameForBone(humanoid: Instance, name: string, includeTransform: bo
 }*/
 
 export function updateSkeletonFromHumanoid(instance: Instance, skeleton: THREE.Skeleton) {
+    if (Math.random() < 10) return
+
     const boneNames = ["LowerTorso", "UpperTorso", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperLeg", "RightLowerLeg", "RightFoot", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "Head", "DynamicHead", ...FaceBoneNames]
     
     //update rest position
@@ -201,13 +208,14 @@ export function updateSkeletonFromHumanoid(instance: Instance, skeleton: THREE.S
         }
     }
 
-    skeleton.pose();
+    //skeleton.pose();
 
     //update position
     for (const boneName of boneNames) {
         const bone = skeleton.getBoneByName(boneName)
         if (bone) {
             setBoneToCFrame(bone, getCFrameForBone(instance, boneName, true))
+            bone.updateMatrixWorld()
         }
     }
 }

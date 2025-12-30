@@ -5,7 +5,7 @@ import { API, Authentication } from '../api'
 import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
 import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
-import { LAYERED_CLOTHING_ALGORITHM, USE_VERTEX_COLOR } from '../misc/flags'
+import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
@@ -201,22 +201,29 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forc
                 skinWeights[i * 4 + 2] = skinning.boneWeights[2] / 255
                 skinWeights[i * 4 + 3] = skinning.boneWeights[3] / 255
 
-                skinIndices[i * 4 + 0] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
-                skinIndices[i * 4 + 1] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[1]]]]
-                skinIndices[i * 4 + 2] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[2]]]]
-                skinIndices[i * 4 + 3] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[3]]]]
+                if (USE_LEGACY_SKELETON) {
+                    skinIndices[i * 4 + 0] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
+                    skinIndices[i * 4 + 1] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[1]]]]
+                    skinIndices[i * 4 + 2] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[2]]]]
+                    skinIndices[i * 4 + 3] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[3]]]]
 
-                if (skinIndices[i * 4 + 0] === 0) {
-                    skinIndices[i * 4 + 0] = BoneNameToIndex["Head"]
-                }
-                if (skinIndices[i * 4 + 1] === 0) {
-                    skinIndices[i * 4 + 1] = BoneNameToIndex["Head"]
-                }
-                if (skinIndices[i * 4 + 2] === 0) {
-                    skinIndices[i * 4 + 2] = BoneNameToIndex["Head"]
-                }
-                if (skinIndices[i * 4 + 3] === 0) {
-                    skinIndices[i * 4 + 3] = BoneNameToIndex["Head"]
+                    if (skinIndices[i * 4 + 0] === 0) {
+                        skinIndices[i * 4 + 0] = BoneNameToIndex["Head"]
+                    }
+                    if (skinIndices[i * 4 + 1] === 0) {
+                        skinIndices[i * 4 + 1] = BoneNameToIndex["Head"]
+                    }
+                    if (skinIndices[i * 4 + 2] === 0) {
+                        skinIndices[i * 4 + 2] = BoneNameToIndex["Head"]
+                    }
+                    if (skinIndices[i * 4 + 3] === 0) {
+                        skinIndices[i * 4 + 3] = BoneNameToIndex["Head"]
+                    }
+                } else {
+                    skinIndices[i * 4 + 0] = subset.boneIndices[skinning.subsetIndices[0]]
+                    skinIndices[i * 4 + 1] = subset.boneIndices[skinning.subsetIndices[1]]
+                    skinIndices[i * 4 + 2] = subset.boneIndices[skinning.subsetIndices[2]]
+                    skinIndices[i * 4 + 3] = subset.boneIndices[skinning.subsetIndices[3]]
                 }
 
                 //TODO: fix whatever is wrong above
