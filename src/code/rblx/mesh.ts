@@ -692,11 +692,10 @@ export class FileMesh {
                 this.readChunkLODS(view, chunkVersion)
                 break
             case "FACS\0\0\0\0":
-                console.log("READING FACS v6/7")
                 this.readChunkFACS(view, chunkVersion)
                 break
         }
-        console.log(this)
+        
         view.viewOffset = newViewOffset
     }
 
@@ -1035,7 +1034,6 @@ export class FileMesh {
 
                 //facs
                 if (version === "version 5.00\n" && this.facsDataFormat === 1 && this.sizeOfFacsData > 0) {
-                    console.log("READING FACS v5")
                     this.facs = readFACS(view)
                 }
 

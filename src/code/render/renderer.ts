@@ -154,7 +154,7 @@ export function removeInstance(instance: Instance) {
 
     const desc = renderables.get(instance)
     if (desc) {
-        desc.dispose(renderer, scene, desc.result)
+        desc.dispose(renderer, scene, desc.result, desc.skeletonDesc)
     }
 
     renderables.delete(instance)
@@ -205,7 +205,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                         newDesc.updateResult()
 
                         if (renderables.get(instance)) {
-                            oldDesc?.dispose(renderer, scene, oldDesc.result)
+                            oldDesc?.dispose(renderer, scene, oldDesc.result, oldDesc.skeletonDesc)
 
                             if (result instanceof THREE.SkinnedMesh) {
                                 let skeleton = undefined
@@ -235,6 +235,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                                 }
                                 
                                 if (skeleton) {
+                                    console.log(skeleton)
                                     result.bind(skeleton)
                                     scene.add(result)
                                 }
@@ -247,7 +248,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                             isRenderingMesh.set(instance, false)
                             addInstance(instance, auth) //check instance again in case it changed during compilation
                         } else {
-                            newDesc.dispose(renderer, scene, newDesc.result)
+                            newDesc.dispose(renderer, scene, newDesc.result, newDesc.skeletonDesc)
                         }
                     }
                 })

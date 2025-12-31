@@ -12,7 +12,8 @@ export const LAYERED_CLOTHING_ALGORITHM: "linear" | "linearnormal" = "linear"
 
 //general rendering
 export const USE_VERTEX_COLOR = true
-export const USE_LEGACY_SKELETON = true
+export const USE_LEGACY_SKELETON = false
 
 //debug
 export const LOAD_TEST_PLACE = false
+export const SHOW_SKELETON_HELPER = false

@@ -6,6 +6,7 @@ import { removeInstance } from './renderer';
 import { AbbreviationToFaceControlProperty, FaceBoneNames } from '../rblx/constant';
 import FaceControlsWrapper from '../rblx/instance/FaceControls';
 import type { FileMesh } from '../rblx/mesh';
+import { SHOW_SKELETON_HELPER } from '../misc/flags';
 
 export const BoneNameToIndex: {[K in string]: number} = {
     "Root": 0,
@@ -185,8 +186,6 @@ function getCFrameForBone(humanoid: Instance, name: string, includeTransform: bo
 }*/
 
 export function updateSkeletonFromHumanoid(instance: Instance, skeleton: THREE.Skeleton) {
-    if (Math.random() < 10) return
-
     const boneNames = ["LowerTorso", "UpperTorso", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperLeg", "RightLowerLeg", "RightFoot", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "Head", "DynamicHead", ...FaceBoneNames]
     
     //update rest position
@@ -208,7 +207,7 @@ export function updateSkeletonFromHumanoid(instance: Instance, skeleton: THREE.S
         }
     }
 
-    //skeleton.pose();
+    skeleton.pose();
 
     //update position
     for (const boneName of boneNames) {
@@ -346,8 +345,10 @@ export function getSkeletonFromHumanoid(instance: Instance, skeletons: Map<Insta
         skeleton = new THREE.Skeleton([RootBone, HumanoidRootNodeBone, LowerTorsoBone, UpperTorsoBone, RightUpperArmBone, RightLowerArmBone, RightHandBone, LeftUpperArmBone, LeftLowerArmBone, LeftHandBone, RightUpperLegBone, RightLowerLegBone, RightFootBone, LeftUpperLegBone, LeftLowerLegBone, LeftFootBone, HeadBone, DynamicHeadBone, ...faceBones])
         //[getBoneMatrix(instance, "Root"), getBoneMatrix(instance, "HumanoidRootPart"), getBoneMatrix(instance, "LowerTorso"), getBoneMatrix(instance, "UpperTorso"), getBoneMatrix(instance, "RightUpperArm"), getBoneMatrix(instance, "RightLowerArm"), getBoneMatrix(instance, "RightHand"), getBoneMatrix(instance, "LeftUpperArm"), getBoneMatrix(instance, "LeftLowerArm"), getBoneMatrix(instance, "LeftHand"), getBoneMatrix(instance, "RightUpperLeg"), getBoneMatrix(instance, "RightLowerLeg"), getBoneMatrix(instance, "RightFoot"), getBoneMatrix(instance, "LeftUpperLeg"), getBoneMatrix(instance, "LeftLowerLeg"), getBoneMatrix(instance, "LeftFoot")]
         console.log(skeleton)
-        //const skeletonHelper = new THREE.SkeletonHelper(RootBone)
-        //                            scene.add(skeletonHelper)
+        if (SHOW_SKELETON_HELPER) {
+            const skeletonHelper = new THREE.SkeletonHelper(RootBone)
+            scene.add(skeletonHelper)
+        }
         scene.add(RootBone)
         skeletons.set(instance, skeleton)
     } else {

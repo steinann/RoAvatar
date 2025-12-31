@@ -7,6 +7,7 @@ import type { Authentication } from '../api';
 import { traverseRigCFrame } from '../rblx/scale';
 import { MeshType } from '../rblx/constant';
 import { SkeletonDesc } from './skeletonDesc';
+import { USE_LEGACY_SKELETON } from '../misc/flags';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -45,7 +46,8 @@ export class RenderableDesc {
             this.adjustRotation.isSame(other.adjustRotation) &&
             this.adjustScale.isSame(other.adjustScale) &&*/
             this.isBodyPart === other.isBodyPart &&
-            this.size.isSame(other.size)
+            this.size.isSame(other.size) &&
+            this.skeletonDesc === other.skeletonDesc //this looks like a mistake BUT its actually intentional
     }
 
     needsRegeneration(other: RenderableDesc) {
@@ -162,7 +164,8 @@ export class RenderableDesc {
         this.materialDesc.fromInstance(child)
     }
 
-    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mesh?: THREE.Mesh) {
+    //Used to dispose OLD stuff
+    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mesh?: THREE.Mesh, skeletonDesc?: SkeletonDesc) {
         if (this.meshDesc) {
             this.meshDesc.dispose()
         }
@@ -175,8 +178,8 @@ export class RenderableDesc {
             }
             scene.remove(mesh)
         }
-        if (this.skeletonDesc) {
-            this.skeletonDesc.dispose(scene)
+        if (skeletonDesc) {
+            skeletonDesc.dispose(scene)
         }
         if (mesh) {
             renderer.renderLists.dispose()
@@ -185,7 +188,9 @@ export class RenderableDesc {
 
     async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene, auth: Authentication): Promise<THREE.Mesh | Response | undefined> {
         const originalResult = this.result
+        const originalSkeletonDesc = this.skeletonDesc
         this.result = undefined
+        this.skeletonDesc = undefined
 
         //compile dependencies
         const promises: [Promise<THREE.Mesh | Response | undefined>, Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial>] = [
@@ -220,11 +225,11 @@ export class RenderableDesc {
         }
 
         //skeleton
-        if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
+        if (!USE_LEGACY_SKELETON && SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
             this.skeletonDesc = new SkeletonDesc(this.meshDesc, scene)
         }
 
-        this.dispose(renderer, scene, originalResult)
+        this.dispose(renderer, scene, originalResult, originalSkeletonDesc)
 
         return threeMesh
     }
@@ -271,7 +276,12 @@ export class RenderableDesc {
             resultCF.Orientation = [...resultRot.Orientation]
 
             */
+            
             setTHREEMeshCF(this.result, resultCF)
+            
+            if (this.skeletonDesc && this.instance) {
+                this.skeletonDesc.update(this.instance)
+            }
             this.result.updateMatrix()
         }
     }
