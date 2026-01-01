@@ -251,7 +251,7 @@ export class RenderableDesc {
         if (this.result) {
             let resultCF = this.cframe
 
-            if (this.isBodyPart && this.isSkinned && this.instance) {
+            if (this.isSkinned && this.instance) {
                 const hrp = this.instance.parent?.FindFirstChild("HumanoidRootPart")
                 if (hrp) {
                     resultCF = (hrp.Prop("CFrame") as CFrame).multiply(traverseRigCFrame(this.instance))
