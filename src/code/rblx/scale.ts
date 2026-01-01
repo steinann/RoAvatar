@@ -250,7 +250,7 @@ function getPartScale(part: Instance, wideToNarrow: number, anthroPercent: numbe
 }
 
 //Returns the original size of the part or will create one if it cannot find one
-function getOriginalSize(part: Instance) {
+export function getOriginalSize(part: Instance) {
 	let originalSize = part.Prop("Size") as Vector3
 	const originalSizeValue = part.FindFirstChild(originalSizeName)
 	if (originalSizeValue) {

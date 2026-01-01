@@ -508,6 +508,7 @@ export class MeshDesc {
 
         if (geometry.attributes.skinWeight) {
             threeMesh = new THREE.SkinnedMesh(geometry)
+            threeMesh.frustumCulled = false
         } else {
             threeMesh = new THREE.Mesh(geometry)
         }

@@ -226,12 +226,25 @@ export class RenderableDesc {
 
         //skeleton
         if (!USE_LEGACY_SKELETON && SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
-            this.skeletonDesc = new SkeletonDesc(this.meshDesc, scene)
+            this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
         }
 
         this.dispose(renderer, scene, originalResult, originalSkeletonDesc)
 
         return threeMesh
+    }
+
+    getScale() {
+        if (!this.result) {
+            return new Vector3(1,1,1)
+        }
+
+        if (!this.meshDesc.scaleIsRelative) {
+            return new Vector3(this.size.X, this.size.Y, this.size.Z)
+        } else {
+            const oldSize = this.originalScale
+            return new Vector3(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+        }
     }
 
     updateResult() {
@@ -246,36 +259,7 @@ export class RenderableDesc {
             }
 
             //apply size
-            if (!this.meshDesc.scaleIsRelative) {
-                this.result.scale.set(this.size.X, this.size.Y, this.size.Z)
-            } else {
-                const oldSize = this.originalScale
-                this.result.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
-            }
-
-            //apply adjustment (INACCURATE DO NOT USE)
-            /*
-            this.result.scale.set(this.result.scale.x, this.result.scale.y, this.result.scale.z)
-            this.result.scale.multiply(new THREE.Vector3(this.adjustScale.X, this.adjustScale.Y, this.adjustScale.Z));
-
-            const offsetCF = new CFrame()
-            offsetCF.Position = this.adjustPosition.toVec3()
-            //offsetCF.Orientation = this.adjustRotation.toVec3()
-
-            //rotation
-            const ogRot = new CFrame()
-            ogRot.Orientation = [...resultCF.Orientation]
-
-            const newRot = new CFrame()
-            newRot.Orientation = this.adjustRotation.toVec3()
-
-            resultCF.Orientation = [0,0,0]
-            resultCF = resultCF.multiply(offsetCF)
-
-            const resultRot = newRot.multiply(ogRot)
-            resultCF.Orientation = [...resultRot.Orientation]
-
-            */
+            this.result.scale.set(...this.getScale().toVec3())
             
             setTHREEMeshCF(this.result, resultCF)
             

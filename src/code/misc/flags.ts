@@ -16,4 +16,5 @@ export const USE_LEGACY_SKELETON = false
 
 //debug
 export const LOAD_TEST_PLACE = false
-export const SHOW_SKELETON_HELPER = false
+export const SHOW_SKELETON_HELPER = true
+export const ANIMATE_SKELETON = true
