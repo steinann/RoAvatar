@@ -259,6 +259,9 @@ export const FaceControlNames = [
     "TongueDown", "TongueOut", "TongueUp"
 ]
 
+/**
+ * @deprecated Face bone names are not standardized
+ */
 export const FaceBoneNames = [
     "TongueBase",
     "RightOuterBrow",

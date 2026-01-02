@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { MeshDesc } from "./meshDesc";
 import { CFrame, Instance, Vector3 } from '../rblx/rbx';
 import { deg, rad } from '../misc/misc';
-import { getOriginalSize } from '../rblx/scale';
+import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../rblx/scale';
 import { ANIMATE_SKELETON, SHOW_SKELETON_HELPER, USE_LEGACY_SKELETON } from '../misc/flags';
 import { divide, multiply } from '../rblx/mesh-deform';
 import FaceControlsWrapper from '../rblx/instance/FaceControls';
@@ -161,6 +161,26 @@ export class SkeletonDesc {
         return partEquivalent
     }
 
+    getRootCFrame(instance: Instance, includeTransform: boolean) {
+        if (includeTransform) {
+            return instance.Prop("CFrame") as CFrame
+        } else {
+            let bodyPart: Instance | undefined = undefined
+            if (instance.parent && instance.parent.FindFirstChildOfClass("Humanoid")) {
+                bodyPart = instance
+            } else if (instance.parent && instance.parent.parent && instance.parent.className === "Accessory") {
+                bodyPart = GetAttachedPart(instance.parent, instance.parent.parent)
+            }
+
+            const hrp = this.getPartEquivalent(instance, "HumanoidRootPart")
+            if (hrp && bodyPart) {
+                return (hrp.Prop("CFrame") as CFrame).multiply(traverseRigCFrame(bodyPart))
+            }
+        }
+
+        return new CFrame()
+    }
+
     resetRestPos(selfInstance: Instance, includeTransform: boolean = false) {
         if (!selfInstance.parent) return
 
@@ -173,10 +193,12 @@ export class SkeletonDesc {
             if (partEquivalent && parentPartEquivalent) {
                 setBoneToCFrame(bone, getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform))
             } else if (bone.name === "Root") {
-                //setBoneToCFrame(bone, selfInstance.Prop("CFrame") as CFrame)
-                setBoneToCFrame(bone, new CFrame())
+                setBoneToCFrame(bone, this.getRootCFrame(selfInstance, includeTransform))
             } else if (bone.name === "HumanoidRootNode") {
-                //const reverseCF = (selfInstance.Prop("CFrame") as CFrame).inverse()
+                let reverseCF = new CFrame()
+                if (i === 1) {
+                    reverseCF = this.getRootCFrame(selfInstance, includeTransform).inverse()
+                }
 
                 let rootCF = new CFrame()
                 const rootPart = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
@@ -184,7 +206,7 @@ export class SkeletonDesc {
                     rootCF = rootPart.Prop("CFrame") as CFrame
                 }
 
-                setBoneToCFrame(bone, rootCF)
+                setBoneToCFrame(bone, reverseCF.multiply(rootCF))
             } else if (bone.name === "DynamicHead" || bone.parent?.name === "DynamicHead" || bone.parent?.parent?.name === "DynamicHead" || bone.parent?.parent?.parent?.name === "DynamicHead") {
                 //find scale difference
                 const ogCF = this.originalBoneCFrames[i]

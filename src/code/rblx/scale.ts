@@ -187,7 +187,7 @@ function FindFirstMatchingAttachment(attachmentName: string, rig: Instance) {
 }
 
 //Returns the character part the accessory is attached to
-function GetAttachedPart(accessory: Instance, rig: Instance) {
+export function GetAttachedPart(accessory: Instance, rig: Instance) {
 	const handle = accessory.FindFirstChild("Handle")
 	if (!handle) {
 		return

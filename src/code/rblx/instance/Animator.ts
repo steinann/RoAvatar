@@ -7,6 +7,7 @@ import InstanceWrapper from "./InstanceWrapper";
 const weightMult = 3
 
 //TODO: fix the giant mistake that was assuming subnames are consistent
+//TODO: and the giant mistake that is assuming only one animation is played at a time (i dont know why i did that??)
 
 export default class AnimatorWrapper extends InstanceWrapper {
     static className: string = "Animator"

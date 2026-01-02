@@ -4,7 +4,6 @@ Meaning of tags in code:
     BUG: (A bug/issue with roblox, these should NOT be fixed as to maintain accuracy)
 
 ISSUES (Relating to renderer inaccuracy):
-    -SKELETON: Skinning treats Root bone as world origin instead of treating it as the renderable's CFrame, see 126276012366391, 140233792042793 and 107221904954874 as examples
     -SKELETON: Eyebrows and eyelashes may not contain FACS data (is this always the case?) and therefore have their face bones ignored during animation
         -Them having their own FACS data and bones doesn't make sense as it break the animation if you change the underlying head
         -They likely inherit the bones and FACS data of the underlying head, which is why AutoSkin is needed
