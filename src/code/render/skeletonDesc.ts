@@ -9,11 +9,6 @@ import FaceControlsWrapper from '../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../rblx/constant';
 import type { RenderableDesc } from './renderableDesc';
 
-//TODO: Update FACS bones based on head CFrame and Size, which shouldnt be that hard because the Head contains OriginalSize, just multiply original bones with the difference
-//TODO: Make it so Root bone is the part CFrame
-//TODO: FACS
-//right now behavior is just as good as legacy-skeleton BUT without FACS
-
 function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     bone.position.set(...cf.Position)
     bone.rotation.set(rad(cf.Orientation[0]), rad(cf.Orientation[1]), rad(cf.Orientation[2]), "YXZ")
@@ -166,7 +161,7 @@ export class SkeletonDesc {
         return partEquivalent
     }
 
-    resetRestPos(selfInstance: Instance) {
+    resetRestPos(selfInstance: Instance, includeTransform: boolean = false) {
         if (!selfInstance.parent) return
 
         for (let i = 0; i < this.bones.length; i++) {
@@ -176,7 +171,7 @@ export class SkeletonDesc {
             const parentPartEquivalent = bone.parent ? this.getPartEquivalent(selfInstance, bone.parent.name !== "HumanoidRootNode" ? bone.parent.name : "HumanoidRootPart") : undefined
 
             if (partEquivalent && parentPartEquivalent) {
-                setBoneToCFrame(bone, getJointForInstances(parentPartEquivalent, partEquivalent, false))
+                setBoneToCFrame(bone, getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform))
             } else if (bone.name === "Root") {
                 //setBoneToCFrame(bone, selfInstance.Prop("CFrame") as CFrame)
                 setBoneToCFrame(bone, new CFrame())
@@ -191,9 +186,9 @@ export class SkeletonDesc {
 
                 setBoneToCFrame(bone, rootCF)
             } else if (bone.name === "DynamicHead" || bone.parent?.name === "DynamicHead" || bone.parent?.parent?.name === "DynamicHead" || bone.parent?.parent?.parent?.name === "DynamicHead") {
-                const ogCF = this.originalBoneCFrames[i]
-                
                 //find scale difference
+                const ogCF = this.originalBoneCFrames[i]
+
                 const head = this.getPartEquivalent(selfInstance, "Head")
                 if (head) {
                     const headSize = head.Prop("Size") as Vector3
@@ -207,7 +202,25 @@ export class SkeletonDesc {
 
                     setBoneToCFrame(bone, scaledCF)
                 }
-            } /*else if (bone.name === "DynamicHead") {
+            }
+            /*if (bone.name === "Head") {
+
+                //find scale difference
+                const head = this.getPartEquivalent(selfInstance, "Head")
+                if (head) {
+                    const headSize = head.Prop("Size") as Vector3
+                    const ogHeadSize = getOriginalSize(head)
+
+                    const scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+
+                    //apply scale
+                    //const scaledCF = ogCF.clone()
+                    //scaledCF.Position = multiply(scaledCF.Position, scale)
+
+                    
+                    bone.scale.set(...scale)
+                }
+            }*/ /*else if (bone.name === "DynamicHead") {
                 const headPart = this.getPartEquivalent(selfInstance, "Head")
                 if (headPart) {
                     const motor = headPart.FindFirstChildOfClass("Motor6D")
@@ -219,32 +232,39 @@ export class SkeletonDesc {
         }
 
         this.updateMatrixWorld()
-        this.setAsRest()
+        if (!includeTransform) {
+            this.setAsRest()
+            this.updateMatrixWorld()
+        }
     }
 
     updateMatrixWorld() {
         for (const bone of this.skeleton.bones) {
-            bone.updateMatrixWorld()
+            bone.updateMatrixWorld(true)
         }
     }
 
     update(instance: Instance) {
         if (!instance.parent) return
 
+        this.resetRestPos(instance)
+        
         if (ANIMATE_SKELETON) {
-            this.resetRestPos(instance)
+            //non-facs animation is done in here, quite misleading method name
+            this.resetRestPos(instance, true)
+
             for (const bone of this.skeleton.bones) {
                 const isFACS = this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(bone.name)
 
                 if (!isFACS) {
-                    const partEquivalent = this.getPartEquivalent(instance, bone.name)
+                    /*const partEquivalent = this.getPartEquivalent(instance, bone.name)
                     const parentPartEquivalent = bone.parent ? this.getPartEquivalent(instance, bone.parent.name !== "HumanoidRootNode" ? bone.parent.name : "HumanoidRootPart") : undefined
 
                     if (partEquivalent && parentPartEquivalent) {
                         setBoneToCFrame(bone, getJointForInstances(parentPartEquivalent, partEquivalent, true))
                     } else if (partEquivalent) {
                         setBoneToCFrame(bone, partEquivalent.Prop("CFrame") as CFrame)
-                    }
+                    }*/
                 } else {
                     const facsMesh = this.meshDesc.fileMesh
                     const facs = this.meshDesc.fileMesh?.facs
@@ -270,6 +290,7 @@ export class SkeletonDesc {
                                 let jointCF = new CFrame()
 
                                 const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)]
+                                jointCF = ogCF.clone()
                                 //find scale difference
                                 const head = this.getPartEquivalent(instance, "Head")
                                 if (head) {
@@ -279,7 +300,6 @@ export class SkeletonDesc {
                                     const scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
 
                                     //apply scale
-                                    jointCF = ogCF.clone()
                                     jointCF.Position = multiply(jointCF.Position, scale)
                                 }
 
@@ -341,6 +361,8 @@ export class SkeletonDesc {
                                 break
                             }
                         }
+                    } else {
+                        console.log(head, facs, facsMesh)
                     }
                 }
             }

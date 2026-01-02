@@ -236,6 +236,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                                 
                                 if (skeleton) {
                                     console.log(skeleton)
+                                    result.bindMode = "detached"
                                     if (newDesc.skeletonDesc) {
                                         scene.add(newDesc.skeletonDesc.rootBone)
                                     }

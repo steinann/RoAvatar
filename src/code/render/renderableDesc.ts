@@ -4,10 +4,10 @@ import { MaterialDesc } from "./materialDesc";
 import { MeshDesc } from "./meshDesc";
 import { rad } from '../misc/misc';
 import type { Authentication } from '../api';
-import { traverseRigCFrame } from '../rblx/scale';
 import { MeshType } from '../rblx/constant';
 import { SkeletonDesc } from './skeletonDesc';
 import { USE_LEGACY_SKELETON } from '../misc/flags';
+import { traverseRigCFrame } from '../rblx/scale';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -56,7 +56,7 @@ export class RenderableDesc {
             return false
         }
 
-        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) || (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
+        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) //|| (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
     }
 
     fromRenderableDesc(other: RenderableDesc) {
@@ -262,11 +262,16 @@ export class RenderableDesc {
             this.result.scale.set(...this.getScale().toVec3())
             
             setTHREEMeshCF(this.result, resultCF)
+            this.result.updateMatrix()
+            this.result.updateMatrixWorld(true)
             
             if (this.skeletonDesc && this.instance) {
+                if (this.result && this.result instanceof THREE.SkinnedMesh) {
+                    this.result.bindMatrix.copy(this.result.matrixWorld.clone())
+                    this.result.bindMatrixInverse.copy(this.result.matrixWorld.clone().invert())
+                }
                 this.skeletonDesc.update(this.instance)
             }
-            this.result.updateMatrix()
         }
     }
 }

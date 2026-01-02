@@ -177,11 +177,15 @@ export class CFrame {
         return cloneCF
     }
 
-    getMatrix() {
+    getTHREEMatrix() {
         const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rad(this.Orientation[0]), rad(this.Orientation[1]), rad(this.Orientation[2]), "YXZ"))
         const transformMatrix = new THREE.Matrix4().makeTranslation(this.Position[0], this.Position[1], this.Position[2])
 
-        return transformMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(quat)).toArray()
+        return transformMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(quat))
+    }
+
+    getMatrix() {
+        return this.getTHREEMatrix().toArray()
     }
 
     fromMatrix(m: Mat4x4) {
