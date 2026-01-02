@@ -361,8 +361,6 @@ export class SkeletonDesc {
                                 break
                             }
                         }
-                    } else {
-                        console.log(head, facs, facsMesh)
                     }
                 }
             }
