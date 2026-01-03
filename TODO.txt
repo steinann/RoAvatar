@@ -20,4 +20,3 @@ ISSUES (Relating to renderer inaccuracy):
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
-    -Skinned meshes require regeneration when changing size due to THREE.js being weird

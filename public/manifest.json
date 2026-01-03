@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "RoAvatar",
     "description": "A remake of the Roblox avatar editor with new and improved features",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "icons": {
         "16": "assets/icons/16x16.png",
         "32": "assets/icons/32x32.png",
