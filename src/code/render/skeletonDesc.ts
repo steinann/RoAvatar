@@ -190,23 +190,36 @@ export class SkeletonDesc {
             const partEquivalent = this.getPartEquivalent(selfInstance, bone.name)
             const parentPartEquivalent = bone.parent ? this.getPartEquivalent(selfInstance, bone.parent.name !== "HumanoidRootNode" ? bone.parent.name : "HumanoidRootPart") : undefined
 
-            if (partEquivalent && parentPartEquivalent) {
-                setBoneToCFrame(bone, getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform))
-            } else if (bone.name === "Root") {
-                setBoneToCFrame(bone, this.getRootCFrame(selfInstance, includeTransform))
-            } else if (bone.name === "HumanoidRootNode") {
-                let reverseCF = new CFrame()
-                if (i === 1) {
-                    reverseCF = this.getRootCFrame(selfInstance, includeTransform).inverse()
-                }
+            let rootBoneCF = new CFrame()
+            if (bone.name === "Root") {
+                rootBoneCF = this.getRootCFrame(selfInstance, includeTransform)
+            } else if (bone.parent?.name === "Root") {
+                rootBoneCF = this.getRootCFrame(selfInstance, includeTransform).inverse()
+            }
 
+            if (partEquivalent && parentPartEquivalent) {
+                setBoneToCFrame(bone, rootBoneCF.multiply(getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform)))
+            } else if (partEquivalent) {
+                if (includeTransform) {
+                    setBoneToCFrame(bone, rootBoneCF.multiply(partEquivalent.Prop("CFrame") as CFrame))
+                } else {
+                    let hrpCF = new CFrame()
+                    const hrp = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
+                    if (hrp) {
+                        hrpCF = hrp.Prop("CFrame") as CFrame
+                    }
+                    setBoneToCFrame(bone, rootBoneCF.multiply(hrpCF.multiply(traverseRigCFrame(partEquivalent))))
+                }
+            } else if (bone.name === "Root") {
+                setBoneToCFrame(bone, rootBoneCF.multiply(new CFrame()))
+            } else if (bone.name === "HumanoidRootNode") {
                 let rootCF = new CFrame()
                 const rootPart = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
                 if (rootPart) {
                     rootCF = rootPart.Prop("CFrame") as CFrame
                 }
 
-                setBoneToCFrame(bone, reverseCF.multiply(rootCF))
+                setBoneToCFrame(bone, rootBoneCF.multiply(rootCF))
             } else if (bone.name === "DynamicHead" || bone.parent?.name === "DynamicHead" || bone.parent?.parent?.name === "DynamicHead" || bone.parent?.parent?.parent?.name === "DynamicHead") {
                 //find scale difference
                 const ogCF = this.originalBoneCFrames[i]
