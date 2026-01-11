@@ -185,7 +185,13 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                         if (result.status === 200) {
                             refresh()
                         } else {
-                            //TODO: add error
+                            if (setAlertEnabled && setAlertText) {
+                                setAlertText("Failed to save outfit")
+                                setAlertEnabled(true)
+                                setTimeout(() => {
+                                    setAlertEnabled(false)
+                                }, 3000)
+                            }
                         }
                 })
                     }}>Create</RadialButton>

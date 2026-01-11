@@ -21,6 +21,7 @@ import { type NavigationMenuItems, type Search_Payload } from './code/api-consta
 import MarketplaceCategory from './react/marketplaceCategory'
 import { HAIR_IS_BODYPART } from './code/misc/flags'
 import BarButton from './react/barButton'
+import RadialButton from './react/generic/radialButton'
 //import { arrayBufferToBase64 } from './code/misc/misc'
 //import Test_AvatarPreview from './react/test-avatarPreview'
 
@@ -47,7 +48,11 @@ function App() {
   const [alertText, setAlertText] = useState<string>("")
   const [alertEnabled, setAlertEnabled] = useState<boolean>(false)
 
+  const [addAssetOpen, setAddAssetOpen] = useState<boolean>(false)
+
   const searchRef = useRef<HTMLInputElement>(null)
+  const addAssetDialogRef = useRef<HTMLDialogElement>(null)
+  const addAssetInputRef = useRef<HTMLInputElement>(null)
 
   function undo() {
     if (historyIndex > 0) {
@@ -326,6 +331,39 @@ function App() {
               {alertText}
             </div>
 
+            <dialog style={addAssetOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={addAssetDialogRef} onCancel={() => {setAddAssetOpen(false)}}>
+              <span className="dialog-title roboto-700">Add Asset</span>
+              <input ref={addAssetInputRef} className="dialog-text-input roboto-300" placeholder="URL or Id"></input>
+              <div className="dialog-actions">
+                <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+                  setAddAssetOpen(false)
+                }}>Cancel</RadialButton>
+                <RadialButton className="dialog-confirm roboto-600" onClick={() => {
+                  setAddAssetOpen(false)
+
+                  const idValue = addAssetInputRef.current?.value || ""
+                  const ids = idValue.match(/^\d+|\d+\b|\d+(?=\w)/g)
+                  let id = null
+                  if (ids) {
+                    id = Number(ids[0])
+                  }
+
+                  if (id && !isNaN(id) && id > 0 && auth) {
+                    const newOutfit = outfit.clone()
+                    newOutfit.addAssetId(auth, id).then((success) => {
+                      if (success) {
+                        if (addAssetInputRef.current) {
+                          addAssetInputRef.current.value = ""
+                        }
+
+                        setOutfit(newOutfit)
+                      }
+                    })
+                  }
+                }}>Add</RadialButton>
+              </div>
+          </dialog>
+
             {/*LEFT SIDE*/}
             <div className='main-left division-down'>
               <BarCategory className="background-transparent bar-double-margin"><BarButton category='|' setCategory={(a) => {return a}}></BarButton></BarCategory>
@@ -350,6 +388,9 @@ function App() {
                     setOutfit(newOutfit)
                   }}/>
                 })}
+                <ItemCard auth={auth} forceImage='../assets/newnewoutfit.png' className='worn-list-item' showViewButton={false} includeName={false} itemInfo={new ItemInfo("None", "", -1, "Add Asset")} onClick={() => {
+                  setAddAssetOpen(true)
+                }}></ItemCard>
               </div>
             </div>
 

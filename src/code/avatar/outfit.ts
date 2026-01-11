@@ -1001,7 +1001,9 @@ export class Outfit {
             return false
         }
 
-        const asset = new Asset()
+        this.addAsset(assetId, assetDetails.AssetTypeId, assetDetails.Name)
+
+        /*const asset = new Asset()
         asset.id = assetId
         asset.name = assetDetails.Name
 
@@ -1013,7 +1015,7 @@ export class Outfit {
         }
         asset.assetType.name = AssetTypes[assetDetails.AssetTypeId]
 
-        this.assets.push(asset)
+        this.assets.push(asset)*/
 
         return true
     }

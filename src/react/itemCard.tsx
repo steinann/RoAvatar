@@ -208,6 +208,10 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
 
                     API.Avatar.PatchOutfit(auth, itemInfo.id, {name: toUseName}).then((result) => {
                         if (result.status === 200 && refresh) {
+                            if (outfitNameInputRef.current) {
+                                outfitNameInputRef.current.value = ""
+                            }
+
                             refresh()
                         } else if (setAlertText && setAlertEnabled) {
                             setAlertText("Failed to rename character")

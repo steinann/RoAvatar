@@ -867,6 +867,7 @@ dialog {
     inset-block-start: 0px;
     inset-block-end: 0px;
     max-width: calc(100% - 2em - 6px);
+    min-width: 300px;
     max-height: calc(100% - 2em - 6px);
     user-select: text;
     visibility: visible;
