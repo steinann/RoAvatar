@@ -71,6 +71,7 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
                                 for (const asset of result.assets) {
                                     newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
                                 }
+                                newOutfit.scale = result.scale.clone()
 
                                 setOutfit(newOutfit)
                             }

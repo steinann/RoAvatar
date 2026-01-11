@@ -219,6 +219,8 @@ export const DataType = {
 
     "Color3uint8": 0x1a,
     "Int64": 0x1b,
+    "SharedString": 0x1c,
+    "Bytecode": 0x1d,
 
     "Capabilites": 0x21, //NOT IMPLEMENTED
 
@@ -424,3 +426,13 @@ export const AbbreviationToFaceControlProperty: {[K in string]: string} = {
     "r_OBR": "RightOuterBrowRaiser",
     "r_ULR": "RightUpperLipRaiser",
 }
+
+export const StringBufferProperties = [
+    "ValuesAndTimes",
+    "label",
+    "name",
+    "parent",
+    "preTransform",
+    "transform",
+    "postTransform"
+]

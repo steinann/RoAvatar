@@ -57,8 +57,11 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
         currentlyUpdatingPreview = true
 
         if (LOAD_TEST_PLACE) {
-            API.Asset.GetRBX("../assets/Mesh Deformation Test.rbxl").then((result) => {
+            API.Asset.GetRBX(LOAD_TEST_PLACE).then((result) => {
                 if (result instanceof RBX) {
+                    console.log("Loaded", LOAD_TEST_PLACE)
+                    console.log(result)
+
                     const root = result.generateTree()
                     currentRig = root
                     addInstance(root, auth)

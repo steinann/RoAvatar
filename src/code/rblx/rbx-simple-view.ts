@@ -7,7 +7,7 @@ export default class RBXSimpleView {
     buffer
     locked = false
 
-    constructor (buffer: ArrayBuffer) {
+    constructor (buffer: ArrayBufferLike) {
         this.view = new DataView(buffer)
         this.buffer = buffer
         this.viewOffset = 0

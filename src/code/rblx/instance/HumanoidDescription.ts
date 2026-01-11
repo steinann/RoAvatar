@@ -1099,6 +1099,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 const animTrackInstance = result.generateTree().GetChildren()[0]
                                 if (animTrackInstance && humanoid.parent) {
                                     const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                    animTrack.looped = true;
                                     (animatorW.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>).set(subId, animTrack);
                                     (animatorW.instance.Prop("_NameIdMap") as Map<string,bigint>).set(`${animName}.${subName}`, subId)
                                     animatorW.instance.setProperty("_HasLoadedAnimation",true)

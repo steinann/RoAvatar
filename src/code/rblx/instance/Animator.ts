@@ -69,7 +69,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
                 }
                 track.setTime(track.timePosition + addTime)
 
-                if (track.timePosition >= track.length) {
+                if (track.finished) {
                     this.playAnimation("idle.Animation1")
                     return
                 }
@@ -166,6 +166,9 @@ export default class AnimatorWrapper extends InstanceWrapper {
                                         const animTrackInstance = result.generateTree().GetChildren()[0]
                                         if (animTrackInstance && humanoid.parent) {
                                             const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                            if (forceLoop) {
+                                                animTrack.looped = true
+                                            }
                                             (this.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>).set(animId, animTrack);
                                             (this.instance.Prop("_NameIdMap") as Map<string,bigint>).set(`emote.${id}`, animId)
                                             this.instance.setProperty("_HasLoadedAnimation",true)

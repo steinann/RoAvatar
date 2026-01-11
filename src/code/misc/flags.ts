@@ -15,6 +15,6 @@ export const USE_VERTEX_COLOR = true
 export const USE_LEGACY_SKELETON = false
 
 //debug
-export const LOAD_TEST_PLACE = false
+export const LOAD_TEST_PLACE = false //"../assets/Mesh Deformation Test.rbxl"
 export const SHOW_SKELETON_HELPER = false
 export const ANIMATE_SKELETON = true

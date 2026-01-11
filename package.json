@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "fzstd": "^0.1.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "three": "^0.180.0",

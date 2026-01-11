@@ -160,6 +160,20 @@ class LODS {
     }
 }
 
+class HSRAVIS {
+    bitFlags: boolean[] = []
+
+    clone() {
+        const copy = new HSRAVIS()
+        copy.bitFlags = new Array(this.bitFlags.length)
+        for (let i = 0; i < this.bitFlags.length; i++) {
+            copy.bitFlags[i] = this.bitFlags[i]
+        }
+
+        return copy
+    }
+}
+
 class FileMeshBone {
     boneNameIndex: number = 0 //uint
 
@@ -447,8 +461,6 @@ function readQuantizedMatrix(view: SimpleView) {
 
     const quantizedMatrix = new QuantizedMatrix(version, rows, cols)
 
-    console.log("QM VERSION", version)
-
     switch (version) {
         case 1:
             for (let i = 0; i < rows * cols; i++) {
@@ -539,6 +551,7 @@ export class FileMesh {
     lods!: LODS //LODS
     skinning!: SKINNING //SKINNING
     facs?: FACS
+    hsrAvis?: HSRAVIS
 
     _bounds?: [Vec3,Vec3]
     _size?: Vec3 = undefined
@@ -694,6 +707,9 @@ export class FileMesh {
             case "FACS\0\0\0\0":
                 this.readChunkFACS(view, chunkVersion)
                 break
+            case "HSRAVIS\0":
+                this.readChunkHSRAVIS(view, chunkVersion)
+                break
         }
         
         view.viewOffset = newViewOffset
@@ -744,6 +760,23 @@ export class FileMesh {
         this.skinning.numSubsets = view.readUint32()
         for (let i = 0; i < this.skinning.numSubsets; i++) {
             this.skinning.subsets.push(readSubset(view))
+        }
+    }
+
+    readChunkHSRAVIS(view: SimpleView, version: number) {
+        if (version !== 1) return
+
+        this.hsrAvis = new HSRAVIS()
+
+        const alwaysVisibleBitFlagsCount = view.readUint32()
+        const alwaysVisibleBitFlagsLength = Math.floor((alwaysVisibleBitFlagsCount + 7) / 8)
+
+        for (let i = 0; i < alwaysVisibleBitFlagsLength; i++) {
+            const byteValue = view.readUint8()
+
+            for (let j = 0; j < 8; j++) {
+                this.hsrAvis.bitFlags.push((byteValue & Math.pow(2,j)) > 0)
+            }
         }
     }
 

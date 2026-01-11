@@ -65,7 +65,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                     for (const item of response.data) {
                         //price
                         let itemPrice = undefined
-                        if (!item.isOffSale) {
+                        if (!item.isOffSale && !item.hasResellers) {
                             itemPrice = item.price
                         } else if (item.hasResellers) {
                             itemPrice = item.lowestResalePrice
@@ -76,6 +76,8 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                         if (item.itemRestrictions.includes("Limited")) {
                             limitedType = "Limited"
                         } else if (item.itemRestrictions.includes("LimitedUnique")) {
+                            limitedType = "LimitedUnique"
+                        } else if (item.itemRestrictions.includes("Collectible")) {
                             limitedType = "LimitedUnique"
                         }
 

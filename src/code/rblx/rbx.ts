@@ -9,8 +9,9 @@ import RBXSimpleView from './rbx-simple-view';
 import { rad, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from './mesh';
-import { BodyPartNameToEnum, DataType, magic, xmlMagic } from './constant';
+import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
 import * as LZ4 from './lz4'
+import * as fzstd from 'fzstd';
 
 //datatype structs
 export class UDim {
@@ -635,6 +636,9 @@ export class Instance {
                 const valueSTR = value as string
                 this.name = valueSTR
             }
+            /*if (this.className === "AnimationRigData" && StringBufferProperties.includes(property.name || "")) {
+                saveByteArray([value as ArrayBuffer], property.name || "null")
+            }*/
 
             property._value = value
 
@@ -930,6 +934,7 @@ export class RBX {
 
     meta = new Map<string,string>() //Map<string,string>
     sstr = new Map<number[],string>() //Map<MD5,string>
+    sstrArr: string[] = []
     instArray: INST[] = [] //INST[]
     propArray: PROP[] = [] //PROP[]
     prnt = new PRNT() //PRNT
@@ -1022,6 +1027,7 @@ export class RBX {
             const md5 = [chunkView.readUint32(), chunkView.readUint32(), chunkView.readUint32(), chunkView.readUint32()]
             const str = chunkView.readUtf8String()
 
+            this.sstrArr.push(str)
             this.sstr.set(md5, str)
         }
     }
@@ -1051,11 +1057,12 @@ export class RBX {
         const valuesLength = this.classIDtoINST.get(prop.classID).instanceCount
 
         switch (prop.typeID) {
+            case DataType.Bytecode:
             case DataType.String:
                 {
                     let totalRead = 0
                     while (totalRead < valuesLength) {
-                        if (prop.propertyName === "ValuesAndTimes") {
+                        if (StringBufferProperties.includes(prop.propertyName)) {
                             const length = chunkView.readUint32()
                             prop.values.push(chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1))
                             chunkView.viewOffset += length
@@ -1294,6 +1301,16 @@ export class RBX {
 
                     break
                 }
+            case DataType.SharedString:
+                {
+                    const nums = chunkView.readInterleaved32(valuesLength, false, "readUint32") as number[]
+                    
+                    for (const num of nums) {
+                        prop.values.push(num)
+                    }
+
+                    break
+                }
             default:
                 console.warn(`Unknown property type ${prop.typeID} in property ${prop.propertyName}`)
         }
@@ -1324,8 +1341,11 @@ export class RBX {
             view.viewOffset -= 4
             const isLZ4 = !isZSTD
 
+            const compressedByteArray = view.buffer.slice(view.viewOffset, view.viewOffset + compressedLength)
+
             if (isZSTD) { //ZSTD
-                throw new Error("Compressed data is ZSTD") //TODO: implement
+                const decompressedData = fzstd.decompress(new Uint8Array(compressedByteArray)).buffer
+                return decompressedData.slice(12)
             } else if (isLZ4) { //LZ4
                 //const uncompressed = Buffer.alloc(uncompressedLength)
 
@@ -1335,8 +1355,6 @@ export class RBX {
                 ///*const uncompressedSize = */LZ4.decodeBlock(compressedIntArray, uncompressed)
                 
                 //return uncompressed.buffer
-
-                const compressedByteArray = view.buffer.slice(view.viewOffset, view.viewOffset + compressedLength)
                 
                 return LZ4.decompress(compressedByteArray, uncompressedLength)
             }
@@ -1686,6 +1704,12 @@ export class RBX {
                             {
                                 const referenced = referentToInstance.get(prop.values[i] as number)
                                 instance.setProperty(property.name, referenced)
+                                break
+                            }
+                        case DataType.SharedString:
+                            {
+                                const str = this.sstrArr[prop.values[i] as number]
+                                instance.setProperty(property.name, str)
                                 break
                             }
                         default:

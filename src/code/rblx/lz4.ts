@@ -1,5 +1,5 @@
 //https://www.reddit.com/r/dartlang/comments/19ahswx/a_simple_lz4_block_decoder/ then converted to TypeScript by Copilot (sorry... i dont know dart)
-export function decompress(data: ArrayBuffer, uncompressedLength: number): ArrayBuffer {
+export function decompress(data: ArrayBufferLike, uncompressedLength: number): ArrayBuffer {
   const src = new Uint8Array(data);
   const dest = new Uint8Array(uncompressedLength);
 

@@ -225,8 +225,6 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forc
                     skinIndices[i * 4 + 2] = subset.boneIndices[skinning.subsetIndices[2]]
                     skinIndices[i * 4 + 3] = subset.boneIndices[skinning.subsetIndices[3]]
                 }
-
-                //TODO: fix whatever is wrong above
                 
                 /*const resultingIndex = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
                 console.log(resultingIndex)
