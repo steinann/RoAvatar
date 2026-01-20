@@ -42,6 +42,15 @@ export function minus(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]]
 }
 
+export function dot(v0: Vec3, v1: Vec3): number {
+    return v0[0]*v1[0] + v0[1]*v1[1] + v0[2]*v1[2]
+}
+
+export function normalize(v: Vec3) {
+    const mag = magnitude(v)
+    return divide(v, [mag, mag, mag])
+}
+
 export function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
     return [
         Math.min(Math.max(lower[0], v0[0]), higher[0]),
@@ -188,6 +197,28 @@ export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
     return offsetArray
 }
 
+export function getDistVertArray(ref: FileMesh, dist: FileMesh) {
+    const offsetArray: (FileMeshVertex | undefined)[] = new Array(ref.coreMesh.verts.length)
+    const outerVertHashMap = getUVtoVertMap(dist)
+    for (let i = 0; i < ref.coreMesh.verts.length; i++) {
+        const vert = ref.coreMesh.verts[i]
+        const vertHash = hashVec2(vert.uv[0], vert.uv[1])
+        const outerVerts = outerVertHashMap.get(vertHash)
+        if (outerVerts) {
+            const outerVert = outerVerts[0]
+            if (outerVert) {
+                offsetArray[i] = outerVert
+            } else {
+                offsetArray[i] = undefined
+            }
+        } else {
+            offsetArray[i] = undefined
+        }
+    }
+
+    return offsetArray
+}
+
 async function Wait(time: number) {
     return new Promise(resolve => {
         setTimeout(() => {
@@ -196,7 +227,7 @@ async function Wait(time: number) {
     })
 }
 
-type MeshChunk = {
+export type MeshChunk = {
     pos: Vec3,
     indices: number[],
 }
@@ -206,6 +237,9 @@ export type WeightChunk = {
     weights: number[]
 }
 
+export type WeightChunk3 = WeightChunk & {
+    weights: Vec3[]
+}
 
 function toChunkPos(v0: Vec3, size: Vec3, widthSplit: number, heightSplit: number, depthSplit: number, lowerBound: Vec3, higherBound: Vec3): Vec3 {
     const offsetV0 = add(v0, multiply(size, [0.5, 0.5, 0.5]))
@@ -351,6 +385,116 @@ export function createWeightsForMeshChunkedOLD(mesh: FileMesh, ref_mesh: FileMes
     }
 
     return weightChunks
+}
+
+export function createMeshChunks(mesh: FileMesh, widthSplit: number, heightSplit: number, depthSplit: number) {
+    //create base chunks
+    const lowerBound: Vec3 = [0,0,0]
+    const higherBound: Vec3 = [widthSplit - 1, heightSplit - 1, depthSplit - 1]
+
+    const baseChunks: MeshChunk[] = new Array(widthSplit * heightSplit * depthSplit)
+    let i = 0;
+    for (let x = 0; x < widthSplit; x++) {
+        for (let y = 0; y < heightSplit; y++) {
+            for (let z = 0; z < depthSplit; z++) {
+                const baseChunk: MeshChunk = {
+                    pos: [x,y,z],
+                    indices: [],
+                }
+
+                baseChunks[i] = baseChunk
+                i++
+            }
+        }
+    }
+
+    let [meshLowerBound, meshHigherBound] = mesh.bounds
+    meshLowerBound = toChunkPos(meshLowerBound, mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound)
+    meshHigherBound = toChunkPos(meshHigherBound, mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound)
+
+    /*meshLowerBound[0] -= 1
+    meshLowerBound[1] -= 1
+    meshLowerBound[2] -= 1
+    meshHigherBound[0] += 1
+    meshHigherBound[1] += 1
+    meshHigherBound[2] += 1*/
+
+    const usedBaseChunks: MeshChunk[] = []
+    for (let i = 0; i < baseChunks.length; i++) {
+        const baseChunk = baseChunks[i]
+        if (baseChunk.pos[0] >= meshLowerBound[0] && baseChunk.pos[1] >= meshLowerBound[1] && baseChunk.pos[2] >= meshLowerBound[2] &&
+            baseChunk.pos[0] <= meshHigherBound[0] && baseChunk.pos[1] <= meshHigherBound[1] && baseChunk.pos[2] <= meshHigherBound[2]
+        ) {
+            usedBaseChunks.push(baseChunk)
+        }
+    }
+    
+    /*
+    const vert = ref_mesh.coreMesh.verts[2]
+    const chunkPos = clamp(floor(multiply(divide(add(vert.position, multiply(ref_mesh.size,[0.5,0.5,0.5])), ref_mesh.size), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound)    
+
+    console.log(vert.position, ref_mesh.size)
+    console.log(chunkPos)
+    console.log("---")
+    console.log(toChunkPos(vert.position, ref_mesh.size, widthSplit, heightSplit, depthSplit, lowerBound, higherBound))
+    */
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+        const chunkPos = clamp(minus(multiply(divide(add(vert.position, multiply(mesh.size,[0.5,0.5,0.5])), mesh.size), [widthSplit, heightSplit, depthSplit]), [0.5,0.5,0.5]), lowerBound, higherBound)
+        /*const chunkPos: Vec3 = clamp([
+            mapNum(vert.position[0], mesh.bounds[0][0], mesh.bounds[1][0], lowerBound[0], higherBound[0]) + 0.5,
+            mapNum(vert.position[1], mesh.bounds[0][1], mesh.bounds[1][1], lowerBound[1], higherBound[1]) + 0.5,
+            mapNum(vert.position[2], mesh.bounds[0][2], mesh.bounds[1][2], lowerBound[2], higherBound[2]) + 0.5,
+        ],lowerBound,higherBound)
+        */
+
+        for (let j = 0; j < usedBaseChunks.length; j++) {
+            const baseChunk = usedBaseChunks[j]
+            if (distance(baseChunk.pos, chunkPos) <= Math.sqrt(3)) {
+                baseChunk.indices.push(i)
+            }
+        }
+    }
+
+    //make sure every chunk has at least some indices by making ones without any indices setting refererences to the closest ones with
+    const chunkToCloseChunk = new Map<MeshChunk,MeshChunk>()
+
+    for (const baseChunk of usedBaseChunks) {
+        if (baseChunk.indices.length < 10) {
+            let closestChunk = undefined
+            let lastDistance = 99999
+
+            for (const baseChunk2 of usedBaseChunks) {
+                const dist = distance(baseChunk2.pos, baseChunk.pos)
+                if (dist < lastDistance && baseChunk2.indices.length > 10) {
+                    lastDistance = dist
+                    closestChunk = baseChunk2
+                }
+            }
+
+            if (closestChunk) {
+                chunkToCloseChunk.set(baseChunk, closestChunk)
+            }
+        }
+    }
+
+    for (const baseChunk of usedBaseChunks) {
+        const closeChunk = chunkToCloseChunk.get(baseChunk)
+        if (closeChunk) {
+            baseChunk.indices = closeChunk.indices
+        }
+    }
+
+    return usedBaseChunks
+}
+
+export function vertPosToChunkPos(pos: Vec3, meshSize: Vec3, widthSplit: number, heightSplit: number, depthSplit: number) {
+    const lowerBound: Vec3 = [0,0,0]
+    const higherBound: Vec3 = [widthSplit - 1, heightSplit - 1, depthSplit - 1]
+    const chunkPos = clamp(floor(multiply(divide(add(pos, multiply(meshSize,[0.5,0.5,0.5])), meshSize), [widthSplit, heightSplit, depthSplit])), lowerBound, higherBound)
+
+    return chunkPos
 }
 
 export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) {
@@ -945,6 +1089,85 @@ export function layerClothingChunkedNormals(mesh: FileMesh, ref_mesh: FileMesh, 
         vert.position = add(vert.position, totalNormalOffset)
     }
     console.timeEnd("offset")
+
+    console.timeEnd("total")
+}
+
+export function layerClothingChunkedNormals2(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
+    console.time("total")
+
+    //TODO: actually get a better algorithm instead of cheating like this, (dist_mesh is inflated to avoid clipping)
+    //console.time("inflation")
+    
+    //for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
+    //    const ref_vert = ref_mesh.coreMesh.verts[i]
+    //    const dist_vert = dist_mesh.coreMesh.verts[i]
+    //
+    //    const xSim = mapNum(ref_vert.normal[0] * dist_vert.normal[0], -1, 1, 1, 0)
+    //    const ySim = mapNum(ref_vert.normal[1] * dist_vert.normal[1], -1, 1, 1, 0)
+    //    const zSim = mapNum(ref_vert.normal[2] * dist_vert.normal[2], -1, 1, 1, 0)
+    //
+    //    dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.05, 0.05, 0.05]))
+    //    dist_vert.position = add(dist_vert.position, multiply(dist_vert.normal, [0.5 * xSim,0.5 * ySim,0.5 * zSim]))
+    //}
+    
+
+    if (INFLATE_LAYERED_CLOTHING) {
+        for (const vert of dist_mesh.coreMesh.verts) {
+            vert.position = add(vert.position, multiply(vert.normal, [INFLATE_LAYERED_CLOTHING,INFLATE_LAYERED_CLOTHING,INFLATE_LAYERED_CLOTHING]))
+        }
+    }
+    //console.timeEnd("inflation")
+
+    //console.time("offsetArray")
+    const distVertsFromRefVerts = getDistVertArray(ref_mesh, dist_mesh)
+    //console.timeEnd("offsetArray")
+
+    //console.time("weights")
+    let allWeights = undefined
+    if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
+        allWeights = WeightCache.get(cacheId)
+    }
+    if (!allWeights) {
+        allWeights = createWeightsForMeshChunked(mesh, ref_mesh)
+        if (cacheId && ENABLE_LC_WEIGHT_CACHE) {
+            WeightCache.set(cacheId, allWeights)
+        }
+    }
+    //console.timeEnd("weights")
+
+    //console.time("offset")
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+
+        let totalOffset: Vec3 = [0,0,0]
+        
+        const weights = allWeights[i]
+
+        for (let j = 0; j < weights.meshChunk.indices.length; j++) {
+            const weight = weights.weights[j]
+            const index = weights.meshChunk.indices[j]
+
+            const refVert = ref_mesh.coreMesh.verts[index]
+            const distVert = distVertsFromRefVerts[index]
+
+            if (distVert) {
+                const refNormal = new THREE.Vector3(refVert.normal[0], refVert.normal[1], refVert.normal[2])
+                const distNormal = new THREE.Vector3(distVert.normal[0], distVert.normal[1], distVert.normal[2])
+
+                const quat = new THREE.Quaternion().setFromUnitVectors(refNormal, distNormal)
+
+                const ogOffset = minus(vert.position, refVert.position)
+                const newOffset = new THREE.Vector3(...ogOffset).applyQuaternion(quat)
+
+                totalOffset = add(totalOffset, multiply(add(distVert.position, newOffset.toArray()), [weight,weight,weight]))
+            }
+        }
+
+        vert.position = totalOffset
+    }
+    //console.timeEnd("offset")
 
     console.timeEnd("total")
 }

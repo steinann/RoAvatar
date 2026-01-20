@@ -92,54 +92,84 @@ class COREMESH {
         return copy
     }
 
-    removeDuplicateVertices(distance = 0.0001): number {
-        const toRemove = []
-        const posToI = new Map<number,number>() //posHash: vertIndex
+    getTouchingVerts(index: number) {
+        const touchingVerts: number[] = []
 
-        for (let i = 0; i < this.verts.length; i++) {
-            const vert = this.verts[i]
-            const hashedPos = hashVec3(vert.position[0], vert.position[1], vert.position[2], distance) + hashVec2(vert.uv[0], vert.uv[1])
-            const otherI = posToI.get(hashedPos)
-
-            if (otherI) { //merge vertex
-                //switch faces to other vertex
-                for (const face of this.faces) {
-                    if (face.a === i) {
-                        face.a = otherI
-                    }
-                    if (face.b === i) {
-                        face.b = otherI
-                    }
-                    if (face.c === i) {
-                        face.c = otherI
-                    }
+        for (const face of this.faces) {
+            if (face.a === index || face.b === index || face.c === index) {
+                if (face.a !== index && !touchingVerts.includes(face.a)) {
+                    touchingVerts.push(face.a)
                 }
+                if (face.b !== index && !touchingVerts.includes(face.b)) {
+                    touchingVerts.push(face.b)
+                }
+                if (face.c !== index && !touchingVerts.includes(face.c)) {
+                    touchingVerts.push(face.c)
+                }
+            }
+        }
+
+        return touchingVerts
+    }
+
+    removeDuplicateVertices(distance = 0.0001): number {
+        const posToIndex = new Map<number, number>()
+        const remap = new Array(this.verts.length).fill(-1)
+
+        //detect duplicates
+        for (let i = 0; i < this.verts.length; i++) {
+            const v = this.verts[i]
+            const hash = hashVec3(v.position[0], v.position[1], v.position[2], distance) + hashVec2(v.uv[0], v.uv[1])
+
+            const existing = posToIndex.get(hash)
+
+            if (existing !== undefined) {
+                //duplicate -> map to existing
+                remap[i] = existing
 
                 //merge normals
-                const otherVert = this.verts[otherI]
-                const totalNormal = new Vector3().fromVec3(otherVert.normal).add(new Vector3().fromVec3(vert.normal))
-                const resultNormal = totalNormal.normalize()
-                otherVert.normal = resultNormal.toVec3()
+                const a = this.verts[existing]
+                const b = v
+                const merged = new Vector3().fromVec3(a.normal).add(new Vector3().fromVec3(b.normal)).normalize()
+                a.normal = merged.toVec3()
 
-                //schedule vertex for removal
-                toRemove.push(vert)
             } else {
-                posToI.set(hashedPos, i)
+                posToIndex.set(hash, i)
+                remap[i] = i
             }
         }
 
-        let removedVertices = 0
-        for (const vert of toRemove) {
-            const i = this.verts.indexOf(vert)
-            if (i >= 0) {
-                this.verts.splice(i,1)
-                this.numverts = this.verts.length
-                removedVertices++
-            }
+        //remap faces
+        for (const f of this.faces) {
+            f.a = remap[f.a]
+            f.b = remap[f.b]
+            f.c = remap[f.c]
         }
-        
-        return removedVertices
+
+        //build new compact vertex array
+        const newVerts = []
+        const newIndex = new Map<number, number>()
+
+        for (let i = 0; i < this.verts.length; i++) {
+            const canonical = remap[i]
+            if (!newIndex.has(canonical)) {
+                newIndex.set(canonical, newVerts.length)
+                newVerts.push(this.verts[canonical])
+            }
+            remap[i] = newIndex.get(canonical)!
+        }
+
+        //Fix faces again to use compact indices
+        for (const f of this.faces) {
+            f.a = remap[f.a]
+            f.b = remap[f.b]
+            f.c = remap[f.c]
+        }
+
+        this.verts = newVerts
+        return newVerts.length
     }
+
 }
 
 class LODS {
@@ -797,6 +827,13 @@ export class FileMesh {
             const dracoBitStreamSize = view.readUint32()
             const buffer = (view.buffer.slice(view.viewOffset, view.viewOffset + dracoBitStreamSize))
             //console.log(dracoBitStreamSize, DracoDecoderModule)
+            /*while (!DracoDecoderModule) {
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve(undefined)
+                    },100)
+                })
+            }*/
             const decoderModule = await DracoDecoderModule()
             const decoder = new decoderModule.Decoder()
 

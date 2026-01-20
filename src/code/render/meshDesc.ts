@@ -4,9 +4,10 @@ import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx
 import { API, Authentication } from '../api'
 import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
-import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
+import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
 import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
+import { RBFDeformerPatch } from '../rblx/cage-mesh-deform'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -398,6 +399,8 @@ export class MeshDesc {
             return mesh
         }
 
+        let the_ref_mesh = undefined
+
         //layered clothing
         if (this.layerDesc && this.targetCages && this.targetCFrames && this.targetSizes && this.enclosedLayers) {
             //load meshes
@@ -428,7 +431,7 @@ export class MeshDesc {
             if (!ref_mesh) {
                 throw new Error("not possible")
             }
-            ref_mesh.coreMesh.removeDuplicateVertices(0.01)
+            console.log(ref_mesh.coreMesh.verts.length - ref_mesh.coreMesh.removeDuplicateVertices(0.01))
 
             //create destination cage
             const dist_mesh = ref_mesh.clone()
@@ -481,8 +484,18 @@ export class MeshDesc {
             const layeredClothingCacheId = `${this.mesh}-${this.layerDesc.reference}`
 
             switch (LAYERED_CLOTHING_ALGORITHM) {
+                case "rbf":
+                    { 
+                        const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh)
+                        rbfDeformer.solve()
+                        rbfDeformer.deformMesh(mesh)
+                        break
+                    }
                 case "linearnormal":
                     layerClothingChunkedNormals(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
+                    break
+                case "linearnormal2":
+                    layerClothingChunkedNormals2(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
                     break
                 case "linear":
                 default:
@@ -490,6 +503,7 @@ export class MeshDesc {
                     break
             }
 
+            the_ref_mesh = undefined
         }
 
         //let canIncludeSkinning = true
@@ -499,7 +513,7 @@ export class MeshDesc {
 
         this.fileMesh = mesh
 
-        const geometry = fileMeshToTHREEGeometry(mesh, this.canHaveSkinning, this.forceVertexColor)
+        const geometry = fileMeshToTHREEGeometry(the_ref_mesh || mesh, this.canHaveSkinning, this.forceVertexColor)
 
         //create and add mesh to scene
         let threeMesh = undefined

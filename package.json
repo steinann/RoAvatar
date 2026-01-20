@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "fzstd": "^0.1.1",
+    "mathjs": "^15.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "three": "^0.180.0",

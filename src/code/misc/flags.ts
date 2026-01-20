@@ -8,7 +8,7 @@ export const ENABLE_API_CACHE = true
 //layered clothing
 export const ENABLE_LC_WEIGHT_CACHE = true
 export const INFLATE_LAYERED_CLOTHING: number = 0.05
-export const LAYERED_CLOTHING_ALGORITHM: "linear" | "linearnormal" = "linear"
+export const LAYERED_CLOTHING_ALGORITHM: "linear" | "linearnormal" | "linearnormal2" | "rbf" = "rbf"
 
 //general rendering
 export const USE_VERTEX_COLOR = true
