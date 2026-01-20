@@ -463,7 +463,7 @@ export class MeshDesc {
             //offset ref_mesh
             offsetMesh(ref_mesh, this.layerDesc.referenceOrigin)
 
-            //deform based on layers under TODO: fix this, i mean it works but its terrible, try compressing inner layers
+            //deform based on layers under TODO: fix this, i mean it works but its terrible, try compressing inner layers and we should use deformation for this instead of just applying the offset directly (rip performance)
             /*
             for (const enclosedLayer of this.enclosedLayers) {
                 const cage = meshMap.get(enclosedLayer.cage)

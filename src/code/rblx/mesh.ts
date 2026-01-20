@@ -1034,7 +1034,7 @@ export class FileMesh {
                 }
             case "version 4.00\n":
             case "version 4.01\n":
-            case "version 5.00\n": //TODO: actually properly parse v5
+            case "version 5.00\n":
                 {
                 //header
                 view.readUint16() //sizeOf_header

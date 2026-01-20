@@ -777,7 +777,7 @@ const API = {
 
 let currentLoadingThumbnails = false
 function requestIdFromThumbnailInfo(thumbnailInfo: ThumbnailInfo) {
-    return thumbnailInfo.id + ":undefined:" + thumbnailInfo.type + ":" + thumbnailInfo.size + ":null:regular"
+    return thumbnailInfo.id + ":undefined:" + thumbnailInfo.type + ":" + thumbnailInfo.size + ":webp:regular"
 }
 
 function PurgeFailedThumbnails() {
@@ -807,7 +807,7 @@ function BatchThumbnails() {
         }
 
         body.push({
-            "format": null,
+            "format": "webp",
             "requestId": requestIdFromThumbnailInfo(thumbnailInfo),
             "size": thumbnailInfo.size,
             "targetId": thumbnailInfo.id,
