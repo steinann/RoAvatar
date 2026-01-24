@@ -21,6 +21,10 @@ ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
 
 FEATURES:
-    -ParticleEmitter rendering
-    -Sounds for those accessories that have that
-    -Gear inside preview
+    HIGH PRIORITY:
+        -Saving outfits locally, that can also include unowned items
+    MEDIUM PRIORITY:
+        -Gear inside preview
+    LOW PRIORITY:
+        -Particle rendering
+        -Sounds for those accessories that have that

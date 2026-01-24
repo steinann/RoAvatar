@@ -162,6 +162,24 @@ export const MainToSubNames: {[K in string]: string[]} = {
     "walk": ["WalkAnim"]
 }
 
+export const AnimationPropToName: {[K in AnimationProp]: string} = {
+    "ClimbAnimation": "climb",
+    "FallAnimation": "fall",
+    "IdleAnimation": "idle",
+    "JumpAnimation": "jump",
+    "MoodAnimation": "mood",
+    "RunAnimation": "run",
+    "SwimAnimation": "swim",
+    "WalkAnimation": "walk",
+    "dance1": "dance1",
+    "dance2": "dance2",
+    "dance3": "dance3",
+    "toolnone": "toolnone",
+}
+
+/**
+ * @deprecated
+ */
 export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]]} = {
     "ClimbAnimation": ["climb",[["ClimbAnim",507765644n]]],
     "FallAnimation": ["fall",[["FallAnim",507767968n]]],
@@ -180,6 +198,9 @@ export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]
     "toolnone": ["toolnone",[["ToolNoneAnim", 507768375n]]]
 }
 
+/**
+ * @deprecated
+ */
 export const DefaultAnimationsR6: typeof DefaultAnimations = {
     "ClimbAnimation": ["climb",[["ClimbAnim",180436334n]]],
     "FallAnimation": ["fall",[["FallAnim",180436148n]]],
@@ -196,6 +217,138 @@ export const DefaultAnimationsR6: typeof DefaultAnimations = {
     "dance3": ["dance3",[["2",182491423n]]],
 
     "toolnone": ["toolnone",[["ToolNoneAnim", 182393478n]]]
+}
+
+export type AnimationSetEntry = {id: string, weight: number, isEmote?: boolean}
+export type AnimationSet = {[K in string]: AnimationSetEntry[]}
+
+export const animNamesR6: AnimationSet = {
+    idle: [
+        { id: "http://www.roblox.com/asset/?id=180435571", weight: 9 },
+        { id: "http://www.roblox.com/asset/?id=180435792", weight: 1 }
+    ],
+    walk: [
+        { id: "http://www.roblox.com/asset/?id=180426354", weight: 10 }
+    ],
+    /*run: [
+        { id: "run.xml", weight: 10 }
+    ],*/
+    jump: [
+        { id: "http://www.roblox.com/asset/?id=125750702", weight: 10 }
+    ],
+    fall: [
+        { id: "http://www.roblox.com/asset/?id=180436148", weight: 10 }
+    ],
+    climb: [
+        { id: "http://www.roblox.com/asset/?id=180436334", weight: 10 }
+    ],
+    sit: [
+        { id: "http://www.roblox.com/asset/?id=178130996", weight: 10 }
+    ],
+    toolnone: [
+        { id: "http://www.roblox.com/asset/?id=182393478", weight: 10 }
+    ],
+    toolslash: [
+        { id: "http://www.roblox.com/asset/?id=129967390", weight: 10 },
+//        { id: "slash.xml", weight: 10 }
+    ],
+    toollunge: [
+        { id: "http://www.roblox.com/asset/?id=129967478", weight: 10 }
+    ],
+    /*wave: [
+        { id: "http://www.roblox.com/asset/?id=128777973", weight: 10 }
+    ],
+    point: [
+        { id: "http://www.roblox.com/asset/?id=128853357", weight: 10 }
+    ],*/
+    dance1: [
+        { id: "http://www.roblox.com/asset/?id=182435998", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=182491037", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=182491065", weight: 10 }
+    ],
+    dance2: [
+        { id: "http://www.roblox.com/asset/?id=182436842", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=182491248", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=182491277", weight: 10 }
+    ],
+    dance3: [
+        { id: "http://www.roblox.com/asset/?id=182436935", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=182491368", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=182491423", weight: 10 }
+    ],
+    /*laugh: [
+        { id: "http://www.roblox.com/asset/?id=129423131", weight: 10 }
+    ],
+    cheer: [
+        { id: "http://www.roblox.com/asset/?id=129423030", weight: 10 }
+    ],*/
+}
+
+export const animNamesR15: AnimationSet = {
+    idle: [
+        { id: "http://www.roblox.com/asset/?id=507766666", weight: 1 },
+        { id: "http://www.roblox.com/asset/?id=507766388", weight: 9 }
+    ],
+    walk: [
+        { id: "http://www.roblox.com/asset/?id=913402848", weight: 10 }
+    ],
+    run: [
+        { id: "http://www.roblox.com/asset/?id=913376220", weight: 10 }
+    ],
+    swim: [
+        { id: "http://www.roblox.com/asset/?id=913384386", weight: 10 }
+    ],
+    swimidle: [
+        { id: "http://www.roblox.com/asset/?id=913389285", weight: 10 }
+    ],
+    jump: [
+        { id: "http://www.roblox.com/asset/?id=507765000", weight: 10 }
+    ],
+    fall: [
+        { id: "http://www.roblox.com/asset/?id=507767968", weight: 10 }
+    ],
+    climb: [
+        { id: "http://www.roblox.com/asset/?id=507765644", weight: 10 }
+    ],
+    sit: [
+        { id: "http://www.roblox.com/asset/?id=2506281703", weight: 10 }
+    ],
+    toolnone: [
+        { id: "http://www.roblox.com/asset/?id=507768375", weight: 10 }
+    ],
+    toolslash: [
+        { id: "http://www.roblox.com/asset/?id=522635514", weight: 10 }
+    ],
+    toollunge: [
+        { id: "http://www.roblox.com/asset/?id=522638767", weight: 10 }
+    ],
+    /*wave: [
+        { id: "http://www.roblox.com/asset/?id=507770239", weight: 10 }
+    ],
+    point: [
+        { id: "http://www.roblox.com/asset/?id=507770453", weight: 10 }
+    ],
+    dance: [
+        { id: "http://www.roblox.com/asset/?id=507771019", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=507771955", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=507772104", weight: 10 }
+    ],
+    dance2: [
+        { id: "http://www.roblox.com/asset/?id=507776043", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=507776720", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=507776879", weight: 10 }
+    ],
+    dance3: [
+        { id: "http://www.roblox.com/asset/?id=507777268", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=507777451", weight: 10 },
+        { id: "http://www.roblox.com/asset/?id=507777623", weight: 10 }
+    ],
+    laugh: [
+        { id: "http://www.roblox.com/asset/?id=507770818", weight: 10 }
+    ],
+    cheer: [
+        { id: "http://www.roblox.com/asset/?id=507770677", weight: 10 }
+    ],*/
 }
 
 export const DataType = {

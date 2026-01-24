@@ -32,7 +32,7 @@ function App() {
   const [outfit, _setOutfit] = useState<Outfit>(new Outfit())
   const [navigationMenuItems, setNavigationMenuItems] = useState<NavigationMenuItems | undefined>(undefined)
 
-  const [currentAnimName, _setCurrentAnimName] = useState<string>("idle.Animation1")
+  const [currentAnimName, _setCurrentAnimName] = useState<string>("idle")
 
   const [canUndo, setCanUndo] = useState<boolean>(false)
   const [canRedo, setCanRedo] = useState<boolean>(false)
@@ -108,13 +108,13 @@ function App() {
 
   function setCurrentAnimName(name: string) {
     //switch to compatible animation if avatar is r6
-    if (outfit.playerAvatarType === AvatarType.R6 && name === "swim.Swim") {
-      name = "walk.WalkAnim"
-    } else if (outfit.playerAvatarType === AvatarType.R6 && name === "jump.JumpAnim") {
-      name = "fall.FallAnim"
+    if (outfit.playerAvatarType === AvatarType.R6 && (name === "swim" || name === "run")) {
+      name = "walk"
+    } else if (outfit.playerAvatarType === AvatarType.R6 && name === "jump") {
+      name = "fall"
     } else if (outfit.playerAvatarType === AvatarType.R6 && name.startsWith("emote.")) {
       const emoteId = Number(name.split(".")[1])
-      const danceName = `dance${emoteId % 3 + 1}.2`
+      const danceName = `dance${emoteId % 3 + 1}`
       name = danceName
     }
 
@@ -152,28 +152,28 @@ function App() {
     _setSubCategoryType(newSubCategoryType)
     switch (newSubCategoryType) {
       case "Idle": 
-        setCurrentAnimName("idle.Animation1")
+        setCurrentAnimName("idle")
         break
       case "Walk":
-        setCurrentAnimName("walk.WalkAnim")
+        setCurrentAnimName("walk")
         break
       case "Run":
-        setCurrentAnimName("run.RunAnim")
+        setCurrentAnimName("run")
         break
       case "Fall":
-        setCurrentAnimName("fall.FallAnim")
+        setCurrentAnimName("fall")
         break
       case "Jump":
-        setCurrentAnimName("jump.JumpAnim")
+        setCurrentAnimName("jump")
         break
       case "Swim":
-        setCurrentAnimName("swim.Swim")
+        setCurrentAnimName("swim")
         break
       case "Climb":
-        setCurrentAnimName("climb.ClimbAnim")
+        setCurrentAnimName("climb")
         break
       default:
-        setCurrentAnimName("idle.Animation1")
+        setCurrentAnimName("idle")
         break
     }
   }

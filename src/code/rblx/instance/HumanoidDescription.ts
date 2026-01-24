@@ -3,13 +3,13 @@ ISSUES (++ Probably fixed, -- Not fixed)
 -- Face is included in dynamic head (but not rendered)
 */
 
-import { API, Authentication } from "../../api";
+import { API, Authentication, idFromStr } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { delta_CIEDE2000 } from "../color-similarity";
-import { AccessoryType, AllAnimations, AllBodyParts, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, DefaultAnimations, DefaultAnimationsR6, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
+import { AccessoryType, AllAnimations, AllBodyParts, AnimationPropToName, animNamesR15, animNamesR6, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
 import { CFrame, Color3, hasSameVal, hasSameValFloat, Instance, isSameColor, isSameVector3, Property, RBX, Vector3 } from "../rbx";
 import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
@@ -1085,7 +1085,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     })
                 }))
             } else { //if a default animation
-                const [animName, subAnims] = avatarType === AvatarType.R15 ? DefaultAnimations[animationProp] : DefaultAnimationsR6[animationProp]
+                /*const [animName, subAnims] = avatarType === AvatarType.R15 ? DefaultAnimations[animationProp] : DefaultAnimationsR6[animationProp]
 
                 //load sub animations
                 for (const subAnim of subAnims) {
@@ -1111,6 +1111,42 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                             }
                         })
                     }))
+                }*/
+                
+                const animName = AnimationPropToName[animationProp]
+                const animationSetEntries = avatarType === AvatarType.R15 ? animNamesR15[animName] : animNamesR6[animName]
+
+                animatorW.data.animationSet[animName] = []
+
+                if (animationSetEntries) {
+                    for (const subAnim of animationSetEntries) {
+                        //actual request
+                        promises.push(new Promise((resolve) => {
+                            API.Asset.GetRBX(subAnim.id, undefined, auth).then(result => {
+                                if (result instanceof RBX) {
+                                    //get and parse track
+                                    const animTrackInstance = result.generateTree().GetChildren()[0]
+                                    if (animTrackInstance && humanoid.parent) {
+                                        const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                        animTrack.looped = true;
+                                        animatorW.data.animationTracks.set(BigInt(idFromStr(subAnim.id)), animTrack)
+                                        if (!animatorW.data.animationSet[animName]) {
+                                            animatorW.data.animationSet[animName] = []
+                                        }
+                                        animatorW.data.animationSet[animName].push(subAnim)
+
+                                        animatorW.instance.setProperty("_HasLoadedAnimation",true)
+                                    }
+
+                                    resolve(undefined)
+                                } else {
+                                    resolve(result)
+                                }
+                            })
+                        }))
+                    }
+                } else {
+                    console.warn(`No default found for animation ${animName}`)
                 }
             }
         }

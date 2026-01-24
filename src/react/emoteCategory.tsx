@@ -41,7 +41,7 @@ function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemIn
             if (itemInfo) {
                 setAnimName(`emote.${itemInfo.id}`)
             } else {
-                setAnimName("idle.Animation1")
+                setAnimName("idle")
             }
         }}>
         {cardImage}
@@ -97,7 +97,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
     //unequip emote function
     const unequipEmote = useCallback(() => {
         if (!auth) return
-        setAnimName(`idle.Animation1`)
+        setAnimName(`idle`)
 
         if (!equippedEmotes) return
 

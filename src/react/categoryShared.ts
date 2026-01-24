@@ -5,7 +5,7 @@ import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant";
 
 export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void) => {
     if (item.itemType !== "Asset") {
-        setAnimName(`idle.Animation1`)
+        setAnimName(`idle`)
     }
 
     if (!outfit.containsAsset(item.id) && item.itemType === "Asset") { //if asset (not worn)
@@ -16,17 +16,12 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
         if (item.type.endsWith("Animation") && item.type !== "EmoteAnimation") {
             const entry = DefaultAnimations[item.type as AnimationProp]
             const mainName = entry[0]
-            const subArr = entry[1]
-            const sub0 = subArr[0]
-            if (sub0) {
-                const sub0Name = sub0[0]
-
-                setAnimName(`${mainName}.${sub0Name}`)
-            }
+            
+            setAnimName(`${mainName}`)
         } else if (item.type === "EmoteAnimation") {
             setAnimName(`emote.${item.id}`)
         } else {
-            setAnimName(`idle.Animation1`)
+            setAnimName(`idle`)
         }
         setOutfit(newOutfit)
     } else if (item.itemType === "Asset") { //if asset thats already worn

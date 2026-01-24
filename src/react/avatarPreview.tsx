@@ -235,6 +235,8 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                 const animator = humanoid.FindFirstChildOfClass("Animator")
                 if (animator) {
                     const animatorW = new AnimatorWrapper(animator)
+
+                    //main animation
                     const successfullyPlayed = animatorW.playAnimation(animName)
                     if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
                         const emoteId = BigInt(animName.split(".")[1])
@@ -242,10 +244,17 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                             animatorW.playAnimation(animName)
                         })
                     }
+
+                    //mood animation
+                    if (outfit.containsAssetType("MoodAnimation") && !animName.startsWith("emote.")) {
+                        animatorW.playAnimation("mood", "mood")
+                    } else {
+                        animatorW.stopMoodAnimation()
+                    }
                 }
             }
         }
-    }, [auth, animName])
+    }, [auth, animName, outfit])
 
     //render animations
     useEffect(() => {

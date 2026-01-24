@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CFrame, Instance } from '../rblx/rbx';
-import { deg, lerp, mapNum, rad } from '../misc/misc';
+import { deg, lerp, mapNum, rad, specialClamp } from '../misc/misc';
 import type { Vec3 } from '../rblx/mesh';
 import SimpleView from '../lib/simple-view';
 import FaceControlsWrapper from './instance/FaceControls';
@@ -537,9 +537,8 @@ class AnimationTrack {
     keyframeGroups: (PartKeyframeGroup | FaceKeyframeGroup)[] = [] //one group per motor6D, only if trackType = "Sequence"
     curves: (PartCurve | FaceCruve)[] = [] //only if trackType = "Curve"
     
-    //playing info
+    //frame info
     isPlaying = false
-    speed = 1
     timePosition = 0
     weight = 1
     finished = true
@@ -549,6 +548,13 @@ class AnimationTrack {
     length = 0
     looped = false
     priority = AnimationPriority.Core
+
+    //playing info
+    pOriginalWeight = 0
+    pTargetWeight = 0
+    pSpeed = 1
+    pFadedTime = 0
+    pFadeTime = 0.1
 
     getNamedMotor(motorName: string, parentName: string): Instance | undefined {
         if (!this.rig) {
@@ -883,6 +889,9 @@ class AnimationTrack {
         return this
     }
 
+    /**
+     * @deprecated, reset inside Animator instead
+     */
     resetMotorTransforms() {
         if (!this.rig) {
             return
@@ -1053,6 +1062,57 @@ class AnimationTrack {
         this.finished = time >= this.length
 
         this.renderPose()
+    }
+
+    /**
+     * Remember to call tick() on each frame
+     */
+    Play(fadeTime: number = 0.1, weight: number = 1, speed: number = 1) {
+        this.isPlaying = true
+        this.timePosition = 0
+
+        this.pOriginalWeight = 0
+        this.pTargetWeight = weight
+        this.pSpeed = speed
+        this.pFadedTime = 0
+        this.pFadeTime = fadeTime
+
+        this.tick(0)
+    }
+
+    /**
+     * Remember to call tick() on each frame
+     */
+    Stop(fadeTime: number = 0.1) {
+        this.isPlaying = false
+
+        this.pOriginalWeight = this.weight
+        this.pTargetWeight = 0
+        this.pFadedTime = 0
+        this.pFadeTime = fadeTime
+
+        this.tick(0)
+    }
+
+    /**
+     * 
+     * @returns looped
+     */
+    tick(deltaTime: number = 1 / 60): boolean {
+        const addTime = deltaTime * this.pSpeed
+
+        this.pFadedTime += addTime
+
+        const newWeight = lerp(this.pOriginalWeight, this.pTargetWeight, specialClamp(this.pFadedTime / this.pFadeTime, 0, 1))
+        this.weight = newWeight
+
+        const ogTime = this.timePosition
+
+        if (this.weight >= 0.01) {
+            this.setTime(this.timePosition += addTime)
+        }
+
+        return ogTime + addTime >= this.length && this.weight >= 0.00001
     }
 }
 

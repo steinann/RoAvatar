@@ -1,97 +1,229 @@
 import { API, Authentication, idFromStr } from "../../api";
 import { AnimationTrack } from "../animation";
-import { DataType, MainToSubNames } from "../constant";
-import { Property, RBX } from "../rbx";
+import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
+import { CFrame, Property, RBX } from "../rbx";
 import InstanceWrapper from "./InstanceWrapper";
 
-const weightMult = 3
+class AnimatorWrapperData {
+    animationSet: AnimationSet = {}
+    emotes = new Map<bigint,AnimationSetEntry>()
 
-//TODO: fix the giant mistake that was assuming subnames are consistent
-//TODO: and the giant mistake that is assuming only one animation is played at a time (i dont know why i did that??)
+    animationTracks = new Map<bigint,AnimationTrack>()
+
+    currentAnimation?: string = "idle"
+    currentAnimationTrack?: AnimationTrack
+
+    currentToolAnimation?: string
+    currentToolAnimationTrack?: AnimationTrack
+
+    currentMoodAnimation?: string = "mood"
+    currentMoodAnimationTrack?: AnimationTrack
+}
+
+function getRandomBetweenInclusive(min: number, max: number) {
+  return Math.random() * ((max + 1) - min) + min;
+}
+
 
 export default class AnimatorWrapper extends InstanceWrapper {
     static className: string = "Animator"
-    static requiredProperties: string[] = ["Name", "_TrackMap", "_NameIdMap", "_CurrentAnimation", "_HasLoadedAnimation"]
+    static requiredProperties: string[] = ["Name", "_data", "_HasLoadedAnimation"]
 
     setup() {
         this.instance.addProperty(new Property("Name", DataType.String), "Animator")
 
-        this.instance.addProperty(new Property("_TrackMap", DataType.NonSerializable), new Map<bigint,AnimationTrack>())
-        this.instance.addProperty(new Property("_NameIdMap", DataType.NonSerializable), new Map<string,bigint>())
-
-        this.instance.addProperty(new Property("_CurrentAnimation", DataType.NonSerializable), "idle.Animation1")
+        this.instance.addProperty(new Property("_data", DataType.NonSerializable), new AnimatorWrapperData())
         this.instance.addProperty(new Property("_HasLoadedAnimation", DataType.NonSerializable), false)
-
-        this.instance.addProperty(new Property("_LastAnimationId", DataType.NonSerializable), -1n)
-        this.instance.addProperty(new Property("_CurrentAnimationId", DataType.NonSerializable), -1n)
-
-        this.instance.addProperty(new Property("_Weight", DataType.NonSerializable), 1)
     }
 
-    renderAnimation(addTime: number = 1 / 60) {
-        const currentAnimName = this.instance.Prop("_CurrentAnimation") as string
-        const nameIdMap = this.instance.Prop("_NameIdMap") as Map<string,bigint>
-        const trackMap = this.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>
+    get data() {
+        return this.instance.Prop("_data") as AnimatorWrapperData
+    }
 
-        let id = nameIdMap.get(currentAnimName)
+    _pickRandom(entries: AnimationSetEntry[]) {
+        let totalWeight = 0
+        for (const entry of entries) {
+            totalWeight += entry.weight
+        }
 
-        if (this.instance.Prop("_CurrentAnimationId") !== id && id) {
-            this.playAnimation(currentAnimName)
-            this.renderAnimation(addTime)
+        if (totalWeight > 0) {
+            let accumulatedWeight = 0
+            const weight = getRandomBetweenInclusive(1, totalWeight)
+            for (const entry of entries) {
+                accumulatedWeight += entry.weight
+                if (accumulatedWeight >= weight) {
+                    return entry
+                }
+            }
+        }
+
+        return entries[0]
+    }
+
+    _getTrack(id: string) {
+        const realId = BigInt(idFromStr(id))
+        return this.data.animationTracks.get(realId)
+    }
+
+    _switchAnimation(name: string) {
+        let transitionTime = 0.2
+        if (name === this.data.currentAnimation) {
+            transitionTime = 0.15
+        }
+
+        this.data.currentAnimation = name
+
+        //get appropriate track
+        let toPlayTrack: AnimationTrack | undefined = undefined
+
+        if (!name.startsWith("emote.")) {
+            const entries = this.data.animationSet[name]
+            if (entries && entries.length > 0) {
+                const entry = this._pickRandom(entries)
+                if (entry) {
+                    toPlayTrack = this._getTrack(entry.id)
+                }
+            }
+        } else {
+            const emoteId = BigInt(name.split(".")[1])
+            const entry = this.data.emotes.get(emoteId)
+            if (entry) {
+                toPlayTrack = this._getTrack(entry.id)
+            }
+        }
+
+        //if oldTrack !== newTrack
+        if (toPlayTrack !== this.data.currentAnimationTrack) {
+            //if new track
+            if (toPlayTrack) {
+                //stop old track
+                if (this.data.currentAnimationTrack) {
+                    this.data.currentAnimationTrack.Stop(transitionTime)
+                }
+
+                this.data.currentAnimationTrack = undefined
+
+                //play new track
+                this.data.currentAnimationTrack = toPlayTrack
+                toPlayTrack.Play(transitionTime)
+            }
+        }
+
+        return !!toPlayTrack
+    }
+
+    stopMoodAnimation() {
+        if (this.data.currentMoodAnimationTrack) {
+            this.data.currentMoodAnimationTrack.Stop()
+        }
+        this.data.currentMoodAnimationTrack = undefined
+        this.data.currentMoodAnimation = undefined
+    }
+
+    _switchMoodAnimation(name: string) {
+        let transitionTime = 0.2
+        if (name === this.data.currentMoodAnimation) {
+            transitionTime = 0.15
+        }
+
+        this.data.currentMoodAnimation = name
+
+        //get appropriate track
+        let toPlayTrack: AnimationTrack | undefined = undefined
+
+        const entries = this.data.animationSet[name]
+        if (entries && entries.length > 0) {
+            const entry = this._pickRandom(entries)
+            if (entry) {
+                toPlayTrack = this._getTrack(entry.id)
+            }
+        }
+
+        //if oldTrack !== newTrack
+        if (toPlayTrack !== this.data.currentMoodAnimationTrack) {
+            //if new track
+            if (toPlayTrack) {
+                //stop old track
+                if (this.data.currentMoodAnimationTrack) {
+                    this.data.currentMoodAnimationTrack.Stop(transitionTime)
+                }
+
+                this.data.currentMoodAnimationTrack = undefined
+
+                //play new track
+                this.data.currentMoodAnimationTrack = toPlayTrack
+                toPlayTrack.Play(transitionTime)
+            }
+        }
+
+        return !!toPlayTrack
+    }
+
+    isValidTrackForSet(track: AnimationTrack, name: string) {
+        if (this.data.animationSet[name]) {
+            for (const entry of this.data.animationSet[name]) {
+                if (this._getTrack(entry.id) === track) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    _fixUnloaded() {
+        if ((this.data.currentAnimation && !this.data.currentAnimationTrack) || (this.data.currentAnimation && this.data.currentAnimationTrack && !this.isValidTrackForSet(this.data.currentAnimationTrack, this.data.currentAnimation))) {
+            this._switchAnimation(this.data.currentAnimation)
+        }
+        if ((this.data.currentMoodAnimation && !this.data.currentMoodAnimationTrack) || (this.data.currentMoodAnimation && this.data.currentMoodAnimationTrack && !this.isValidTrackForSet(this.data.currentMoodAnimationTrack, this.data.currentMoodAnimation))) {
+            this._switchMoodAnimation(this.data.currentMoodAnimation)
+        }
+    }
+
+    restPose() {
+        const rig = this.instance.parent?.parent
+
+        if (!rig) {
             return
         }
 
-        const lastId = this.instance.Prop("_LastAnimationId") as bigint
+        const descendants = rig.GetDescendants()
 
-        let weight = lastId >= 0n ? this.instance.Prop("_Weight") as number : 1
-
-        if (trackMap.get(lastId) && (!id || !trackMap.get(id))) {
-            weight = 1
-            id = lastId
-        } else {
-            if (lastId) {
-                const track = trackMap.get(lastId)
-                if (track) {
-                    track.weight = 1 - weight
-                    track.resetMotorTransforms()
-                    track.setTime(track.timePosition + addTime)
-                }
-            }
-        }
-
-        if (id) {
-            const track = trackMap.get(id)
-            if (track) {
-                //track.renderPose()
-                track.weight = weight
-                if (!lastId) {
-                    track.resetMotorTransforms()
-                }
-                track.setTime(track.timePosition + addTime)
-
-                if (track.finished) {
-                    this.playAnimation("idle.Animation1")
-                    return
-                }
-
-                if (id !== lastId) {
-                    this.instance.setProperty("_Weight", Math.min(1,weight + addTime * weightMult))
-                }
-
-                const rig = track.rig
-                if (rig) {
-                    //Recalculate motor6Ds, this is neccessary do to an ISSUE: that needs TODO: be fixed
-                    for (const child of rig.GetDescendants()) {
-                        if (child.className === "Motor6D") {
-                            child.setProperty("Transform", child.Prop("Transform"))
-                        } else if (child.className === "Weld") {
-                            child.setProperty("C0", child.Prop("C0"))
-                        }
+        for (const child of descendants) {
+            if (child.className === "Motor6D") {
+                child.setProperty("Transform", new CFrame(0,0,0))
+            } else if (child.className === "FaceControls") {
+                const propertyNames = child.getPropertyNames()
+                for (const propertyName of propertyNames) {
+                    if (FaceControlNames.includes(propertyName)) {
+                        child.setProperty(propertyName, 0)
                     }
                 }
             }
-        } else {
-            //console.log(currentAnimName, nameIdMap)
+        }
+    }
+
+    renderAnimation(addTime: number = 1 / 60) {
+        this.restPose()
+        this._fixUnloaded()
+
+        for (const track of this.data.animationTracks.values()) {
+            const looped = track.tick(addTime)
+            if (this.data.currentAnimationTrack === track && looped && this.data.currentAnimation) {
+                this._switchAnimation(this.data.currentAnimation)
+            }
+        }
+
+        const rig = this.instance.parent?.parent
+        if (rig) {
+            //Recalculate motor6Ds, this is neccessary due to an ISSUE: that needs TODO: be fixed
+            for (const child of rig.GetDescendants()) {
+                if (child.className === "Motor6D") {
+                    child.setProperty("Transform", child.Prop("Transform"))
+                } else if (child.className === "Weld") {
+                    child.setProperty("C0", child.Prop("C0"))
+                }
+            }
         }
     }
 
@@ -101,131 +233,128 @@ export default class AnimatorWrapper extends InstanceWrapper {
             throw new Error("Parent is missing from Animator")
         }
 
-        return new Promise(resolve => {
-            API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(result => { //get instance with animation ids
-                if (result instanceof RBX) {
-                    const promises2: Promise<Response | undefined>[] = []
-                    const root = result.generateTree().GetChildren()[0]
+        const animationInfo = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth)
+        if (!(animationInfo instanceof RBX)) {
+            return animationInfo
+        }
 
-                    if (!isEmote) { //avatar animation
-                        //for every main animation
-                        for (const anim of root.GetChildren()) { 
-                            const animName = anim.Prop("Name") as string
-                            //for every sub animation
-                            for (const subAnim of anim.GetChildren()) {
-                                let subName = subAnim.Prop("Name") as string
-                                const subAnimIdStr = subAnim.Prop("AnimationId") as string
+        const root = animationInfo.generateTree().GetChildren()[0]
 
-                                if (subAnimIdStr.length > 0) {
-                                    const subAnimId = BigInt(idFromStr(subAnimIdStr))
+        const promises: Promise<Response | undefined>[] = []
 
-                                    //load sub animation
-                                    promises2.push(new Promise(resolve => {
-                                        API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined, auth).then(result => {
-                                            if (result instanceof RBX) {
-                                                //get and parse animation track
-                                                console.log("loading anim", subAnimId)
+        if (!isEmote) {
+            //for every main animation
+            for (const anim of root.GetChildren()) { 
+                const animName = anim.Prop("Name") as string
+                this.data.animationSet[animName] = []
 
-                                                //TODO: properly fix sub names instead of this
-                                                if (MainToSubNames[animName] && !MainToSubNames[animName].includes(subName)) {
-                                                    subName = MainToSubNames[animName][0]
-                                                }
-
-                                                const animTrackInstance = result.generateTree().GetChildren()[0]
-                                                if (animTrackInstance && humanoid.parent) {
-                                                    const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
-                                                    if (forceLoop) {
-                                                        animTrack.looped = true
-                                                    }
-                                                    
-                                                    (this.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>).set(subAnimId, animTrack);
-                                                    (this.instance.Prop("_NameIdMap") as Map<string,bigint>).set(`${animName}.${subName}`, subAnimId)
-                                                    this.instance.setProperty("_HasLoadedAnimation",true)
-                                                    console.log(animTrack)
-                                                }
-
-                                                resolve(undefined)
-                                            } else {
-                                                resolve(result)
-                                            }
-                                        })
-                                    }))
-                                }
-                            }
-                        }
-                    } else { //emote
-                        const animIdStr = root.Prop("AnimationId") as string
-                        const animId = BigInt(idFromStr(animIdStr))
-
-                        if (animIdStr.length > 0) {
-                            //load empote animation
-                            promises2.push(new Promise(resolve => {
-                                API.Asset.GetRBX(`rbxassetid://${animId}`, undefined, auth).then(result => {
-                                    if (result instanceof RBX) {
-                                        //get and parse animation track
-                                        const animTrackInstance = result.generateTree().GetChildren()[0]
-                                        if (animTrackInstance && humanoid.parent) {
-                                            const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
-                                            if (forceLoop) {
-                                                animTrack.looped = true
-                                            }
-                                            (this.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>).set(animId, animTrack);
-                                            (this.instance.Prop("_NameIdMap") as Map<string,bigint>).set(`emote.${id}`, animId)
-                                            this.instance.setProperty("_HasLoadedAnimation",true)
-                                        }
-
-                                        resolve(undefined)
-                                    } else {
-                                        resolve(result)
-                                    }
-                                })
-                            }))
-                        }
+                //for every sub animation
+                for (const subAnim of anim.GetChildren()) {
+                    const subAnimIdStr = subAnim.Prop("AnimationId") as string
+                    let subWeight = 0
+                    const subWeightChild = subAnim.FindFirstChild("Weight")
+                    if (subWeightChild && subWeightChild.className === "NumberValue" && subWeightChild.HasProperty("Value")) {
+                        subWeight = subWeightChild.Prop("Value") as number
                     }
 
-                    Promise.all(promises2).then((values2) => { //return result when all subs are finished loading
-                        for (const value2 of values2) {
-                            if (value2) {
-                                resolve(value2)
-                                return
-                            }
-                        }
+                    if (subAnimIdStr.length > 0) {
+                        const subAnimId = BigInt(idFromStr(subAnimIdStr))
 
-                        resolve(undefined)
-                        return
-                    })
-                } else {
-                    resolve(result)
+                        //load sub animation
+                        promises.push(new Promise(resolve => {
+                            API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined, auth).then(result => {
+                                if (result instanceof RBX) {
+                                    //get and parse animation track
+                                    console.log("loading anim", subAnimId)
+
+                                    const animTrackInstance = result.generateTree().GetChildren()[0]
+                                    if (animTrackInstance && humanoid.parent) {
+                                        const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                        if (forceLoop) {
+                                            animTrack.looped = true
+                                        }
+                                        
+                                        if (!this.data.animationSet[animName]) {
+                                            this.data.animationSet[animName] = []
+                                        }
+                                        
+                                        this.data.animationSet[animName].push({
+                                            id: `rbxassetid://${subAnimId}`,
+                                            weight: subWeight,
+                                        })
+                                        this.data.animationTracks.set(subAnimId, animTrack)
+
+                                        this.instance.setProperty("_HasLoadedAnimation",true)
+                                    }
+
+                                    resolve(undefined)
+                                } else {
+                                    resolve(result)
+                                }
+                            })
+                        }))
+                    }
                 }
-            })
-        })
+            }
+        } else {
+            const animIdStr = root.Prop("AnimationId") as string
+            const animId = BigInt(idFromStr(animIdStr))
+
+            if (animIdStr.length > 0) {
+                //load emote animation
+                promises.push(new Promise(resolve => {
+                    API.Asset.GetRBX(`rbxassetid://${animId}`, undefined, auth).then(result => {
+                        if (result instanceof RBX) {
+                            //get and parse animation track
+                            const animTrackInstance = result.generateTree().GetChildren()[0]
+                            if (animTrackInstance && humanoid.parent) {
+                                const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                if (forceLoop) {
+                                    animTrack.looped = true
+                                }
+                                
+                                this.data.emotes.set(id, {
+                                        id: `rbxassetid://${animId}`,
+                                        weight: 1,
+                                    })
+                                this.data.animationTracks.set(animId, animTrack)
+
+                                this.instance.setProperty("_HasLoadedAnimation",true)
+                            }
+
+                            resolve(undefined)
+                        } else {
+                            resolve(result)
+                        }
+                    })
+                }))
+            }
+        }
     }
 
-    playAnimation(name: string): boolean {
-        console.log("playing",name)
+    playAnimation(name: string, type: "main" | "mood" | "tool" = "main"): boolean {
+        console.log("playing", name)
 
-        const nameIdMap = this.instance.Prop("_NameIdMap") as Map<string,bigint>
-        const trackMap = this.instance.Prop("_TrackMap") as Map<bigint,AnimationTrack>
-
-        const id = nameIdMap.get(name)
-        if (id && this.instance.Prop("_CurrentAnimationId") !== id) {
-            this.instance.setProperty("_CurrentAnimation", name)
-
-            const currentId = this.instance.Prop("_CurrentAnimationId") as bigint
-            this.instance.setProperty("_LastAnimationId", currentId)
-            this.instance.setProperty("_CurrentAnimationId", id)
-            if (currentId >= 0) {
-                this.instance.setProperty("_Weight", 0)
-            }
-
-            const track = trackMap.get(id)
-            if (track) {
-                console.log(track)
-                //track.resetMotorTransforms()
-                //track.setTime(0)
-                track.timePosition = 0
-                return true
-            }
+        switch (type) {
+            case "main":
+                if (this.data.currentAnimation !== name) {
+                    if (!name.startsWith("emote.")) {
+                        this.playAnimation("mood", "mood")
+                    } else {
+                        this.stopMoodAnimation()
+                    }
+                    return this._switchAnimation(name)
+                } else {
+                    return true
+                }
+                break
+            case "mood":
+                if (this.data.currentMoodAnimation !== name) {
+                    return this._switchMoodAnimation(name)
+                } else {
+                    return true
+                }
+                break
         }
 
         return false

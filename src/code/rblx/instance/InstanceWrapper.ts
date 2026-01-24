@@ -16,6 +16,11 @@ export default class InstanceWrapper {
         const hasAllProperties = this.static().requiredProperties.every(value => this.instance.getPropertyNames().includes(value))
         if (!hasAllProperties) {
             this.setup()
+
+            const hasAllProperties = this.static().requiredProperties.every(value => this.instance.getPropertyNames().includes(value))
+            if (!hasAllProperties) {
+                throw new Error("setup() does not add all properties listed in requiredProperties")
+            }
         }
     }
 
