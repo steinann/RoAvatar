@@ -1,5 +1,5 @@
 import { API, type Authentication } from "../code/api";
-import { ItemInfo, ToRemoveBeforeBundleType, WearableAssetTypes } from "../code/avatar/asset";
+import { CatalogBundleTypes, ItemInfo, ToRemoveBeforeBundleType, WearableAssetTypes } from "../code/avatar/asset";
 import { Outfit } from "../code/avatar/outfit";
 import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant";
 
@@ -63,6 +63,8 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
     } else if (item.itemType === "Bundle") { //if bundle
         API.Catalog.GetBundleDetails(auth, item.id).then((result) => {
             if (!(result instanceof Response)) {
+                const bundleType = CatalogBundleTypes[result.bundleType]
+
                 for (const item of result.bundledItems) {
                     if (item.type === "UserOutfit") { //find first outfit in bundle
                         API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
@@ -71,7 +73,10 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
                                 for (const asset of result.assets) {
                                     newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
                                 }
-                                newOutfit.scale = result.scale.clone()
+
+                                if (bundleType === "Character") {
+                                    newOutfit.scale = result.scale.clone()
+                                }
 
                                 setOutfit(newOutfit)
                             }

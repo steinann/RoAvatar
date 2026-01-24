@@ -1,3 +1,5 @@
+export type SaleLocationType = "ShopOnly" | "ShopAndAllExperiences" | string
+
 export interface NavigationMenuItems {
     categories: {
         category: string,
@@ -157,17 +159,45 @@ export interface Search_Result {
         offSaleDeadline: null | unknown,
         collectibleItemId: string,
         totalQuantity: number,
-        saleLocationType: "ShopOnly" | "ShopAndAllExperiences" | string,
+        saleLocationType: SaleLocationType,
         hasResellers: boolean,
         isOffSale?: boolean
     }[]
 }
 
 export interface BundleDetails_Result {
+    bundleType: number,
     bundledItems: {
         id: number,
         name: string,
         owned: boolean,
         type: "Asset" | "UserOutfit"
-    }[]
+    }[],
+    collectibleItemId: string,
+    creatorHasVerifiedBadge: boolean,
+    creatorName: string,
+    creatorTargetId: number,
+    creatorType: "User" | "Group",
+    description: string,
+    expectedSellerId: number,
+    favoriteCount: number,
+    hasResellers: boolean,
+    id: number,
+    isPBR: boolean,
+    isPurchasable: boolean,
+    isRecolorable: boolean,
+    itemCreatedUtc: string,
+    itemRestrictions: string[],
+    itemStatus: unknown[],
+    itemType: "Asset" | "Bundle",
+    lowestPrice: number,
+    lowestResalePrice: number,
+    name: string,
+    offSaleDeadline: null | unknown,
+    owned: boolean,
+    price: number,
+    productId: number,
+    saleLocationType: SaleLocationType,
+    totalQuantity: number,
+    unitsAvailableForConsumption: number,
 }
