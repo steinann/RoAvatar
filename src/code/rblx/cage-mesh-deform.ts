@@ -2,6 +2,7 @@ import * as math from "mathjs";
 import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh";
 import { add, createMeshChunks, distance, getDistVertArray, minus, vertPosToChunkPos, type MeshChunk, type WeightChunk3 } from "./mesh-deform";
 import { buildKDTree, knnSearch, type KDNode } from "../misc/kd-tree-3";
+import { WorkerPool } from "../misc/worker-pool";
 
 //200 ~50ms -> 2
 //100 ~26ms -> 4
@@ -456,10 +457,6 @@ type Patch = {
     weights: Vec3[] // one weight per neighbor
 }
 
-
-//TODO: try to use web workers! this is PERFECT for it and then i can hopefully increase importants and K a little if theres enough available
-//we check the total available with navigator.hardwareConcurrency
-//i think a global generic web worker pool for the entire project would be good for avoiding limits and avoiding having to terminate workers
 export class RBFDeformerPatch {
     refVerts: FileMeshVertex[] = [];
     distVerts: FileMeshVertex[] = [];
@@ -474,11 +471,11 @@ export class RBFDeformerPatch {
     patchCenters: Vec3[] = []
     patchCenterIndices: number[] = []
 
-    K: number = 24        // neighbors per patch
+    K: number = 48        // neighbors per patch
     patchCount: number    // how many patches you want
     epsilon: number = 1e-6; // avoid matrix from being singular
 
-    constructor(refMesh: FileMesh, distMesh: FileMesh, patchCount = 160, importantsCount = 7) {
+    constructor(refMesh: FileMesh, distMesh: FileMesh, patchCount = 100, importantsCount = 8) {
         //get arrays of ref and dist verts that match in length and index
         const distVertArr = getDistVertArray(refMesh, distMesh)
         for (let i = 0; i < refMesh.coreMesh.verts.length; i++) {
@@ -517,6 +514,78 @@ export class RBFDeformerPatch {
         this.patchCenters = patchCenters
         this.patchCenterIndices = patchCenterIndices
         this.patchKD = buildKDTree(patchCenters, patchCenterIndices)
+    }
+
+    async solveAsync() {
+        console.time("RBFDeformerPatch.solve");
+        if (!this.controlKD) throw new Error("Control KD-tree not built")
+
+        this.patches = []
+
+        const patchNeighbors: number[][] = []
+        const weightPromises: Promise<Vec3[]>[] = []
+
+        //for each patch
+        for (let p = 0; p < this.patchCenters.length; p++) {
+            const centerPos = this.patchCenters[p]
+
+            //find nearest verts and add importants
+            const neighbors = knnSearch(this.controlKD, centerPos, this.K)
+            for (const important of this.importantIndices) {
+                neighbors.push(({
+                    dist: 0,
+                    index: important
+                }))
+            }
+
+            const K = neighbors.length
+            if (K === 0) continue
+
+            const neighborIndices = neighbors.map(n => n.index)
+            const usedRef = neighborIndices.map(i => this.refVerts[i])
+            const usedDist = neighborIndices.map(i => this.distVerts[i])
+
+            //build distance matrix A
+            const A: number[][] = new Array(K)
+            for (let i = 0; i < K; i++) {
+                A[i] = new Array(K)
+                const pi = usedRef[i].position
+                for (let j = 0; j < K; j++) {
+                    const pj = usedRef[j].position
+                    A[i][j] = (i === j) ? this.epsilon : distance(pi, pj)
+                }
+            }
+
+            //create offset arrays
+            const bx = usedRef.map((r, i) => usedDist[i].position[0] - r.position[0])
+            const by = usedRef.map((r, i) => usedDist[i].position[1] - r.position[1])
+            const bz = usedRef.map((r, i) => usedDist[i].position[2] - r.position[2])
+
+            weightPromises.push(WorkerPool.instance.work("patchRBF", [A, bx, by, bz]) as Promise<Vec3[]>)
+
+            patchNeighbors.push(neighborIndices)
+            /*this.patches.push({
+                center: centerPos,
+                neighborIndices,
+                weights,
+            })*/
+        }
+
+        //wait for promises
+        const weights = await Promise.all(weightPromises)
+        for (let i = 0; i < this.patchCenters.length; i++) {
+            this.patches.push({
+                center: this.patchCenters[i],
+                neighborIndices: patchNeighbors[i],
+                weights: weights[i]
+            })
+        }
+
+        //rebuild patch kd tree
+        const patchPoints = this.patches.map(p => p.center)
+        const patchIndices = patchPoints.map((_, i) => i)
+        this.patchKD = buildKDTree(patchPoints, patchIndices)
+        console.timeEnd("RBFDeformerPatch.solve");
     }
 
     solve() {

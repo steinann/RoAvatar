@@ -487,7 +487,7 @@ export class MeshDesc {
                 case "rbf":
                     { 
                         const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh)
-                        rbfDeformer.solve()
+                        await rbfDeformer.solveAsync()
                         rbfDeformer.deformMesh(mesh)
                         break
                     }

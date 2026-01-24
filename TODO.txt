@@ -19,3 +19,8 @@ ISSUES (Relating to renderer inaccuracy):
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
+
+FEATURES:
+    -ParticleEmitter rendering
+    -Sounds for those accessories that have that
+    -Gear inside preview
