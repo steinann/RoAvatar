@@ -486,9 +486,9 @@ export class MeshDesc {
             switch (LAYERED_CLOTHING_ALGORITHM) {
                 case "rbf":
                     { 
-                        const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh)
+                        const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
                         await rbfDeformer.solveAsync()
-                        rbfDeformer.deformMesh(mesh)
+                        rbfDeformer.deformMesh()
                         break
                     }
                 case "linearnormal":
@@ -636,8 +636,8 @@ export class MeshDesc {
 
         //check for surface appearance
         const surfaceAppearance = child.FindFirstChildOfClass("SurfaceAppearance")
-        if (surfaceAppearance && surfaceAppearance.HasProperty("Color")) {
-            const color = surfaceAppearance.Prop("Color") as Color3
+        if (surfaceAppearance) {
+            const color = surfaceAppearance.HasProperty("Color") ? surfaceAppearance.Prop("Color") as Color3 : new Color3(1,1,1)
             const colorMap = surfaceAppearance.Prop("ColorMap") as string
 
             if (colorMap.length > 0) {

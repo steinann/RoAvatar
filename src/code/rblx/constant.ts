@@ -376,6 +376,7 @@ export const DataType = {
     "Bytecode": 0x1d,
 
     "Capabilites": 0x21, //NOT IMPLEMENTED
+    "Content": 0x22,
 
     "NonSerializable": 9999 //not a real type
 }

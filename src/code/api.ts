@@ -188,7 +188,8 @@ const CACHE = {
     "Mesh": new Map<string,FileMesh>(),
     "Image": new Map<string,HTMLImageElement | undefined>(),
     "Thumbnails": new Map<string,string | undefined>(),
-    "ItemOwned": new Map<string,[boolean,number]>()
+    "ItemOwned": new Map<string,[boolean,number]>(),
+    "IsLayered": new Map<number,boolean>()
 }
 
 type ThumbnailInfo = {
@@ -590,6 +591,32 @@ const API = {
                 } else {
                     return response
                 }
+            }
+        },
+        IsLayered: async function(id: number, auth: Authentication): Promise<boolean | Response> {
+            const cached = CACHE.IsLayered.get(id)
+            if (cached !== undefined) {
+                return cached
+            }
+
+            const result = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth)
+            if (result instanceof RBX) {
+                const dataModel = result.generateTree()
+                const descendants = dataModel.GetDescendants()
+                let hasWrapLayer = false
+
+                for (const child of descendants) {
+                    if (child.className === "WrapLayer") {
+                        hasWrapLayer = true
+                    }
+                }
+
+                CACHE.IsLayered.set(id, hasWrapLayer)
+
+                return hasWrapLayer
+            } else {
+                console.warn("Failed to get accessory")
+                return result
             }
         }
     },

@@ -454,10 +454,14 @@ export class RBFDeformerKDTree {
 type Patch = {
     center: Vec3
     neighborIndices: number[]
-    weights: Vec3[] // one weight per neighbor
+    weights?: Vec3[] // one weight per neighbor
 }
 
+let rbfDeformerIdCount = 0
+
 export class RBFDeformerPatch {
+    mesh: FileMesh
+
     refVerts: FileMeshVertex[] = [];
     distVerts: FileMeshVertex[] = [];
 
@@ -471,11 +475,17 @@ export class RBFDeformerPatch {
     patchCenters: Vec3[] = []
     patchCenterIndices: number[] = []
 
-    K: number = 48        // neighbors per patch
+    nearestPatch: number[] = [] //nearest patch for each vert in mesh
+
+    K: number = 32        // neighbors per patch
     patchCount: number    // how many patches you want
     epsilon: number = 1e-6; // avoid matrix from being singular
 
-    constructor(refMesh: FileMesh, distMesh: FileMesh, patchCount = 100, importantsCount = 8) {
+    id: number = rbfDeformerIdCount++
+
+    constructor(refMesh: FileMesh, distMesh: FileMesh, mesh: FileMesh, patchCount = 250, importantsCount = 8) {
+        this.mesh = mesh
+        
         //get arrays of ref and dist verts that match in length and index
         const distVertArr = getDistVertArray(refMesh, distMesh)
         for (let i = 0; i < refMesh.coreMesh.verts.length; i++) {
@@ -517,15 +527,14 @@ export class RBFDeformerPatch {
     }
 
     async solveAsync() {
-        console.time("RBFDeformerPatch.solve");
+        console.time(`RBFDeformerPatch.solve.${this.id}`);
         if (!this.controlKD) throw new Error("Control KD-tree not built")
 
         this.patches = []
 
-        const patchNeighbors: number[][] = []
         const weightPromises: Promise<Vec3[]>[] = []
 
-        //for each patch
+        //create each patch
         for (let p = 0; p < this.patchCenters.length; p++) {
             const centerPos = this.patchCenters[p]
 
@@ -542,8 +551,55 @@ export class RBFDeformerPatch {
             if (K === 0) continue
 
             const neighborIndices = neighbors.map(n => n.index)
+
+            this.patches.push({
+                center: centerPos,
+                neighborIndices,
+                //weights,
+            })
+        }
+
+        //rebuild patch kd tree
+        const patchPoints = this.patches.map(p => p.center)
+        const patchIndices = patchPoints.map((_, i) => i)
+        this.patchKD = buildKDTree(patchPoints, patchIndices)
+
+        //get used patches
+        const isUsedArr = new Array(this.patches.length).fill(false)
+        this.nearestPatch = new Array(this.mesh.coreMesh.verts.length)
+
+        for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
+            const vert = this.mesh.coreMesh.verts[i]
+            const vec = vert.position
+
+            //find nearest patch center
+            const nearestPatchNode = knnSearch(this.patchKD, vec, 1)[0]
+            isUsedArr[nearestPatchNode.index] = true
+            this.nearestPatch[i] = nearestPatchNode.index
+        }
+
+        //create weights
+        let totalSkipped = 0
+
+        for (let p = 0; p < this.patches.length; p++) {
+            //skip unused patches
+            if (!isUsedArr[p]) {
+                weightPromises.push(new Promise((resolve) => {
+                    resolve([])
+                }))
+                totalSkipped += 1
+                continue
+            }
+
+            const patch = this.patches[p]
+
+            const neighborIndices = patch.neighborIndices
+
             const usedRef = neighborIndices.map(i => this.refVerts[i])
             const usedDist = neighborIndices.map(i => this.distVerts[i])
+
+            const K = neighborIndices.length
+            if (K === 0) continue
 
             //build distance matrix A
             const A: number[][] = new Array(K)
@@ -562,39 +618,28 @@ export class RBFDeformerPatch {
             const bz = usedRef.map((r, i) => usedDist[i].position[2] - r.position[2])
 
             weightPromises.push(WorkerPool.instance.work("patchRBF", [A, bx, by, bz]) as Promise<Vec3[]>)
-
-            patchNeighbors.push(neighborIndices)
-            /*this.patches.push({
-                center: centerPos,
-                neighborIndices,
-                weights,
-            })*/
         }
 
         //wait for promises
         const weights = await Promise.all(weightPromises)
-        for (let i = 0; i < this.patchCenters.length; i++) {
-            this.patches.push({
-                center: this.patchCenters[i],
-                neighborIndices: patchNeighbors[i],
-                weights: weights[i]
-            })
+        for (let i = 0; i < weights.length; i++) {
+            this.patches[i].weights = weights[i]
         }
 
-        //rebuild patch kd tree
-        const patchPoints = this.patches.map(p => p.center)
-        const patchIndices = patchPoints.map((_, i) => i)
-        this.patchKD = buildKDTree(patchPoints, patchIndices)
-        console.timeEnd("RBFDeformerPatch.solve");
+        console.log("skipped patches", totalSkipped)
+        console.timeEnd(`RBFDeformerPatch.solve.${this.id}`);
     }
 
+    /**
+     * @deprecated probably doesnt even work anymore, i kept accidentally editing this instead of solveAsync()
+     */
     solve() {
         console.time("RBFDeformerPatch.solve");
         if (!this.controlKD) throw new Error("Control KD-tree not built")
 
         this.patches = []
 
-        //for each patch
+        //create each patch
         for (let p = 0; p < this.patchCenters.length; p++) {
             const centerPos = this.patchCenters[p]
 
@@ -611,8 +656,44 @@ export class RBFDeformerPatch {
             if (K === 0) continue
 
             const neighborIndices = neighbors.map(n => n.index)
+
+            this.patches.push({
+                center: centerPos,
+                neighborIndices,
+                //weights,
+            })
+        }
+
+        //rebuild patch kd tree
+        const patchPoints = this.patches.map(p => p.center)
+        const patchIndices = patchPoints.map((_, i) => i)
+        this.patchKD = buildKDTree(patchPoints, patchIndices)
+
+        //get used patches
+        for (const vert of this.mesh.coreMesh.verts) {
+            const vec = vert.position
+
+            //find nearest patch center
+            const nearestPatchNode = knnSearch(this.patchKD, vec, 1)[0]
+            this.nearestPatch.push(nearestPatchNode.index)
+        }
+
+        //create weights
+        for (let p = 0; p < this.patchCenters.length; p++) {
+            //skip unused patches
+            if (!this.nearestPatch.includes(p)) {
+                continue
+            }
+
+            const patch = this.patches[p]
+
+            const neighborIndices = patch.neighborIndices
+
             const usedRef = neighborIndices.map(i => this.refVerts[i])
             const usedDist = neighborIndices.map(i => this.distVerts[i])
+
+            const K = neighborIndices.length
+            if (K === 0) continue
 
             //build distance matrix A
             const A: number[][] = new Array(K)
@@ -640,33 +721,28 @@ export class RBFDeformerPatch {
 
             const weights = wx.map((_, i) => [wx[i], wy[i], wz[i]] as Vec3)
 
-            this.patches.push({
-                center: centerPos,
-                neighborIndices,
-                weights,
-            })
+            this.patches[p].weights = weights
         }
 
-        //rebuild patch kd tree
-        const patchPoints = this.patches.map(p => p.center)
-        const patchIndices = patchPoints.map((_, i) => i)
-        this.patchKD = buildKDTree(patchPoints, patchIndices)
         console.timeEnd("RBFDeformerPatch.solve");
     }
 
-
-
-    deform(vec: Vec3): Vec3 {
+    deform(i: number): Vec3 {
         if (!this.patchKD || this.patches.length === 0) {
             throw new Error("RBF has not been solved")
         }
 
+        const vec = this.mesh.coreMesh.verts[i].position
+
         //find nearest patch center
-        const nearestPatchNode = knnSearch(this.patchKD, vec, 1)[0]
-        const patch = this.patches[nearestPatchNode.index]
+        const patch = this.patches[this.nearestPatch[i]]
 
         const neighborIndices = patch.neighborIndices
         const weights = patch.weights
+
+        if (!weights) {
+            throw new Error("Patch is missing weights")
+        }
 
         let dx = 0, dy = 0, dz = 0
 
@@ -685,10 +761,11 @@ export class RBFDeformerPatch {
     }
 
 
-    deformMesh(mesh: FileMesh) {
+    deformMesh() {
         console.time("RBFDeformerPatch.deformMesh");
-        for (const vert of mesh.coreMesh.verts) {
-            vert.position = this.deform(vert.position);
+        for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
+            const vert = this.mesh.coreMesh.verts[i]
+            vert.position = this.deform(i);
         }
         console.timeEnd("RBFDeformerPatch.deformMesh");
     }

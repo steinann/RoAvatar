@@ -333,8 +333,6 @@ export default class AnimatorWrapper extends InstanceWrapper {
     }
 
     playAnimation(name: string, type: "main" | "mood" | "tool" = "main"): boolean {
-        console.log("playing", name)
-
         switch (type) {
             case "main":
                 if (this.data.currentAnimation !== name) {
@@ -343,6 +341,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
                     } else {
                         this.stopMoodAnimation()
                     }
+                    console.log("playing", name)
                     return this._switchAnimation(name)
                 } else {
                     return true
@@ -350,6 +349,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
                 break
             case "mood":
                 if (this.data.currentMoodAnimation !== name) {
+                    console.log("playing", name)
                     return this._switchMoodAnimation(name)
                 } else {
                     return true

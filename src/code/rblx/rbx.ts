@@ -163,6 +163,13 @@ export class Color3uint8 {
     }
 }
 
+export class Content {
+    sourceType: number = 0 | 1 | 2 //None = 0, Uri = 1, Object = 2
+    uri?: string
+    object?: Instance
+    externalObject?: Instance
+}
+
 export class CFrame {
     Position: Vec3 = [0,0,0]
     Orientation: Vec3 = [0,0,0]
@@ -662,10 +669,27 @@ export class Instance {
     Property(name: string): unknown {
         name = this.fixPropertyName(name)
 
-        if (name == "Position" && !this.HasProperty("Position")) {
-            const cf = this.Prop("CFrame") as CFrame
-            const pos = cf.Position
-            return new Vector3(pos[0], pos[1], pos[2])
+        if (!this.HasProperty(name)) {
+            switch (name) {
+                case "Position":
+                    {
+                        const cf = this.Prop("CFrame") as CFrame
+                        const pos = cf.Position
+                        return new Vector3(pos[0], pos[1], pos[2])
+                        break
+                    }
+                default:
+                    {
+                        if (name.includes("Id") || name.includes("ID")) {
+                            const contentVersion = name.replace("Id", "Content").replace("ID","Content")
+                            if (this.HasProperty(contentVersion)) {
+                                const content = this.Prop(contentVersion) as Content
+                                return content.uri
+                            }
+                            break
+                        }
+                    }
+            }
         }
 
         if (!this._properties.get(name)) {
@@ -1307,6 +1331,47 @@ export class RBX {
                     
                     for (const num of nums) {
                         prop.values.push(num)
+                    }
+
+                    break
+                }
+            case DataType.Content:
+                {
+                    const sourceTypes = chunkView.readInterleaved32(valuesLength, false, "readUint32") as number[]
+
+                    const uriCount = chunkView.readUint32()
+                    const uris = []
+                    for (let i = 0; i < uriCount; i++) {
+                        uris.push(chunkView.readUtf8String())
+                    }
+
+                    //const objectCount = chunkView.readUint32()
+                    //const objects = readReferents(objectCount, chunkView)
+
+                    //const externalObjectCount = chunkView.readUint32()
+                    //const externalObjects = readReferents(externalObjectCount, chunkView)
+
+                    let uriIndex = 0
+                    //let objectIndex = 0
+                    //let externalObjectIndex = 0
+
+                    for (let i = 0; i < valuesLength; i++) {
+                        const content = new Content()
+                        content.sourceType = sourceTypes[i]
+
+                        //i think the enums are wrong here...
+                        switch (content.sourceType) {
+                            case 0: //None
+                                
+                                break
+                            case 1: //Uri
+                            case 2: //Object
+                                content.uri = uris[uriIndex]
+                                uriIndex += 1
+                                break
+                        }
+
+                        prop.values.push(content)
                     }
 
                     break

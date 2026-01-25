@@ -7,6 +7,7 @@ ISSUES (Relating to renderer inaccuracy):
     -SKELETON: Eyebrows and eyelashes may not contain FACS data (is this always the case?) and therefore have their face bones ignored during animation
         -Them having their own FACS data and bones doesn't make sense as it break the animation if you change the underlying head
         -They likely inherit the bones and FACS data of the underlying head, which is why AutoSkin is needed
+    -SKELETON: Tongues are usually rotated incorrectly
     -MATERIAL: Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand in R6
     -MATERIAL: Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
     -LC: Layered clothing is not layered, i guess its just clothing then?
@@ -16,6 +17,7 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
+    -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration

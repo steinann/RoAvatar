@@ -467,24 +467,14 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                             if (accessoryType === AccessoryType.Hair) {
                                 assetPromises.push(new Promise((resolve) => {
-                                    API.Asset.GetRBX(`rbxassetid://${asset.id}`, undefined, auth).then(result => {
-                                        if (result instanceof RBX) {
-                                            const dataModel = result.generateTree()
-                                            const descendants = dataModel.GetDescendants()
-                                            let hasWrapLayer = false
-
-                                            for (const child of descendants) {
-                                                if (child.className === "WrapLayer") {
-                                                    hasWrapLayer = true
-                                                }
-                                            }
-
-                                            instance.setProperty("IsLayered", hasWrapLayer)
-
-                                            resolve(undefined)
+                                    API.Asset.IsLayered(asset.id, auth).then((isLayered) => {
+                                        if (isLayered instanceof Response) {
+                                            resolve(isLayered)
                                         } else {
-                                            console.warn("Failed to get accessory")
-                                            resolve(result)
+                                            if (!instance.destroyed) {
+                                                instance.setProperty("IsLayered", true)
+                                            }
+                                            resolve(undefined)
                                         }
                                     })
                                 }))
@@ -1069,7 +1059,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         if (!animator) {
             throw new Error("Humanoid is missing an Animator")
         }
-        
+
         const avatarType = humanoid.Prop("RigType") === HumanoidRigType.R15 ? AvatarType.R15 : AvatarType.R6
 
         const animatorW = new AnimatorWrapper(animator)
