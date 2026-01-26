@@ -454,7 +454,7 @@ export class RBFDeformerKDTree {
 type Patch = {
     center: Vec3
     neighborIndices: number[]
-    weights?: Vec3[] // one weight per neighbor
+    weights?: Float32Array // one weight per neighbor, thats 3 elements
 }
 
 let rbfDeformerIdCount = 0
@@ -475,7 +475,7 @@ export class RBFDeformerPatch {
     patchCenters: Vec3[] = []
     patchCenterIndices: number[] = []
 
-    nearestPatch: number[] = [] //nearest patch for each vert in mesh
+    nearestPatch: Uint16Array = new Uint16Array() //nearest patch for each vert in mesh
 
     K: number = 32        // neighbors per patch
     patchCount: number    // how many patches you want
@@ -532,8 +532,6 @@ export class RBFDeformerPatch {
 
         this.patches = []
 
-        const weightPromises: Promise<Vec3[]>[] = []
-
         //create each patch
         for (let p = 0; p < this.patchCenters.length; p++) {
             const centerPos = this.patchCenters[p]
@@ -566,7 +564,7 @@ export class RBFDeformerPatch {
 
         //get used patches
         const isUsedArr = new Array(this.patches.length).fill(false)
-        this.nearestPatch = new Array(this.mesh.coreMesh.verts.length)
+        this.nearestPatch = new Uint16Array(this.mesh.coreMesh.verts.length)
 
         for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
             const vert = this.mesh.coreMesh.verts[i]
@@ -579,13 +577,14 @@ export class RBFDeformerPatch {
         }
 
         //create weights
+        const weightPromises: Promise<ArrayBuffer | undefined>[] = []
         let totalSkipped = 0
 
         for (let p = 0; p < this.patches.length; p++) {
             //skip unused patches
             if (!isUsedArr[p]) {
                 weightPromises.push(new Promise((resolve) => {
-                    resolve([])
+                    resolve(undefined)
                 }))
                 totalSkipped += 1
                 continue
@@ -602,9 +601,9 @@ export class RBFDeformerPatch {
             if (K === 0) continue
 
             //build distance matrix A
-            const A: number[][] = new Array(K)
+            const A: Float32Array[] = new Array(K)
             for (let i = 0; i < K; i++) {
-                A[i] = new Array(K)
+                A[i] = new Float32Array(K)
                 const pi = usedRef[i].position
                 for (let j = 0; j < K; j++) {
                     const pj = usedRef[j].position
@@ -613,27 +612,27 @@ export class RBFDeformerPatch {
             }
 
             //create offset arrays
-            const bx = usedRef.map((r, i) => usedDist[i].position[0] - r.position[0])
-            const by = usedRef.map((r, i) => usedDist[i].position[1] - r.position[1])
-            const bz = usedRef.map((r, i) => usedDist[i].position[2] - r.position[2])
+            const bx = new Float32Array(K).map((_, i) => usedDist[i].position[0] - usedRef[i].position[0])
+            const by = new Float32Array(K).map((_, i) => usedDist[i].position[1] - usedRef[i].position[1])
+            const bz = new Float32Array(K).map((_, i) => usedDist[i].position[2] - usedRef[i].position[2])
 
-            weightPromises.push(WorkerPool.instance.work("patchRBF", [A, bx, by, bz]) as Promise<Vec3[]>)
+            weightPromises.push(WorkerPool.instance.work("patchRBF", [A.map(r => r.buffer), bx.buffer, by.buffer, bz.buffer]) as Promise<ArrayBuffer>)
         }
 
         //wait for promises
         const weights = await Promise.all(weightPromises)
         for (let i = 0; i < weights.length; i++) {
-            this.patches[i].weights = weights[i]
+            const weightArr = weights[i]
+            if (weightArr) {
+                this.patches[i].weights = new Float32Array(weightArr)
+            }
         }
 
         console.log("skipped patches", totalSkipped)
         console.timeEnd(`RBFDeformerPatch.solve.${this.id}`);
     }
 
-    /**
-     * @deprecated probably doesnt even work anymore, i kept accidentally editing this instead of solveAsync()
-     */
-    solve() {
+    /*solve() {
         console.time("RBFDeformerPatch.solve");
         if (!this.controlKD) throw new Error("Control KD-tree not built")
 
@@ -725,7 +724,7 @@ export class RBFDeformerPatch {
         }
 
         console.timeEnd("RBFDeformerPatch.solve");
-    }
+    }*/
 
     deform(i: number): Vec3 {
         if (!this.patchKD || this.patches.length === 0) {
@@ -752,9 +751,9 @@ export class RBFDeformerPatch {
             const r = distance(vec, refP)
             const phi = r // kernel
 
-            dx += phi * weights[i][0]
-            dy += phi * weights[i][1]
-            dz += phi * weights[i][2]
+            dx += phi * weights[i*3 + 0]
+            dy += phi * weights[i*3 + 1]
+            dz += phi * weights[i*3 + 2]
         }
 
         return add(vec, [dx, dy, dz])
