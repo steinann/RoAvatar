@@ -181,7 +181,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
 
                         if (buffer) {
                             console.log("buffer", buffer)
-                            const arrayBuffer = base64ToArrayBuffer(buffer)
+                            const arrayBuffer = base64ToArrayBuffer(buffer.replace(/\s/g, ''))
                             const outfit = new Outfit()
                             outfit.fromBuffer(arrayBuffer, auth).then(() => {
                                 setOutfit(outfit)

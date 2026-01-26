@@ -248,11 +248,11 @@ export function arrayBufferToBase64(buffer: ArrayBuffer) {
     for (let i = 0; i < len; i++) {
         binary += String.fromCharCode( bytes[ i ] );
     }
-    return btoa( binary );
+    return btoa( binary ).replaceAll("+","-").replaceAll("/","_");
 }
 
 export function base64ToArrayBuffer(base64: string) {
-    const binaryString = atob(base64);
+    const binaryString = atob(base64.replaceAll("-","+").replaceAll("_","/"));
 
     const length = binaryString.length;
     const bytes = new Uint8Array(length);

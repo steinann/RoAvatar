@@ -1068,6 +1068,8 @@ export class Outfit {
         }
 
         //assets
+        const assetPromises: Promise<undefined>[] = []
+
         while (view.viewOffset < view.buffer.byteLength) {
             const flags = view.readUint8()
             let id = 0
@@ -1078,57 +1080,68 @@ export class Outfit {
                 id = view.readUint32()
             }
 
-            await this.addAssetId(auth, id)
-            
-            let asset: Asset | undefined = undefined
-            for (const assetIn of this.assets) {
-                if (assetIn.id === id) {
-                    asset = assetIn
-                }
-            }
-
             //order
+            let assetOrder = undefined
+
             if (flags & 1) {
                 const order = view.readUint8()
-                if (asset) {
-                    if (!asset.meta) asset.meta = new AssetMeta()
-                    asset.meta.order = order
-                }
+                assetOrder = order
             }
 
             //pos
+            let assetPos = undefined
+
             if (flags & 2) {
-                const posX = mapNum(view.readUint8(), 0,255, -0.25,0.25)
-                const posY = mapNum(view.readUint8(), 0,255, -0.25,0.25)
-                const posZ = mapNum(view.readUint8(), 0,255, -0.25,0.25)
-                if (asset) {
-                    if (!asset.meta) asset.meta = new AssetMeta()
-                    asset.meta.position = {X: posX, Y: posY, Z: posZ}
-                }
+                const posX = mapNum(view.readUint8(), 0,255, -1,1)
+                const posY = mapNum(view.readUint8(), 0,255, -1,1)
+                const posZ = mapNum(view.readUint8(), 0,255, -1,1)
+                assetPos = {X: posX, Y: posY, Z: posZ}
             }
 
             //rot
+            let assetRot = undefined
+
             if (flags & 4) {
-                const rotX = mapNum(view.readUint8(), 0,255, -30,30)
-                const rotY = mapNum(view.readUint8(), 0,255, -30,30)
-                const rotZ = mapNum(view.readUint8(), 0,255, -30,30)
-                if (asset) {
-                    if (!asset.meta) asset.meta = new AssetMeta()
-                    asset.meta.rotation = {X: rotX, Y: rotY, Z: rotZ}
-                }
+                const rotX = mapNum(view.readUint8(), 0,255, -90,90)
+                const rotY = mapNum(view.readUint8(), 0,255, -90,90)
+                const rotZ = mapNum(view.readUint8(), 0,255, -90,90)
+                assetRot = {X: rotX, Y: rotY, Z: rotZ}
             }
 
             //scale
+            let assetScale = undefined
+
             if (flags & 8) {
                 const scaleX = mapNum(view.readUint8(), 0,255, 0.5,2)
                 const scaleY = mapNum(view.readUint8(), 0,255, 0.5,2)
                 const scaleZ = mapNum(view.readUint8(), 0,255, 0.5,2)
-                if (asset) {
-                    if (!asset.meta) asset.meta = new AssetMeta()
-                    asset.meta.scale = {X: scaleX, Y: scaleY, Z: scaleZ}
-                }
+                assetScale = {X: scaleX, Y: scaleY, Z: scaleZ}
             }
+
+            assetPromises.push(new Promise((resolve) => {
+                this.addAssetId(auth, id).then(() => {
+                    let asset: Asset | undefined = undefined
+                    for (const assetIn of this.assets) {
+                        if (assetIn.id === id) {
+                            asset = assetIn
+                        }
+                    }
+
+                    if (asset && (assetOrder || assetPos || assetRot || assetScale)) {
+                        asset.meta = new AssetMeta()
+                        asset.meta.order = assetOrder
+                        asset.meta.position = assetPos
+                        asset.meta.rotation = assetRot
+                        asset.meta.scale = assetScale
+                    }
+
+                    resolve(undefined)
+                })
+            }))
+            
         }
+
+        await Promise.all(assetPromises)
 
         return this
     }
@@ -1272,15 +1285,15 @@ export class Outfit {
             }
 
             if (pos) {
-                view.writeUint8(Math.floor(mapNum(pos.X, -0.25,0.25, 0,255)))
-                view.writeUint8(Math.floor(mapNum(pos.Y, -0.25,0.25,0,255)))
-                view.writeUint8(Math.floor(mapNum(pos.Z, -0.25,0.25, 0,255)))
+                view.writeUint8(Math.floor(mapNum(pos.X, -1,1, 0,255)))
+                view.writeUint8(Math.floor(mapNum(pos.Y, -1,1,0,255)))
+                view.writeUint8(Math.floor(mapNum(pos.Z, -1,1, 0,255)))
             }
 
             if (rot) {
-                view.writeUint8(Math.floor(mapNum(rot.X, -30,30, 0,255)))
-                view.writeUint8(Math.floor(mapNum(rot.Y, -30,30, 0,255)))
-                view.writeUint8(Math.floor(mapNum(rot.Z, -30,30, 0,255)))
+                view.writeUint8(Math.floor(mapNum(rot.X, -90,90, 0,255)))
+                view.writeUint8(Math.floor(mapNum(rot.Y, -90,90, 0,255)))
+                view.writeUint8(Math.floor(mapNum(rot.Z, -90,90, 0,255)))
             }
 
             if (scale) {
