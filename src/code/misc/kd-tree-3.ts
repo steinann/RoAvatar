@@ -41,17 +41,68 @@ export function buildKDTree(points: Vec3[], indices: number[], depth = 0): KDNod
     return node;
 }
 
-// K-NN, returning sorted by distance
-export function knnSearch(node: KDNode | null, target: Vec3, k: number, heap: { dist: number, index: number }[] = []): { dist: number, index: number }[] {
+type HeapItem = { dist: number; index: number };
+
+function siftUp(heap: HeapItem[], i: number): void {
+    while (i > 0) {
+        const p = (i - 1) >> 1;
+        if (heap[p].dist >= heap[i].dist) break;
+        const tmp = heap[p];
+        heap[p] = heap[i];
+        heap[i] = tmp;
+        i = p;
+    }
+}
+
+function siftDown(heap: HeapItem[], i: number): void {
+    const n = heap.length;
+    while (true) {
+        let largest = i;
+        const l = (i << 1) + 1;
+        const r = l + 1;
+
+        if (l < n && heap[l].dist > heap[largest].dist) largest = l;
+        if (r < n && heap[r].dist > heap[largest].dist) largest = r;
+        if (largest === i) break;
+
+        const tmp = heap[i];
+        heap[i] = heap[largest];
+        heap[largest] = tmp;
+
+        i = largest;
+    }
+}
+
+function heapPushMax(heap: HeapItem[], item: HeapItem, k: number): void {
+    if (heap.length < k) {
+        heap.push(item);
+        siftUp(heap, heap.length - 1);
+        return;
+    }
+    if (item.dist >= heap[0].dist) return; // worse than current worst
+
+    heap[0] = item;
+    siftDown(heap, 0);
+}
+function distSq(a: Vec3, b: Vec3): number {
+    const dx = a[0] - b[0];
+    const dy = a[1] - b[1];
+    const dz = a[2] - b[2];
+    return dx * dx + dy * dy + dz * dz;
+}
+
+export function knnSearch(
+    node: KDNode | null,
+    target: Vec3,
+    k: number,
+    heap: HeapItem[] = []
+): HeapItem[] {
     if (!node) return heap;
 
     const axis = node.axis;
-    const dist = distance(target, node.point);
+    const dist = distSq(target, node.point);
 
-    // insert into heap (simple array sorted by dist)
-    heap.push({ dist, index: node.index });
-    heap.sort((a, b) => a.dist - b.dist);
-    if (heap.length > k) heap.pop();
+    heapPushMax(heap, { dist, index: node.index }, k);
 
     const diff = target[axis] - node.point[axis];
     const primary = diff < 0 ? node.left : node.right;
@@ -59,10 +110,42 @@ export function knnSearch(node: KDNode | null, target: Vec3, k: number, heap: { 
 
     knnSearch(primary, target, k, heap);
 
-    // check if other side might contain closer points
-    if (heap.length < k || Math.abs(diff) < heap[heap.length - 1].dist) {
+    //only explore far side if needed
+    const worstDist = heap.length < k ? Infinity : heap[0].dist;
+    if (diff * diff < worstDist) {
         knnSearch(secondary, target, k, heap);
     }
 
+    if (node === null) {
+        heap.sort((a, b) => a.dist - b.dist);
+    }
+
     return heap;
+}
+
+
+export function nearestSearch(node: KDNode | null, target: Vec3,best: { dist: number, index: number } = { dist: Infinity, index: -1 }): { dist: number, index: number } {
+    if (!node) return best;
+
+    //compute distance to this node
+    const dist = distance(target, node.point);
+    if (dist < best.dist) {
+        best = { dist, index: node.index };
+    }
+
+    const axis = node.axis;
+    const diff = target[axis] - node.point[axis];
+
+    //choose primary branch
+    const primary = diff < 0 ? node.left : node.right;
+    const secondary = diff < 0 ? node.right : node.left;
+
+    //search primary branch
+    best = nearestSearch(primary, target, best);
+
+    if (Math.abs(diff) < best.dist) {
+        best = nearestSearch(secondary, target, best);
+    }
+
+    return best;
 }
