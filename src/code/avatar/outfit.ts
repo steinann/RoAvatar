@@ -499,6 +499,8 @@ export class Outfit {
         if (outfitJson.creationDate) {
             this.creationDate = outfitJson.creationDate
         }
+
+        this.fixOrders()
     }
 
     /**
@@ -981,11 +983,38 @@ export class Outfit {
         asset.assetType.id = typeId
         if (LayeredClothingAssetOrder[asset.assetType.id]) {
             asset.meta = new AssetMeta()
-            asset.meta.order = LayeredClothingAssetOrder[asset.assetType.id]
+            const toUseOrder = this.getNextOrder(LayeredClothingAssetOrder[asset.assetType.id])
+            asset.meta.order = toUseOrder
         }
         asset.assetType.name = typeName
 
         this.assets.push(asset)
+    }
+
+    fixOrders() {
+        for (const asset of this.assets) {
+            if (asset.meta && asset.meta.order) {
+                asset.setOrder(this.getNextOrder(asset.meta.order))
+            }
+        }
+    }
+
+    isOrderUsed(order: number): boolean {
+        for (const asset of this.assets) {
+            if (asset.meta && asset.meta.order === order) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    getNextOrder(order: number): number {
+        while (this.isOrderUsed(order)) {
+            order += 1
+        }
+
+        return order
     }
 
     async addAssetId(auth: Authentication, assetId: number): Promise<boolean> {
@@ -1142,6 +1171,8 @@ export class Outfit {
         }
 
         await Promise.all(assetPromises)
+
+        this.fixOrders()
 
         return this
     }

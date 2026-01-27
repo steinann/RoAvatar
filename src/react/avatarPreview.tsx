@@ -162,7 +162,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
         }
 
         if (layeredCount >= 2 && outfit.playerAvatarType === AvatarType.R15) {
-            setWarning("Layered accessories are not in order in the preview")
+            setWarning(undefined)
         } else {
             setWarning(undefined)
         }

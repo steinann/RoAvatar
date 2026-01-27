@@ -4,7 +4,7 @@ import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx
 import { API, Authentication } from '../api'
 import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
-import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
+import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, mergeTargetWithReference } from '../rblx/mesh-deform'
 import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 import { RBFDeformerPatch } from '../rblx/cage-mesh-deform'
@@ -479,6 +479,30 @@ export class MeshDesc {
                 offsetRefMeshLikeInnerAndOuter(dist_mesh, reference, cage)
             }
             */
+           //layer clothing, do note that reference meshes are NOT consistent
+           for (const enclosedLayer of this.enclosedLayers) {
+                const cage = meshMap.get(enclosedLayer.cage)
+                const reference = meshMap.get(enclosedLayer.reference)
+
+                if (!cage || !reference) {
+                    throw new Error("this isnt possible, shut up typescript")
+                }
+
+                offsetMesh(reference, enclosedLayer.referenceOrigin)
+                offsetMesh(cage, enclosedLayer.cageOrigin)
+
+                const newReference = reference.clone()
+                //deformReferenceToBaseBodyParts(newReference, [dist_mesh], [new Vector3(1,1,1)], [new CFrame()])
+                mergeTargetWithReference(newReference, dist_mesh, new Vector3(1,1,1), new CFrame())
+
+                const targetDeformer = new RBFDeformerPatch(reference, newReference, cage)
+                await targetDeformer.solveAsync()
+                targetDeformer.deformMesh()
+
+                const rbfDeformer = new RBFDeformerPatch(newReference, cage, dist_mesh)
+                await rbfDeformer.solveAsync()
+                rbfDeformer.deformMesh()
+            }
 
             //layer the clothing
             const layeredClothingCacheId = `${this.mesh}-${this.layerDesc.reference}`

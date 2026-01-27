@@ -37,6 +37,7 @@ export class WorkerPool {
             if (info[0] == id) {
                 info[1](data)
                 this.workersResolves[i].splice(this.workersResolves[i].indexOf(info),1)
+                this.workersActiveTasks[i] -= 1
                 break
             }
         }
