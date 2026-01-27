@@ -140,6 +140,7 @@ camera.lookAt(new THREE.Vector3(...orbitControlsTarget))
 controls.update()
 
 function animate() {
+    renderer.setRenderTarget(null)
     renderer.render( scene, camera );
 
     requestAnimationFrame( () => {
@@ -293,6 +294,10 @@ export function getRendererCamera() {
 
 export function getRendererControls() {
     return controls
+}
+
+export function getRenderer() {
+    return renderer
 }
 
 export function exportScene() {

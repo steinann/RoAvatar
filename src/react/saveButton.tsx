@@ -24,6 +24,8 @@ export default function SaveButton({historyIndex,historyLength,setAlertEnabled,s
     //TODO: compare the current outfit with the last saved one
     return <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
         if (auth && buttonEnabled) {
+            //if you redraw a thumbnail right before updating the avatar the thumbnail might end up becoming the old avatar instead of the new one (kinda cool), happens more frequently if the old one takes long to render
+            //API.Avatar.RedrawThumbnail(auth)
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
                 if (result) {

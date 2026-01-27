@@ -282,6 +282,30 @@ const API = {
             return new Promise((returnResolve) => {
                 const promises: Promise<Response>[] = []
 
+                if (!onlyItems) {
+                    //scale
+                    promises.push(new Promise((resolve) => {
+                        RBLXPost("https://avatar.roblox.com/v1/avatar/set-scales", auth, outfit.scale.toJson()).then(response => {
+                            resolve(response)
+                        })
+                    }))
+
+                    //bodyColors
+                    const isBrickColor = outfit.bodyColors.colorType == "BrickColor"
+                    promises.push(new Promise((resolve) => {
+                        RBLXPost(`https://avatar.roblox.com/${isBrickColor ? "v1" : "v2"}/avatar/set-body-colors`, auth, outfit.bodyColors.toJson()).then(response => {
+                            resolve(response)
+                        })
+                    }))
+
+                    //playerAvatarType
+                    promises.push(new Promise((resolve) => {
+                        RBLXPost("https://avatar.roblox.com/v1/avatar/set-player-avatar-type", auth, {"playerAvatarType": outfit.playerAvatarType}).then(response => {
+                            resolve(response)
+                        })
+                    }))
+                }
+
                 //assets
                 promises.push(new Promise((resolve) => {
                     let ogResponse: Response | undefined = undefined
@@ -309,31 +333,6 @@ const API = {
                         }
                     })
                 }))
-                
-
-                if (!onlyItems) {
-                    //scale
-                    promises.push(new Promise((resolve) => {
-                        RBLXPost("https://avatar.roblox.com/v1/avatar/set-scales", auth, outfit.scale.toJson()).then(response => {
-                            resolve(response)
-                        })
-                    }))
-
-                    //bodyColors
-                    const isBrickColor = outfit.bodyColors.colorType == "BrickColor"
-                    promises.push(new Promise((resolve) => {
-                        RBLXPost(`https://avatar.roblox.com/${isBrickColor ? "v1" : "v2"}/avatar/set-body-colors`, auth, outfit.bodyColors.toJson()).then(response => {
-                            resolve(response)
-                        })
-                    }))
-
-                    //playerAvatarType
-                    promises.push(new Promise((resolve) => {
-                        RBLXPost("https://avatar.roblox.com/v1/avatar/set-player-avatar-type", auth, {"playerAvatarType": outfit.playerAvatarType}).then(response => {
-                            resolve(response)
-                        })
-                    }))
-                }
 
                 Promise.all<Response>(promises).then(values => {
                     let isSuccess = true
@@ -506,6 +505,9 @@ const API = {
         },
         GetAvatarRules: async function(): Promise<Response> {
             return await RBLXGet("https://avatar.roblox.com/v1/avatar-rules")
+        },
+        RedrawThumbnail: async function(auth: Authentication): Promise<Response> {
+            return await RBLXPost("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", auth, "")
         }
     },
     "Asset": {
