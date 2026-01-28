@@ -499,9 +499,10 @@ export class MeshDesc {
                 await targetDeformer.solveAsync()
                 targetDeformer.deformMesh()
 
-                const rbfDeformer = new RBFDeformerPatch(newReference, cage, dist_mesh)
+                mergeTargetWithReference(dist_mesh, cage, new Vector3(1,1,1), new CFrame())
+                /*const rbfDeformer = new RBFDeformerPatch(newReference, cage, dist_mesh)
                 await rbfDeformer.solveAsync()
-                rbfDeformer.deformMesh()
+                rbfDeformer.deformMesh()*/
             }
 
             //layer the clothing

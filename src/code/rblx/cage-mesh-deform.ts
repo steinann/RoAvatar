@@ -477,7 +477,7 @@ export class RBFDeformerPatch {
 
     nearestPatch: Uint16Array = new Uint16Array() //nearest patch for each vert in mesh
 
-    K: number = 16        // neighbors per patch
+    K: number = 32        // neighbors per patch
     patchCount: number    // how many patches you want
     epsilon: number = 1e-6; // avoid matrix from being singular
 
