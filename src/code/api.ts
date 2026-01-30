@@ -13,6 +13,8 @@ class Authentication {
     TOKEN?: string
     SessionUUID?: string
 
+    info?: {id: number, name: string, displayName: string}
+
     lastRefreshed = new Date().getTime()
 
     async fill() {
@@ -22,6 +24,16 @@ class Authentication {
             this.TOKEN = await API.Auth.GetToken(this.ROBLOSECURITY)
         }
         */
+    }
+
+    async getUserInfo() {
+        if (this.info) {
+            return this.info
+        }
+
+        const info = await API.Users.GetUserInfo(this)
+        this.info = info
+        return info
     }
 
     async getToken() {
@@ -696,15 +708,8 @@ const API = {
         }
     },
     "Inventory": {
-        GetInventory: async function(auth: Authentication, assetTypes: string[], cursor?: string) {
-            let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?assetTypes="
-
-            for (let i = 0; i < assetTypes.length; i++) {
-                requestUrl += assetTypes[i]
-                if (i < assetTypes.length - 1) {
-                    requestUrl += ","
-                }
-            }
+        GetInventory: async function(auth: Authentication, userId: number, assetType: number, cursor?: string) {
+            let requestUrl = `https://inventory.roblox.com/v2/users/${userId}/inventory/${assetType}?sortOrder=Desc&limit=100`
 
             if (cursor) {
                 requestUrl += `&cursor=${cursor}`

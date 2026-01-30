@@ -3,6 +3,7 @@ import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh";
 import { add, createMeshChunks, distance, getDistVertArray, minus, vertPosToChunkPos, type MeshChunk, type WeightChunk3 } from "./mesh-deform";
 import { buildKDTree, knnSearch, nearestSearch, type KDNode } from "../misc/kd-tree-3";
 import { WorkerPool } from "../misc/worker-pool";
+import { RBF_PATCH_COUNT, RBF_PATCH_DETAIL_SAMPLES, RBF_PATCH_SHAPE_SAMPLES } from "../misc/flags";
 
 //200 ~50ms -> 2
 //100 ~26ms -> 4
@@ -477,20 +478,23 @@ export class RBFDeformerPatch {
 
     nearestPatch: Uint16Array = new Uint16Array() //nearest patch for each vert in mesh
 
-    K: number = 32        // neighbors per patch
+    K: number   // neighbors per patch
     patchCount: number    // how many patches you want
     epsilon: number = 1e-6; // avoid matrix from being singular
 
     id: number = rbfDeformerIdCount++
 
-    constructor(refMesh: FileMesh, distMesh: FileMesh, mesh: FileMesh, patchCount = 256, importantsCount = 8) {
+    constructor(refMesh: FileMesh, distMesh: FileMesh, mesh: FileMesh, ignoredIndices: number[] = [], patchCount = RBF_PATCH_COUNT, detailsCount = RBF_PATCH_DETAIL_SAMPLES, importantsCount = RBF_PATCH_SHAPE_SAMPLES) {
         console.time(`RBFDeformerPatch.constructor.${this.id}`);
         this.mesh = mesh
+        this.K = detailsCount
         
         console.time(`RBFDeformerPatch.constructor.verts.${this.id}`);
         //get arrays of ref and dist verts that match in length and index
         const distVertArr = getDistVertArray(refMesh, distMesh)
         for (let i = 0; i < refMesh.coreMesh.verts.length; i++) {
+            if (ignoredIndices.includes(i)) continue
+
             const distVert = distVertArr[i]
             if (distVert) {
                 this.refVerts.push(refMesh.coreMesh.verts[i])
@@ -662,100 +666,6 @@ export class RBFDeformerPatch {
         console.log("skipped patches", totalSkipped)
         console.timeEnd(`RBFDeformerPatch.solve.${this.id}`);
     }
-
-    /*solve() {
-        console.time("RBFDeformerPatch.solve");
-        if (!this.controlKD) throw new Error("Control KD-tree not built")
-
-        this.patches = []
-
-        //create each patch
-        for (let p = 0; p < this.patchCenters.length; p++) {
-            const centerPos = this.patchCenters[p]
-
-            //find nearest verts and add importants
-            const neighbors = knnSearch(this.controlKD, centerPos, this.K)
-            for (const important of this.importantIndices) {
-                neighbors.push(({
-                    dist: 0,
-                    index: important
-                }))
-            }
-
-            const K = neighbors.length
-            if (K === 0) continue
-
-            const neighborIndices = neighbors.map(n => n.index)
-
-            this.patches.push({
-                center: centerPos,
-                neighborIndices,
-                //weights,
-            })
-        }
-
-        //rebuild patch kd tree
-        const patchPoints = this.patches.map(p => p.center)
-        const patchIndices = patchPoints.map((_, i) => i)
-        this.patchKD = buildKDTree(patchPoints, patchIndices)
-
-        //get used patches
-        for (const vert of this.mesh.coreMesh.verts) {
-            const vec = vert.position
-
-            //find nearest patch center
-            const nearestPatchNode = knnSearch(this.patchKD, vec, 1)[0]
-            this.nearestPatch.push(nearestPatchNode.index)
-        }
-
-        //create weights
-        for (let p = 0; p < this.patchCenters.length; p++) {
-            //skip unused patches
-            if (!this.nearestPatch.includes(p)) {
-                continue
-            }
-
-            const patch = this.patches[p]
-
-            const neighborIndices = patch.neighborIndices
-
-            const usedRef = neighborIndices.map(i => this.refVerts[i])
-            const usedDist = neighborIndices.map(i => this.distVerts[i])
-
-            const K = neighborIndices.length
-            if (K === 0) continue
-
-            //build distance matrix A
-            const A: number[][] = new Array(K)
-            for (let i = 0; i < K; i++) {
-                A[i] = new Array(K)
-                const pi = usedRef[i].position
-                for (let j = 0; j < K; j++) {
-                    const pj = usedRef[j].position
-                    A[i][j] = (i === j) ? this.epsilon : distance(pi, pj)
-                }
-            }
-
-            const A_mat = math.matrix(A)
-
-            //create offset arrays
-            const bx = usedRef.map((r, i) => usedDist[i].position[0] - r.position[0])
-            const by = usedRef.map((r, i) => usedDist[i].position[1] - r.position[1])
-            const bz = usedRef.map((r, i) => usedDist[i].position[2] - r.position[2])
-
-            //solve weights
-            const LU = math.lup(A_mat)
-            const wx = (math.lusolve(LU, math.matrix(bx)).toArray() as number[]).flat()
-            const wy = (math.lusolve(LU, math.matrix(by)).toArray() as number[]).flat()
-            const wz = (math.lusolve(LU, math.matrix(bz)).toArray() as number[]).flat()
-
-            const weights = wx.map((_, i) => [wx[i], wy[i], wz[i]] as Vec3)
-
-            this.patches[p].weights = weights
-        }
-
-        console.timeEnd("RBFDeformerPatch.solve");
-    }*/
 
     deform(i: number): Vec3 {
         if (!this.patchKD || this.patches.length === 0) {

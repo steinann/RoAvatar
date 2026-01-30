@@ -48,29 +48,74 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
-            API.Avatar.GetAvatarInventory(auth, sortOption, nextPageToken, itemInfos).then(response => {
-                if (loadId !== lastLoadId) return
-                if (response.status === 200) {
-                    response.json().then(body => {
+            if (sortOption !== "inventory") {
+                API.Avatar.GetAvatarInventory(auth, sortOption, nextPageToken, itemInfos).then(response => {
+                    if (loadId !== lastLoadId) return
+                    if (response.status === 200) {
+                        response.json().then(body => {
+                            if (loadId !== lastLoadId) return
+                            //console.log(body)
+                            const pageToken = body.nextPageToken
+                            if (pageToken && pageToken.length > 0) {
+                                setNextPageToken(pageToken)
+                            } else {
+                                setNextPageToken(null)
+                            }
+                            
+                            const newItems = body.avatarInventoryItems
+                            setItems(prev => [...prev, ...newItems])
+                        }).finally(() => {
+                            if (loadId !== lastLoadId) return
+                            setIsLoading(false)
+                        })
+                    } else {
+                        setIsLoading(false)
+                    }
+                })
+            } else {
+                auth.getUserInfo().then(userInfo => {
+                    if (!userInfo) {
+                        return
+                    }
+
+                    API.Inventory.GetInventory(auth, userInfo.id, itemInfos[0].subType, nextPageToken).then(response => {
                         if (loadId !== lastLoadId) return
-                        //console.log(body)
-                        const pageToken = body.nextPageToken
-                        if (pageToken && pageToken.length > 0) {
-                            setNextPageToken(pageToken)
+                        if (response.status === 200) {
+                            response.json().then((body) => {
+                                if (loadId !== lastLoadId) return
+
+                                const pageToken = body.nextPageCursor
+                                if (pageToken && pageToken.length > 0) {
+                                    setNextPageToken(pageToken)
+                                } else {
+                                    setNextPageToken(null)
+                                }
+
+                                const newItems: AvatarInventoryItem[] = []
+                                for (const asset of body.data) {
+                                    newItems.push({
+                                        itemCategory: {itemType: 1, itemSubType: itemInfos[0].subType},
+                                        itemId: asset.assetId,
+                                        itemName: asset.assetName,
+                                    })
+                                }
+                                setItems(prev => [...prev, ...newItems])
+                            }).finally(() => {
+                                if (loadId !== lastLoadId) return
+                                setIsLoading(false)
+                            })
                         } else {
-                            setNextPageToken(null)
+                            setIsLoading(false)
                         }
-                        
-                        const newItems = body.avatarInventoryItems
-                        setItems(prev => [...prev, ...newItems])
                     }).finally(() => {
                         if (loadId !== lastLoadId) return
                         setIsLoading(false)
                     })
-                } else {
+                }).finally(() => {
+                    if (loadId !== lastLoadId) return
                     setIsLoading(false)
-                }
-            })
+                })
+            }
         }
     }
 

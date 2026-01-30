@@ -669,6 +669,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                         headers = {"Roblox-AssetFormat":"avatar_meshpart_head"}
                     }
 
+                    //get body part
                     API.Asset.GetRBX(`rbxassetid://${assetId}`, headers, auth).then(bodyPartRBX => {
                         if (this.cancelApply) resolve(undefined)
                         if (!(bodyPartRBX instanceof RBX)) {
@@ -678,7 +679,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                             //non head body parts
                             if (bodyPart !== BodyPart.Head) {
-                                if (avatarType === AvatarType.R6) {
+                                if (avatarType === AvatarType.R6) { //r6
                                     const R6Folder = dataModel.FindFirstChild("R6")
                                     let characterMesh = undefined
 
@@ -687,19 +688,20 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                     } else {
                                         characterMesh = dataModel.FindFirstChildOfClass("CharacterMesh")
                                     }
-                                    if (characterMesh) {
-                                        for (const oldCharacterMesh of rig.GetChildren()) {
-                                            if (oldCharacterMesh.className === "CharacterMesh") {
-                                                if (oldCharacterMesh.Prop("BodyPart") === characterMesh.Prop("BodyPart")) {
-                                                    oldCharacterMesh.Destroy()
-                                                }
+                                    
+                                    for (const oldCharacterMesh of rig.GetChildren()) {
+                                        if (oldCharacterMesh.className === "CharacterMesh") {
+                                            if (oldCharacterMesh.Prop("BodyPart") === bodyPart) {
+                                                oldCharacterMesh.Destroy()
                                             }
                                         }
+                                    }
 
+                                    if (characterMesh) {
                                         characterMesh.setParent(rig)
                                     }
                                     
-                                } else {
+                                } else { //r15
                                     let R15Folder = dataModel.FindFirstChild("R15ArtistIntent")
                                     if (!R15Folder || R15Folder.GetChildren().length === 0) {
                                         R15Folder = dataModel.FindFirstChild("R15Fixed")
@@ -714,8 +716,8 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 }
 
                                 resolve(undefined)
-                            } else {
-                                if (avatarType === AvatarType.R6) {
+                            } else { //head bodypart
+                                if (avatarType === AvatarType.R6) { //r6
                                     const headMesh = dataModel.FindFirstChildOfClass("SpecialMesh")
                                     if (headMesh) {
                                         const bodyHeadMesh = rig.FindFirstChild("Head")?.FindFirstChildOfClass("SpecialMesh")
@@ -725,7 +727,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                                         headMesh.setParent(rig.FindFirstChild("Head"))
                                     }
-                                } else {
+                                } else { //r15
                                     const head = dataModel.FindFirstChildOfClass("MeshPart")
 
                                     if (head) {

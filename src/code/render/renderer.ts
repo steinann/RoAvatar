@@ -193,6 +193,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                 oldDesc.updateResult()
             }
         } else {
+            //generate new mesh
             if (!isRenderingMesh.get(instance)) {
                 //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
 

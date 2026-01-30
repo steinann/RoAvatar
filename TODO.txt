@@ -14,6 +14,7 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: Layered clothing does not use HSR (Hidden Surface Removal) and does not deform the body/inner clothing to avoid clipping
     -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
     -LC: Layered clothing uses RBF-deformation for cage layering instead of linear deformation
+    -LC: Layering breaks when 2 meshes with identical caging are worn
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...

@@ -83,10 +83,13 @@ export function getUVtoVertMap(mesh: FileMesh) {
     return map
 }
 
-export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, targetSize: Vector3, targetCFrame: CFrame) {
+export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, targetSize: Vector3, targetCFrame: CFrame): number[] {
     const referenceHashMap = getUVtoVertMap(reference)
     
-    for (const vert of target.coreMesh.verts) {
+    const changedVerts = []
+
+    for (let i = 0; i < target.coreMesh.verts.length; i++) {
+        const vert = target.coreMesh.verts[i]
         const hash = hashVec2(vert.uv[0], vert.uv[1])
         
         const refVerts = referenceHashMap.get(hash)
@@ -95,18 +98,30 @@ export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, 
                 const offsetVec3 = targetCFrame.Position
                 refVert.position = [vert.position[0] * targetSize.X + offsetVec3[0], vert.position[1] * targetSize.Y + offsetVec3[1], vert.position[2] * targetSize.Z + offsetVec3[2]]
                 refVert.normal = [vert.normal[0], vert.normal[1], vert.normal[2]]
+
+                const index = reference.coreMesh.verts.indexOf(refVert)
+                changedVerts.push(index)
             }
         }
     }
+
+    return changedVerts
 }
 
-export function deformReferenceToBaseBodyParts(reference: FileMesh, targetCages: FileMesh[], targetSizes: Vector3[], targetCFrames: CFrame[]) {
+export function deformReferenceToBaseBodyParts(reference: FileMesh, targetCages: FileMesh[], targetSizes: Vector3[], targetCFrames: CFrame[]): number[] {
+    const changedVerts: number[] = []
+
     for (let i = 0; i < targetCages.length; i++) {
         const loadedMesh = targetCages[i]
         if (loadedMesh && targetSizes && targetCFrames) {
-            mergeTargetWithReference(reference, loadedMesh, targetSizes[i].divide(new Vector3().fromVec3(loadedMesh.size)), targetCFrames[i])
+            const mergeChangedVerts = mergeTargetWithReference(reference, loadedMesh, targetSizes[i].divide(new Vector3().fromVec3(loadedMesh.size)), targetCFrames[i])
+            for (const changedVert of mergeChangedVerts) {
+                changedVerts.push(changedVert)
+            }
         }
     }
+
+    return changedVerts
 }
 
 //TODO: use new algorithm that accounts for normals

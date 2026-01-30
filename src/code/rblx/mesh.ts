@@ -1121,6 +1121,22 @@ export class FileMesh {
 
         console.log(`Bytes left: ${view.view.byteLength - view.viewOffset}`)
     }
+
+    combine(other: FileMesh) {
+        const vertsLength = this.coreMesh.verts.length
+
+        for (const vert of other.coreMesh.verts) {
+            this.coreMesh.verts.push(vert.clone())
+        }
+
+        for (const face of other.coreMesh.faces) {
+            const newFace = face.clone()
+            newFace.a += vertsLength
+            newFace.b += vertsLength
+            newFace.c += vertsLength
+            this.coreMesh.faces.push(newFace)
+        }
+    }
 }
 
 /*

@@ -7,7 +7,6 @@ import { OutfitContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import ItemCategory from './react/itemCategory'
-//import SubCategory from './react/subCategory'
 import { CategoryDictionary, SortInfo, SpecialInfo } from './code/avatar/sorts'
 import SaveButton from './react/saveButton'
 import UndoRedo from './react/undoRedo'
@@ -22,8 +21,6 @@ import MarketplaceCategory from './react/marketplaceCategory'
 import { HAIR_IS_BODYPART } from './code/misc/flags'
 import BarButton from './react/barButton'
 import RadialButton from './react/generic/radialButton'
-//import { arrayBufferToBase64 } from './code/misc/misc'
-//import Test_AvatarPreview from './react/test-avatarPreview'
 
 const outfitHistory: Outfit[] = []
 
@@ -332,8 +329,8 @@ function App() {
             </div>
 
             <dialog style={addAssetOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={addAssetDialogRef} onCancel={() => {setAddAssetOpen(false)}}>
-              <span className="dialog-title roboto-700">Add Asset</span>
-              <input ref={addAssetInputRef} className="dialog-text-input roboto-300" placeholder="URL or Id"></input>
+              <span className="dialog-title roboto-700">Add Item</span>
+              <input ref={addAssetInputRef} className="dialog-text-input roboto-300" placeholder="Item URL"></input>
               <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                   setAddAssetOpen(false)
@@ -348,17 +345,46 @@ function App() {
                     id = Number(ids[0])
                   }
 
+                  let isBundle = false
+                  if (addAssetInputRef.current?.value.includes("/bundles/")) {
+                    isBundle = true
+                  }
+
                   if (id && !isNaN(id) && id > 0 && auth) {
                     const newOutfit = outfit.clone()
-                    newOutfit.addAssetId(auth, id).then((success) => {
-                      if (success) {
-                        if (addAssetInputRef.current) {
-                          addAssetInputRef.current.value = ""
-                        }
+                    if (!isBundle) {
+                      newOutfit.addAssetId(auth, id).then((success) => {
+                        if (success) {
+                          if (addAssetInputRef.current) {
+                            addAssetInputRef.current.value = ""
+                          }
 
-                        setOutfit(newOutfit)
-                      }
-                    })
+                          setOutfit(newOutfit)
+                        } else {
+                          setAlertEnabled(true)
+                          setAlertText(`Failed to add asset with id ${id}`)
+                          setTimeout(() => {
+                            setAlertEnabled(false)
+                          }, 3000)
+                        }
+                      })
+                    } else {
+                      newOutfit.addBundleId(auth, id).then((success) => {
+                        if (success) {
+                          if (addAssetInputRef.current) {
+                            addAssetInputRef.current.value = ""
+                          }
+
+                          setOutfit(newOutfit)
+                        } else {
+                          setAlertEnabled(true)
+                          setAlertText(`Failed to add bundle with id ${id}`)
+                          setTimeout(() => {
+                            setAlertEnabled(false)
+                          }, 3000)
+                        }
+                      })
+                    }
                   }
                 }}>Add</RadialButton>
               </div>

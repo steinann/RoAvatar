@@ -2,16 +2,30 @@ import * as THREE from 'three'
 import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
+import { traverseRigCFrame } from '../rblx/scale'
 import { FileMesh } from '../rblx/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
+import { deformReferenceToBaseBodyParts, layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, mergeTargetWithReference } from '../rblx/mesh-deform'
 import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 import { RBFDeformerPatch } from '../rblx/cage-mesh-deform'
-import { getModelLayersDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
 //const CACHE_cage = new Map<Instance, Promise<[MeshDesc, FileMesh]>>()
+
+function arrIsSameOrder<T>(arr0: T[], arr1: T[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (let i = 0; i < arr0.length; i++) {
+        if (arr0[i] !== arr1[i]) {
+            return false
+        }
+    }
+
+    return true
+}
 
 /*function arrIsSame<T>(arr0: T[], arr1: T[]) {
     if (arr0.length !== arr1.length) {
@@ -26,6 +40,66 @@ import { getModelLayersDesc, WrapLayerDesc, type ModelLayersDesc } from './layer
 
     return true
 }*/
+
+function arrIsSameCF(arr0: CFrame[], arr1: CFrame[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (const element of arr0) {
+        let found = false
+        for (const element1 of arr1) {
+            if (element.isSame(element1)) {
+                found = true
+            }
+        }
+        if (!found) {
+            return found
+        }
+    }
+
+    return true
+}
+
+function arrIsSameVector3(arr0: Vector3[], arr1: Vector3[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (const element of arr0) {
+        let found = false
+        for (const element1 of arr1) {
+            if (element.isSame(element1)) {
+                found = true
+            }
+        }
+        if (!found) {
+            return found
+        }
+    }
+
+    return true
+}
+
+function arrIsSameWrapLayer(arr0: WrapLayerDesc[], arr1: WrapLayerDesc[]) {
+    if (arr0.length !== arr1.length) {
+        return false
+    }
+
+    for (const element of arr0) {
+        let found = false
+        for (const element1 of arr1) {
+            if (element.isSame(element1)) {
+                found = true
+            }
+        }
+        if (!found) {
+            return found
+        }
+    }
+
+    return true
+}
 
 function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
     const geometry = new THREE.BufferGeometry()
@@ -183,12 +257,36 @@ function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forc
     return geometry
 }
 
-export async function promiseForMesh(url: string, auth: Authentication, readOnly: boolean = false): Promise<[string, Response | FileMesh]> {
+async function promiseForMesh(url: string, auth: Authentication, readOnly: boolean = false): Promise<[string, Response | FileMesh]> {
     return new Promise((resolve) => {
         API.Asset.GetMesh(url, undefined, auth, readOnly).then(result => {
             resolve([url, result])
         })
     })
+}
+
+class WrapLayerDesc {
+    reference: string
+    referenceOrigin: CFrame
+    cage: string
+    cageOrigin: CFrame
+
+    //temporary, order of array is used instead
+    order?: number
+
+    isSame(other: WrapLayerDesc) {
+        return this.reference === other.reference &&
+                this.referenceOrigin.isSame(other.referenceOrigin) &&
+                this.cage === other.cage &&
+                this.cageOrigin.isSame(other.cageOrigin)
+    }
+
+    constructor(reference: string, referenceOrigin: CFrame, cage: string, cageOrigin: CFrame) {
+        this.reference = reference
+        this.referenceOrigin = referenceOrigin
+        this.cage = cage
+        this.cageOrigin = cageOrigin
+    }
 }
 
 export class MeshDesc {
@@ -200,7 +298,12 @@ export class MeshDesc {
 
     //layering
     layerDesc?: WrapLayerDesc
-    modelLayersDesc?: ModelLayersDesc
+
+    targetCages?: string[]
+    targetCFrames?: CFrame[]
+    targetSizes?: Vector3[]
+
+    enclosedLayers?: WrapLayerDesc[]
 
     //result data
     compilationTimestamp: number = -1
@@ -225,24 +328,54 @@ export class MeshDesc {
             return false
         }
 
+        if ((!this.targetCages && other.targetCages) || (this.targetCages && !other.targetCages)) {
+            return false
+        }
+
+        if ((!this.targetCFrames && other.targetCFrames) || (this.targetCFrames && !other.targetCFrames)) {
+            return false
+        }
+
+        if ((!this.targetSizes && other.targetSizes) || (this.targetSizes && !other.targetSizes)) {
+            return false
+        }
+
+        if ((!this.enclosedLayers && other.enclosedLayers) || (this.enclosedLayers && !other.enclosedLayers)) {
+            return false
+        }
+
+        if ((!this.forceVertexColor && other.forceVertexColor) || (this.forceVertexColor && !other.forceVertexColor)) {
+            return false
+        }
+
         if (this.layerDesc && other.layerDesc) {
             if (!this.layerDesc.isSame(other.layerDesc)) {
                 return false
             }
         }
 
-        if ((!this.modelLayersDesc && other.modelLayersDesc) || (this.modelLayersDesc && !other.modelLayersDesc)) {
-            return false
-        }
-
-        if (this.modelLayersDesc && other.modelLayersDesc) {
-            if (!this.modelLayersDesc.isSame(other.modelLayersDesc)) {
+        if (this.targetCages && other.targetCages) {
+            if (!arrIsSameOrder(this.targetCages, other.targetCages)) {
                 return false
             }
         }
 
-        if ((!this.forceVertexColor && other.forceVertexColor) || (this.forceVertexColor && !other.forceVertexColor)) {
-            return false
+        if (this.targetCFrames && other.targetCFrames) {
+            if (!arrIsSameCF(this.targetCFrames, other.targetCFrames)) {
+                return false
+            }
+        }
+
+        if (this.targetSizes && other.targetSizes) {
+            if (!arrIsSameVector3(this.targetSizes, other.targetSizes)) {
+                return false
+            }
+        }
+
+        if (this.enclosedLayers && other.enclosedLayers) {
+            if (!arrIsSameWrapLayer(this.enclosedLayers, other.enclosedLayers)) {
+                return false
+            }
         }
 
         if (this.forceVertexColor && other.forceVertexColor) {
@@ -269,12 +402,21 @@ export class MeshDesc {
         let the_ref_mesh = undefined
 
         //layered clothing
-        if (this.layerDesc && this.modelLayersDesc && this.modelLayersDesc.targetCages && this.modelLayersDesc.targetCages.length > 0 && this.modelLayersDesc.targetCFrames && this.modelLayersDesc.targetSizes && this.modelLayersDesc.layers) {
+        if (this.layerDesc && this.targetCages && this.targetCFrames && this.targetSizes && this.enclosedLayers) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
 
             const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
+            
+            meshPromises.push(promiseForMesh(this.layerDesc.cage, auth, true))
             meshPromises.push(promiseForMesh(this.layerDesc.reference, auth))
+            for (const targetCage of this.targetCages) {
+                meshPromises.push(promiseForMesh(targetCage, auth, true))
+            }
+            for (const enclosedLayer of this.enclosedLayers) {
+                meshPromises.push(promiseForMesh(enclosedLayer.cage, auth))
+                meshPromises.push(promiseForMesh(enclosedLayer.reference, auth))
+            }
 
             const values = await Promise.all(meshPromises)
             for (const [url, mesh] of values) {
@@ -292,25 +434,81 @@ export class MeshDesc {
             console.log(ref_mesh.coreMesh.verts.length - ref_mesh.coreMesh.removeDuplicateVertices(0.01))
 
             //create destination cage
-            let dist_mesh = ref_mesh.clone()
+            const dist_mesh = ref_mesh.clone()
             if (!dist_mesh) {
                 throw new Error("this.layerDesc.reference is missing! That shouldn't be possible...")
             }
 
+            //deform to body
+            const targetCages: FileMesh[] = []
+            for (const targetCageUrl of this.targetCages) {
+                const targetCage = meshMap.get(targetCageUrl)
+                if (!targetCage) {
+                    throw new Error("targetCage is missing! not possible...")
+                }
+                targetCages.push(targetCage)
+            }
+
+            const changedVerts = deformReferenceToBaseBodyParts(dist_mesh, targetCages, this.targetSizes, this.targetCFrames)
+            const ignoredVerts: number[] = []
+            for (let i = 0; i < dist_mesh.coreMesh.verts.length; i++) {
+                if (!changedVerts.includes(i)) {
+                    ignoredVerts.push(i)
+                }
+            }
+
+            /*
+            // remove the ref_mesh.coreMesh.removeDuplicateVertices(0.01) line and add this back to easily generate inner cage meshes from an avatar body
+            const distMeshTHREE = new THREE.Mesh(fileMeshToTHREEGeometry(dist_mesh))
+            
+            const exporter = new OBJExporter();
+            const result = exporter.parse(distMeshTHREE);
+            download("cage.obj", result)
+            */
+
             //offset ref_mesh
             offsetMesh(ref_mesh, this.layerDesc.referenceOrigin)
 
-            //get target mesh
-            const targetMeshes = await this.modelLayersDesc.compileTargetMeshes(auth)
-            if (!targetMeshes || (targetMeshes instanceof Response)) {
-                return targetMeshes
-            }
+            //deform based on layers under TODO: fix this, i mean it works but its terrible, try compressing inner layers and we should use deformation for this instead of just applying the offset directly (rip performance)
+            /*
+            for (const enclosedLayer of this.enclosedLayers) {
+                const cage = meshMap.get(enclosedLayer.cage)
+                const reference = meshMap.get(enclosedLayer.reference)
 
-            for (let i = 0; i < this.modelLayersDesc.layers.length; i++) {
-                if (this.modelLayersDesc.layers[i].isSame(this.layerDesc)) {
-                    dist_mesh = targetMeshes[i]
-                    break
+                if (!cage || !reference) {
+                    throw new Error("this isnt possible, shut up typescript")
                 }
+
+                offsetMesh(reference, enclosedLayer.referenceOrigin)
+                offsetMesh(cage, enclosedLayer.cageOrigin)
+
+                offsetRefMeshLikeInnerAndOuter(dist_mesh, reference, cage)
+            }
+            */
+           //layer clothing, do note that reference meshes are NOT consistent
+           for (const enclosedLayer of this.enclosedLayers) {
+                const cage = meshMap.get(enclosedLayer.cage)
+                const reference = meshMap.get(enclosedLayer.reference)
+
+                if (!cage || !reference) {
+                    throw new Error("this isnt possible, shut up typescript")
+                }
+
+                offsetMesh(reference, enclosedLayer.referenceOrigin)
+                offsetMesh(cage, enclosedLayer.cageOrigin)
+
+                const newReference = reference.clone()
+                //deformReferenceToBaseBodyParts(newReference, [dist_mesh], [new Vector3(1,1,1)], [new CFrame()])
+                mergeTargetWithReference(newReference, dist_mesh, new Vector3(1,1,1), new CFrame())
+
+                const targetDeformer = new RBFDeformerPatch(reference, newReference, cage)
+                await targetDeformer.solveAsync()
+                targetDeformer.deformMesh()
+
+                mergeTargetWithReference(dist_mesh, cage, new Vector3(1,1,1), new CFrame())
+                /*const rbfDeformer = new RBFDeformerPatch(newReference, cage, dist_mesh)
+                await rbfDeformer.solveAsync()
+                rbfDeformer.deformMesh()*/
             }
 
             //layer the clothing
@@ -319,7 +517,7 @@ export class MeshDesc {
             switch (LAYERED_CLOTHING_ALGORITHM) {
                 case "rbf":
                     { 
-                        const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
+                        const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh, ignoredVerts)
                         await rbfDeformer.solveAsync()
                         rbfDeformer.deformMesh()
                         break
@@ -492,13 +690,57 @@ export class MeshDesc {
         if (wrapLayer && model) {
             this.scaleIsRelative = false
             //this.size = new Vector3(1,1,1)
+
+            const selfLayerOrder = wrapLayer.Prop("Order") as number
+
             const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
             const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
             const deformationCage = wrapLayer.Prop("CageMeshId") as string
             const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
 
             this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
-            this.modelLayersDesc = getModelLayersDesc(model)
+
+            this.targetCages = []
+            this.targetCFrames = []
+            this.targetSizes = []
+
+            //wrap targets
+            for (const wrapTarget of model.GetDescendants()) {
+                if (wrapTarget.className === "WrapTarget" && wrapTarget.parent && wrapTarget.parent.className === "MeshPart") {
+                    const bodyPartCage = wrapTarget.Prop("CageMeshId") as string
+
+                    const bodyPartCageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+                    const bodyPartCFrame = traverseRigCFrame(wrapTarget.parent)
+                    const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
+
+                    const bodyPartSize = wrapTarget.parent.Prop("Size") as Vector3
+
+                    this.targetCages.push(bodyPartCage)
+                    this.targetCFrames.push(bodyPartTargetCFrame)
+                    this.targetSizes.push(bodyPartSize)
+                }
+            }
+
+            //underneath wrap layers
+            const underneathLayers: WrapLayerDesc[] = []
+
+            for (const otherWrapLayer of model.GetDescendants()) {
+                if (otherWrapLayer.className === "WrapLayer" && otherWrapLayer !== wrapLayer) {
+                    const layerOrder = otherWrapLayer.Prop("Order") as number
+                    if (layerOrder < selfLayerOrder) {
+                        const deformationReference = otherWrapLayer.Prop("ReferenceMeshId") as string
+                        const referenceOrigin = otherWrapLayer.Prop("ReferenceOrigin") as CFrame
+                        const deformationCage = otherWrapLayer.Prop("CageMeshId") as string
+                        const cageOrigin = otherWrapLayer.Prop("CageOrigin") as CFrame
+
+                        const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+                        underneathLayer.order = layerOrder
+                        underneathLayers.push(underneathLayer)
+                    }
+                }
+            }
+
+            this.enclosedLayers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
         }
     }
 }

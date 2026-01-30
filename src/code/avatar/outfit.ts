@@ -5,7 +5,7 @@ import SimpleView from "../lib/simple-view";
 import { BODYCOLOR3 } from "../misc/flags"
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
-import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
+import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, CatalogBundleTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
 import type { AssetJson } from "./asset"
 import { AvatarType, BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin } from "./constant"
 
@@ -1047,6 +1047,34 @@ export class Outfit {
         this.assets.push(asset)*/
 
         return true
+    }
+
+    async addBundleId(auth: Authentication, bundleId: number): Promise<boolean> {
+        const bundleDetails = await API.Catalog.GetBundleDetails(auth, bundleId)
+
+        if (!(bundleDetails instanceof Response)) {
+            const bundleType = CatalogBundleTypes[bundleDetails.bundleType]
+
+            for (const item of bundleDetails.bundledItems) {
+                if (item.type === "UserOutfit") { //find first outfit in bundle
+                    const result = await API.Avatar.GetOutfitDetails(auth, item.id, this.creatorId || 1)
+                    if (result instanceof Outfit) {
+                        for (const asset of result.assets) {
+                            this.addAsset(asset.id, asset.assetType.id, asset.name)
+                        }
+
+                        if (bundleType === "Character") {
+                            this.scale = result.scale.clone()
+                        }
+
+                        return true
+                    }
+                    break
+                }
+            }
+        }
+
+        return false
     }
 
     getAssetId(assetId: number): Asset | undefined {

@@ -13,7 +13,7 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
         if (WearableAssetTypes.includes(item.type)) {
             newOutfit.addAsset(item.id, item.type, item.name);
         }
-        if (item.type.endsWith("Animation") && item.type !== "EmoteAnimation") {
+        if (item.type.endsWith("Animation") && item.type !== "EmoteAnimation" && item.type !== "MoodAnimation") {
             const entry = DefaultAnimations[item.type as AnimationProp]
             const mainName = entry[0]
             

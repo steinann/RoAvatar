@@ -100,7 +100,18 @@ export const AssetTypes = [
     "EyebrowAccessory",
     "EyelashAccessory",
     "MoodAnimation",
-    "DynamicHead",
+    "DynamicHead", //79
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup",
 ]
 
 export const WearableAssetTypes = [
@@ -143,6 +154,10 @@ export const WearableAssetTypes = [
     "EyelashAccessory",
     "MoodAnimation",
     "DynamicHead",
+
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup",
 
     "PoseAnimation",
     "EarAccessory",
