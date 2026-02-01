@@ -425,8 +425,10 @@ function readBone(view: SimpleView) {
 
     bone.culling = view.readFloat32()
 
-    const newMat: number[] = []
-    for (let i = 0; i < 9; i++) newMat.push(view.readFloat32());
+    const newMat: number[] = new Array(9)
+    for (let i = 0; i < 9; i++) {
+        newMat[i] = view.readFloat32()
+    }
     bone.rotationMatrix = newMat as Mat3x3
 
     bone.position = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
@@ -739,6 +741,9 @@ export class FileMesh {
                 break
             case "HSRAVIS\0":
                 this.readChunkHSRAVIS(view, chunkVersion)
+                break
+            default:
+                console.warn(`Unknown chunk found in mesh: ${chunkType}`)
                 break
         }
         

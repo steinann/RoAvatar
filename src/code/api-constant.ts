@@ -201,3 +201,13 @@ export interface BundleDetails_Result {
     totalQuantity: number,
     unitsAvailableForConsumption: number,
 }
+
+export interface ThumbnailsCustomization_Payload {
+    thumbnailType: number,
+    emoteAssetId: number,
+    camera: {
+        fieldOfViewDeg: number,
+        yRotDeg: number,
+        distanceScale: number,
+    }
+}

@@ -1,4 +1,4 @@
-import type { BundleDetails_Result, GetTopics_Payload, GetTopics_Result, NavigationMenuItems, Search_Payload, Search_Result } from "./api-constant"
+import type { BundleDetails_Result, GetTopics_Payload, GetTopics_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
@@ -520,7 +520,13 @@ const API = {
         },
         RedrawThumbnail: async function(auth: Authentication): Promise<Response> {
             return await RBLXPost("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", auth, "")
-        }
+        },
+        GetThumbnailCustomization: async function(auth: Authentication): Promise<Response> {
+            return await RBLXGet("https://avatar.roblox.com/v1/avatar/thumbnail-customizations", auth)
+        },
+        SetThumbnailCustomization: async function(auth: Authentication, body: ThumbnailsCustomization_Payload): Promise<Response> {
+            return await RBLXPost("https://avatar.roblox.com/v1/avatar/thumbnail-customization", auth, body)
+        },
     },
     "Asset": {
         GetAssetBuffer: async function(url: string, headers?: HeadersInit, auth?: Authentication) {

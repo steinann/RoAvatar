@@ -207,7 +207,7 @@ export class CFrame {
         return this
     }
 
-    fromRotationMatrix(r00: number, r01: number, r02: number, r10: number, r11: number, r12: number, r20: number, r21: number, r22: number) {
+    fromRotationMatrix(r00: number, r01: number, r02: number, r10: number, r11: number, r12: number, r20: number, r21: number, r22: number, order: string = "YXZ") {
         /*const matrix = new Array(9)
         let i = 0
         for (let x = 0; x < 3; x++) {
@@ -227,11 +227,17 @@ export class CFrame {
             }
         }*/
 
+        /*this.Orientation = rotationMatrixToEulerAngles([
+            r00, r01, r02,
+            r10, r11, r12,
+            r20, r21, r22,
+        ], order)*/
+
         this.Orientation = rotationMatrixToEulerAngles([
             r00, r10, r20,
             r01, r11, r21,
             r02, r12, r22
-        ])
+        ], order)
     }
 
     inverse() {
@@ -639,6 +645,7 @@ export class Instance {
                     throw new Error("CFrame orientation can't contain NaN value")
                 }
             }
+
             if (property.name === "Name") {
                 const valueSTR = value as string
                 this.name = valueSTR
@@ -680,7 +687,13 @@ export class Instance {
                     }
                 default:
                     {
-                        if (name.includes("Id") || name.includes("ID")) {
+                        if (this.className === "Decal" && name === "Texture") {
+                            if (this.HasProperty("TextureContent")) {
+                                return (this.Prop("TextureContent") as Content).uri
+                            } else if (this.HasProperty("ColorMapContent")) {
+                                return (this.Prop("ColorMapContent") as Content).uri
+                            }
+                        } else if (name.includes("Id") || name.includes("ID")) {
                             const contentVersion = name.replace("Id", "Content").replace("ID","Content")
                             if (this.HasProperty(contentVersion)) {
                                 const content = this.Prop(contentVersion) as Content

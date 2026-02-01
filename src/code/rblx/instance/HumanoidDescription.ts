@@ -1301,6 +1301,12 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
 
         this.instance.setParent(humanoid)
+        //console.log(humanoid.parent)
+        /*if (humanoid.parent) {
+            const modelWrapper = new ModelWrapper(humanoid.parent)
+            console.log(modelWrapper.GetExtentsSize())
+            console.log(modelWrapper.GetModelCFrame())
+        }*/
         
         return this.instance
     }

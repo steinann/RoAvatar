@@ -27,7 +27,7 @@ import { getModelLayersDesc, WrapLayerDesc, type ModelLayersDesc } from './layer
     return true
 }*/
 
-function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
+export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
     const geometry = new THREE.BufferGeometry()
 
     //position

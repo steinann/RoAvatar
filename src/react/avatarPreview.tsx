@@ -63,6 +63,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
                     console.log(result)
 
                     const root = result.generateTree()
+                    console.log(root)
                     currentRig = root
                     addInstance(root, auth)
                 }

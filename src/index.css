@@ -1339,3 +1339,14 @@ form {
     color: var(--font-color);
     cursor: pointer;
 }
+
+.searchfilter {
+    position: relative
+}
+
+.searchfilter-search {
+    position: absolute;
+    right: 0;
+
+    background-color: var(--body-background);
+}

@@ -11,7 +11,11 @@ import type { RenderableDesc } from './renderableDesc';
 
 function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     bone.position.set(...cf.Position)
-    bone.rotation.set(rad(cf.Orientation[0]), rad(cf.Orientation[1]), rad(cf.Orientation[2]), "YXZ")
+    bone.rotation.order = "YXZ"
+    bone.rotation.x = rad(cf.Orientation[0])
+    bone.rotation.y = rad(cf.Orientation[1])
+    bone.rotation.z = rad(cf.Orientation[2])
+    //bone.rotation.set(rad(cf.Orientation[0]), rad(cf.Orientation[1]), rad(cf.Orientation[2]), "YXZ")
 }
 
 //IMPORTANT: this gets the CENTER of the target part, instead of the joint connection it and the parent
@@ -386,8 +390,7 @@ export class SkeletonDesc {
 
                                 const resultCF = new CFrame()
 
-                                let euler = new THREE.Euler(rad(totalRotation.X), rad(totalRotation.Y), rad(totalRotation.Z), "XYZ")
-                                euler = euler.reorder("YXZ")
+                                const euler = new THREE.Euler(rad(totalRotation.X), rad(totalRotation.Y), rad(totalRotation.Z), "YXZ")
 
                                 resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
                                 resultCF.Position = multiply(totalPosition.toVec3(), headScale)

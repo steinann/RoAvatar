@@ -173,7 +173,12 @@ export class ModelLayersDesc {
                 const bodyPartCFrame = traverseRigCFrame(wrapTarget.parent)
                 const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
 
-                const bodyPartSize = wrapTarget.parent.Prop("Size") as Vector3
+                let bodyPartSize = wrapTarget.parent.Prop("Size") as Vector3
+
+                //TODO: replace this temporary fix for eyelashes/eyebrows clipping with a permanent one
+                if (wrapTarget.parent.Prop("Name") === "Head") {
+                    bodyPartSize = bodyPartSize.multiply(new Vector3(1.03,1.03,1.03))
+                }
 
                 this.targetCages.push(bodyPartCage)
                 this.targetCFrames.push(bodyPartTargetCFrame)

@@ -8,8 +8,6 @@ ISSUES (Relating to renderer inaccuracy):
         -Them having their own FACS data and bones doesn't make sense as it break the animation if you change the underlying head
         -They likely inherit the bones and FACS data of the underlying head, which is why AutoSkin is needed
     -SKELETON: Tongues are usually rotated incorrectly
-    -MATERIAL: Skin color is not applied accurately, see 27112039 which somehow applies the left arm's skin color on the right arm's hand in R6
-    -MATERIAL: Clothing is not applied accurately, see 376532000 which shows the color on the bottom as an example on how this can negatively affect clothing, this applies to both R15 and R6 but is hard to notice
     -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that might give weird results and doesnt seem right), also the deformation should sample BOTH the inner and outer cage! (rip performance)
     -LC: Layered clothing does not use HSR (Hidden Surface Removal) and does not deform the body/inner clothing to avoid clipping
     -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info

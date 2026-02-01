@@ -185,6 +185,12 @@ function App() {
         window.saveOutfit = (a: Outfit) => {
           API.Avatar.SaveOutfit(newAuth, a)
         }
+        window.getMesh = (a: string) => {
+          return API.Asset.GetMesh(a, undefined, newAuth)
+        }
+        window.getRBX = (a: string) => {
+          return API.Asset.GetRBX(a, undefined, newAuth)
+        }
       })
     }
 
@@ -440,7 +446,9 @@ function App() {
                   <input value={tempSearchKeyword} ref={searchRef} className='marketplace-search' placeholder='Search'></input>
                   <button type="submit" className='search-button'><span className='material-symbols-outlined'>search</span></button>
                 </form>
-                 : null}
+                 : null
+                 /*<SearchFilter tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword}/>*/
+                 }
               </BarCategory>
 
               {/*subcategorycategory picker*/}
@@ -475,6 +483,8 @@ declare global {
         arrayBufferToBase64: (a: ArrayBuffer) => string;
         base64ToArrayBuffer: (a: string) => ArrayBuffer;
         saveOutfit: (a: Outfit) => void;
+        getMesh: (a: string) => void;
+        getRBX: (a: string) => void;
     }
 }
 

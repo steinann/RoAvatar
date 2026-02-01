@@ -171,7 +171,18 @@ export class RenderableDesc {
         }
         if (mesh) {
             if (mesh.material) {
-                (mesh.material as THREE.Material).dispose()
+                const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+
+                for (const material of materials) {
+                    for (const key of Object.keys(material)) {
+                        const value = (material as unknown as {[K in string]: unknown})[key]
+                        if (value instanceof THREE.Texture) {
+                            value.dispose()
+                        }
+                    }
+                    
+                    material.dispose()
+                }
             }
             if (mesh.geometry) {
                 mesh.geometry.dispose()
@@ -195,7 +206,7 @@ export class RenderableDesc {
         //compile dependencies
         const promises: [Promise<THREE.Mesh | Response | undefined>, Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial>] = [
             this.meshDesc.compileMesh(auth),
-            this.materialDesc.compileMaterial()
+            this.materialDesc.compileMaterial(this.meshDesc, auth)
         ]
 
         const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)

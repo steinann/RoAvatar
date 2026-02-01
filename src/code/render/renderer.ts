@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 import { download, rad, saveByteArray } from '../misc/misc';
 import { RenderableDesc } from './renderableDesc';
 import { type Connection, type Instance } from '../rblx/rbx';
@@ -7,7 +7,8 @@ import type { Authentication } from '../api';
 import { RenderedClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { getSkeletonFromHumanoid, setFACSMeshForHumanoid, updateSkeletonFromHumanoid } from './legacy-skeleton';
-import { USE_LEGACY_SKELETON } from '../misc/flags';
+import { USE_LEGACY_SKELETON, USE_POST_PROCESSING } from '../misc/flags';
+import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 
 // MAIN DATA FOR THE RENDERER (i should have really made this a class...)
 const isRenderingMesh = new Map<Instance,boolean>()
@@ -26,6 +27,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 1000 );
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setClearColor(new THREE.Color(1,0,1), 0)
 renderer.outputColorSpace = THREE.SRGBColorSpace
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -34,6 +36,24 @@ renderer.setSize( 420, 420 );
 renderer.domElement.setAttribute("style","width: 420px; height: 420; border-radius: 0px;")
 
 renderer.domElement.setAttribute("id","OutfitInfo-outfit-image-3d")
+
+let effectComposer: EffectComposer | undefined = undefined
+
+if (USE_POST_PROCESSING) {
+    effectComposer = new EffectComposer(renderer)
+    const renderPass = new RenderPass(scene, camera)
+    effectComposer.addPass(renderPass)
+
+    const resolution = new THREE.Vector2(420, 420)
+    const bloomPass = new UnrealBloomPass(resolution, 0.15, 0.0001, 0.9)
+    effectComposer.addPass(bloomPass)
+
+    const fxaaPass = new FXAAPass()
+    effectComposer.addPass( fxaaPass )
+
+    const outputPass = new OutputPass()
+    effectComposer.addPass(outputPass)
+}
 
 //const backgroundColor = new THREE.Color( 0x2C2E31 )
 //const backgroundColor = new THREE.Color( 0x191a1f )
@@ -141,7 +161,11 @@ controls.update()
 
 function animate() {
     renderer.setRenderTarget(null)
-    renderer.render( scene, camera );
+    if (effectComposer) {
+        effectComposer.render();
+    } else {
+        renderer.render(scene, camera)
+    }
 
     requestAnimationFrame( () => {
         animate()
@@ -299,6 +323,10 @@ export function getRendererControls() {
 
 export function getRenderer() {
     return renderer
+}
+
+export function getScene() {
+    return scene
 }
 
 export function exportScene() {

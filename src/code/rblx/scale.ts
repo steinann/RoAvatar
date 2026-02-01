@@ -1073,6 +1073,9 @@ export function traverseRigCFrame(instance: Instance) {
 	const motors: Instance[] = []
 
 	let lastMotor6D = instance.FindFirstChildOfClass("Motor6D")
+	if (!lastMotor6D) {
+		lastMotor6D = instance.FindFirstChildOfClass("Weld")
+	}
 	while (lastMotor6D) {
 		motors.push(lastMotor6D)
 		const ogLastMotor6D = lastMotor6D

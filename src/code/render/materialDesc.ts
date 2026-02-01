@@ -1,231 +1,82 @@
 import * as THREE from 'three'
-import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
-import { isAffectedByHumanoid, type Color3, type Color3uint8, type Instance } from "../rblx/rbx"
+import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId, RenderedClassTypes } from "../rblx/constant"
+import { Color3, Color3uint8, Content, isAffectedByHumanoid, type Instance } from "../rblx/rbx"
 import { AvatarType } from '../avatar/constant'
-import { API } from '../api'
-import { rad } from '../misc/misc'
+import { API, Authentication } from '../api'
+import { TextureComposer } from './textureComposer'
+import { Shader_TextureComposer_Flat } from './shaders/textureComposer-flat'
+import { Shader_TextureComposer_FullscreenQuad } from './shaders/textureComposer-fullscreenquad'
+import { Shader_TextureComposer_FullscreenQuad_Color } from './shaders/textureComposer-fullscreenquad-color'
+import { getRenderer } from './renderer'
+import { Shader_TextureComposer_Flat_Color } from './shaders/textureComposer-flat-color'
+import { fileMeshToTHREEGeometry, type MeshDesc } from './meshDesc'
+import { FileMesh } from '../rblx/mesh'
+import { Shader_TextureComposer_Decal } from './shaders/textureComposer-decal'
 
-function mapImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sX: number, sY: number, sW: number, sH: number, oX: number, oY: number, oW: number, oH: number, rotation: number = 0) {
-    ctx.save()
-    ctx.translate(oX,oY)
-    ctx.rotate(rad(rotation))
-    ctx.translate(-oX,-oY)
-
-    //ctx.drawImage(img, sX, sY, sW, sH, oX - 2, oY - 2, oW + 4, oH + 4)
-    ctx.drawImage(img, sX, sY, sW, sH, oX, oY, oW, oH)
-
-    ctx.restore()
-}
-
-function renderClothingToCanvasR15(ctx: CanvasRenderingContext2D, limbId: number, shirtImg?: HTMLImageElement, pantsImg?: HTMLImageElement) {
-    const isArm = limbId === BodyPart.LeftArm || limbId === BodyPart.RightArm
+async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
+    let instruction: THREE.Mesh
 
     //limbs
     if (limbId !== BodyPart.Torso) {
         const isLeft = limbId === BodyPart.LeftArm || limbId === BodyPart.LeftLeg
 
-        const img = isArm ? shirtImg : pantsImg
-        if (img) {
-            const startX = isLeft ? 308 : 217
-            let i = isLeft ? 1 : -3
-
-            //top
-            mapImg(ctx, img, startX, 289, 64, 64, 2, 66, 64, 64, -90)
-
-            //bottom
-            mapImg(ctx, img, startX, 485, 64, 64, 198, 218, 64, 64, 0)
-
-            //front
-            mapImg(ctx, img, startX + 66*0, 355, 64, 114, 66 + 64*0, 66, 64, 114, 0)
-            mapImg(ctx, img, startX + 66*0, 469, 64, 14, 66 + 64*0, 216, 64, 18, 0)
-                //in betweens (TODO: make this more accurate)
-                mapImg(ctx, img, startX + 66*0, 417, 64, 3, 0, 198, 36, 18, 0) //top of lower leg
-                mapImg(ctx, img, startX + 66*0, 465, 64, 3, 160, 254, 36, 18, 0) //top of feet
-                mapImg(ctx, img, startX + 66*0, 417, 64, 3, 103, 45, 36, 18, 180) //bottom of upper leg
-                mapImg(ctx, img, startX + 66*0, 465, 64, 3, 71, 197, 36, 18, 180) //bottom of lower leg
-
-            //left
-            mapImg(ctx, img, startX + 66*i, 355, 64, 114, 66 + 64*1, 66, 64, 114, 0)
-            mapImg(ctx, img, startX + 66*i, 469, 64, 14, 66 + 64*1, 216, 64, 18, 0)
-            i++
-
-            //back
-            mapImg(ctx, img, startX + 66*i, 355, 64, 114, 66 + 64*2, 66, 64, 114, 0)
-            mapImg(ctx, img, startX + 66*i, 469, 64, 14, 2, 236, 64, 18, 0)
-            //in betweens (TODO: make this more accurate)
-                mapImg(ctx, img, startX + 66*i, 417, 64, 3, 35, 197, 36, 18, 180) //top of lower leg
-                mapImg(ctx, img, startX + 66*i, 465, 64, 3, 195, 253, 36, 18, 180) //top of feet
-                mapImg(ctx, img, startX + 66*i, 417, 64, 3, 68, 46, 36, 18, 0) //bottom of upper leg
-                mapImg(ctx, img, startX + 66*i, 465, 64, 3, 36, 198, 36, 18, 0) //bottom of lower leg
-            i++
-
-            //right
-            mapImg(ctx, img, startX + 66*i, 355, 64, 114, 66 + 64*-1, 66, 64, 114, 0)
-            mapImg(ctx, img, startX + 66*i, 469, 64, 14, 66 + 64*-1, 216, 64, 18, 0)
-            i++
-        }
+        instruction = await TextureComposer.simpleMesh(
+            isLeft ? "R15CompositLeftArmBase" : "R15CompositRightArmBase",
+            Shader_TextureComposer_Flat,
+            {
+                uTexture: {value: texture}
+            }
+        )
     } else { //torso
-        //shirt and pants
-        const imgs = []
-        if (pantsImg) {
-            imgs.push(pantsImg)
-        }
-        if (shirtImg) {
-            imgs.push(shirtImg)
-        }
-
-        for (const img of imgs) {
-            //front
-            mapImg(ctx, img, 231, 74, 128, 128, 2, 74, 128, 128, 0)
-
-            //left
-            mapImg(ctx, img, 361, 74, 64, 128, 130, 74, 64, 128, 0)
-
-            //back
-            mapImg(ctx, img, 427, 74, 128, 128, 194, 74, 128, 128, 0)
-
-            //right
-            mapImg(ctx, img, 165, 74, 64, 128, 322, 74, 64, 128, 0)
-
-            //top
-            mapImg(ctx, img, 231, 8, 128, 64, 2, 10, 128, 64, 0)
-
-            //bottom
-            mapImg(ctx, img, 231, 204, 128, 64, 2, 202, 128, 64, 0)
-
-            //cheap cover for top of lower torso TODO: make this more accurate
-            mapImg(ctx, img, 231, 169, 128, 2, 134, 222, 64, 16, 0)
-            mapImg(ctx, img, 427, 169, 128, 2, 134, 206, 64, 16, 0)
-
-            //cheap cover for bottom of upper torso TODO: also make this more accurate
-            mapImg(ctx, img, 231, 170, 128, 2, 134, 38, 64, 16, 0)
-            mapImg(ctx, img, 427, 170, 128, 2, 134, 54, 64, 16, 0)
-        }
+        instruction = await TextureComposer.simpleMesh(
+            "R15CompositTorsoBase",
+            Shader_TextureComposer_Flat,
+            {
+                uTexture: {value: texture}
+            }
+        )
     }
+
+    return instruction
 }
 
-function renderClothingToCanvasR6(ctx: CanvasRenderingContext2D, pantsImg?: HTMLImageElement, shirtImg?: HTMLImageElement, tshirtImg?: HTMLImageElement) {
-    //torso
-    for (const cloth of [pantsImg, shirtImg]) {
-        const img = cloth as HTMLImageElement
+async function renderBodyPartClothingR6(texture: THREE.Texture, clothingType: "shirt" | "pants" | "tshirt") {
+    let instruction: THREE.Mesh
 
-        if (img) {
-            //front
-            mapImg(ctx, img, 231, 74, 128, 128, 122, 64, 128, 100, 90)
-            
-            //back
-            mapImg(ctx, img, 427, 74, 128, 128, 122, 256, 128, 100, 90)
-
-            //left
-            mapImg(ctx, img, 361, 74, 64, 128, 122, 192, 64, 100, 90)
-
-            //right (why did they make 2 spots??, one of them barely even covers anything)
-            mapImg(ctx, img, 165, 74, 64, 128, 122, 0, 64, 100, 90)
-            mapImg(ctx, img, 165, 74, 64, 128, 122, 384, 64, 100, 90)
-
-            //top
-            mapImg(ctx, img, 231, 8, 128, 64, 150, 328, 96, 64, 0)
-        
-            //bottom
-            mapImg(ctx, img, 231, 204, 128, 64, 252, 328, 96, 64, 0)
-        }
+    switch (clothingType) {
+        case "pants":
+            instruction = await TextureComposer.simpleMesh(
+                "CompositPantsTemplate",
+                Shader_TextureComposer_Flat,
+                {uTexture: {value: texture}}
+            )
+            break
+        case "shirt":
+            instruction = await TextureComposer.simpleMesh(
+                "CompositShirtTemplate",
+                Shader_TextureComposer_Flat,
+                {uTexture: {value: texture}}
+            )
+            break
+        case "tshirt":
+            instruction = await TextureComposer.simpleMesh(
+                "CompositTShirt",
+                Shader_TextureComposer_Flat,
+                {uTexture: {value: texture}}
+            )
+            break
     }
 
-    //legs
-    if (pantsImg) { //render pants
-        //right leg
-            //front
-            mapImg(ctx, pantsImg, 217, 355, 64, 128, 272 + 300, 192, 64, 100, 90)
-
-            //right
-            mapImg(ctx, pantsImg, 151, 355, 64, 128, 272 + 300, 128, 64, 100, 90)
-
-            //back
-            mapImg(ctx, pantsImg, 85, 355, 64, 128, 272 + 300, 64, 64, 100, 90)
-
-            //left
-            mapImg(ctx, pantsImg, 19, 355, 64, 128, 272 + 300, 256, 64, 100, 90)
-            mapImg(ctx, pantsImg, 19, 355, 64, 128, 272 + 300, 0, 64, 100, 90)
-
-            //top
-            mapImg(ctx, pantsImg, 217, 289, 64, 64, 354, 328, 48, 64, 0)
-
-            //bottom
-            mapImg(ctx, pantsImg, 217, 485, 64, 64, 462, 328, 48, 64, 0)
-        //left leg
-            //front
-            mapImg(ctx, pantsImg, 308, 355, 64, 128, 422 + 300, 64, 64, 100, 90)
-
-            //right
-            mapImg(ctx, pantsImg, 506, 355, 64, 128, 422 + 300, 0, 64, 100, 90)
-            mapImg(ctx, pantsImg, 506, 355, 64, 128, 422 + 300, 256, 64, 100, 90)
-
-            //back
-            mapImg(ctx, pantsImg, 440, 355, 64, 128, 422 + 300, 192, 64, 100, 90)
-
-            //left
-            mapImg(ctx, pantsImg, 374, 355, 64, 128, 422 + 300, 128, 64, 100, 90)
-
-            //top
-            mapImg(ctx, pantsImg, 308, 289, 64, 64, 408, 328, 48, 64, 0)
-
-            //bottom
-            mapImg(ctx, pantsImg, 308, 485, 64, 64, 516, 328, 48, 64, 0)
-    }
-
-    //shirt
-    if (shirtImg) { //render shirt
-        //right arm
-            //front
-            mapImg(ctx, shirtImg, 217, 355, 64, 128, 272, 192, 64, 100, 90)
-
-            //right
-            mapImg(ctx, shirtImg, 151, 355, 64, 128, 272, 128, 64, 100, 90)
-
-            //back
-            mapImg(ctx, shirtImg, 85, 355, 64, 128, 272, 64, 64, 100, 90)
-
-            //left
-            mapImg(ctx, shirtImg, 19, 355, 64, 128, 272, 256, 64, 100, 90)
-            mapImg(ctx, shirtImg, 19, 355, 64, 128, 272, 0, 64, 100, 90)
-
-            //top
-            mapImg(ctx, shirtImg, 217, 289, 64, 64, 678, 328, 48, 64, 0)
-
-            //bottom
-            mapImg(ctx, shirtImg, 217, 485, 64, 64, 570, 328, 48, 64, 0)
-        //left arm
-            //front
-            mapImg(ctx, shirtImg, 308, 355, 64, 128, 422, 64, 64, 100, 90)
-
-            //right
-            mapImg(ctx, shirtImg, 506, 355, 64, 128, 422, 0, 64, 100, 90)
-            mapImg(ctx, shirtImg, 506, 355, 64, 128, 422, 256, 64, 100, 90)
-
-            //back
-            mapImg(ctx, shirtImg, 440, 355, 64, 128, 422, 192, 64, 100, 90)
-
-            //left
-            mapImg(ctx, shirtImg, 374, 355, 64, 128, 422, 128, 64, 100, 90)
-
-            //top
-            mapImg(ctx, shirtImg, 308, 289, 64, 64, 150, 400, 48, 65, 0) //seam fix
-            mapImg(ctx, shirtImg, 308, 289, 64, 64, 150, 400, 48, 64, 0)
-
-            //bottom
-            mapImg(ctx, shirtImg, 308, 485, 64, 64, 624, 328, 48, 64, 0)
-            
-    }
-    if (tshirtImg) {
-        mapImg(ctx, tshirtImg, 0, 0, tshirtImg.width, tshirtImg.height, 120, 64, 128, 96, 90)
-    }
+    return instruction
 }
 
 class ColorLayer {
     color: Color3
+    bodyPart?: number
 
-    constructor(color: Color3) {
+    constructor(color: Color3, bodyPart?: number) {
         this.color = color
+        this.bodyPart = bodyPart
     }
 
     isSame(other: MaterialLayer) {
@@ -235,12 +86,13 @@ class ColorLayer {
 
         return Math.round(this.color.R * 255) === Math.round(other.color.R * 255) &&
                 Math.round(this.color.G * 255) === Math.round(other.color.G * 255) &&
-                Math.round(this.color.B * 255) === Math.round(other.color.B * 255)
+                Math.round(this.color.B * 255) === Math.round(other.color.B * 255) &&
+                this.bodyPart === other.bodyPart
     }
 }
 
 type TextureLayerUV = "Normal" | "Decal" | "Shirt" | "Pants" | "TShirt"
-type TextureType = "color" | "normal" | "roughness" | "metalness"
+type TextureType = "color" | "normal" | "roughness" | "metalness" | "emissive"
 class TextureLayer {
     uvType: TextureLayerUV = "Normal"
     face?: number //NormalId enum for Decals
@@ -249,6 +101,7 @@ class TextureLayer {
     normal?: string
     roughness?: string
     metalness?: string
+    emissive?: string
 
     isSame(other: MaterialLayer) {
         if (other instanceof ColorLayer) {
@@ -260,7 +113,8 @@ class TextureLayer {
                 this.color === other.color &&
                 this.normal === other.normal &&
                 this.roughness === other.roughness &&
-                this.metalness === other.metalness
+                this.metalness === other.metalness &&
+                this.emissive === other.emissive
     }
 }
 
@@ -273,8 +127,13 @@ export class MaterialDesc {
     doubleSided: boolean = false
     visible: boolean = true
 
+    emissiveStrength: number = 1
+    emissiveTint: Color3 = new Color3(1,1,1)
+
     bodyPart?: number //should only be accounted for if uvType != Normal in TextureLayer
     avatarType?: AvatarType
+
+    createdTextures?: THREE.Texture[] = []
 
     isSame(other: MaterialDesc) {
         const propertiesSame = this.transparent === other.transparent &&
@@ -297,17 +156,17 @@ export class MaterialDesc {
         return propertiesSame && layersSame
     }
 
-    async loadColorTextures(): Promise<Map<string,HTMLImageElement>> {
+    async loadTextures(textureType: TextureType): Promise<Map<string,HTMLImageElement>> {
         const textures = new Map<string,HTMLImageElement>()
         const promises: Promise<HTMLImageElement | undefined>[] = []
         const urls: string[] = []
 
         for (const layer of this.layers) {
             if (layer instanceof TextureLayer) {
-                const layerColor = layer.color
-                if (layerColor) {
-                    urls.push(layerColor)
-                    promises.push(API.Generic.LoadImage(layerColor))
+                const layerURL = layer[textureType]
+                if (layerURL) {
+                    urls.push(layerURL)
+                    promises.push(API.Generic.LoadImage(layerURL))
                 }
             }
         }
@@ -325,164 +184,308 @@ export class MaterialDesc {
         return textures
     }
 
-    async compileTexture(textureType: TextureType): Promise<[THREE.Texture, boolean] | undefined> {
-        if (textureType === "color") {
-            const colorTextures = await this.loadColorTextures()
+    async compileTexture(textureType: TextureType, auth: Authentication, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
+        const layerTextures = await this.loadTextures(textureType)
 
-            const canvas = document.createElement("canvas")
-            const ctx = canvas.getContext("2d")
+        let width = 2
+        let height = 2
+        let camWidth = 2
+        let camHeight = 2
 
-            if (this.avatarType) {
-                if (this.avatarType === AvatarType.R15) {
-                    if (this.bodyPart === BodyPart.Torso) {
-                        canvas.width = 388
-                        canvas.height = 272
-                    } else {
-                        canvas.width = 264
-                        canvas.height = 284
+        if (this.avatarType) {
+            if (this.avatarType === AvatarType.R15) {
+                if (this.bodyPart === BodyPart.Torso) {
+                    width = 388
+                    height = 272
+                    camWidth = 388
+                    camHeight = 272
+                } else {
+                    width = 264
+                    camWidth = 264
+                    height = 284
+                    camHeight = 284
+                }
+            } else if (this.avatarType === AvatarType.R6) {
+                width = 768
+                height = 512
+                camWidth = 1024
+                camHeight = 512
+            }
+        } else {
+            let imgWidth = 2
+            let imgHeight = 2
+            for (const [, img] of layerTextures) {
+                imgWidth = Math.max(imgWidth, img.width)
+                imgHeight = Math.max(imgHeight, img.height)
+            }
+            width = imgWidth
+            height = imgHeight
+            camWidth = imgWidth
+            camHeight = imgHeight
+        }
+
+        const composeInsts: THREE.Mesh[] = []
+        const texturesToDestroy = []
+
+        let noMipmaps = false
+        let hasColorLayer = false
+
+        for (const layer of this.layers) {
+            if (layer instanceof TextureLayer && layer[textureType]) {
+                const layerImage = layerTextures.get(layer[textureType])
+                const layerTexture = new THREE.Texture(layerImage)
+                layerTexture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                layerTexture.needsUpdate = true
+                texturesToDestroy.push(layerTexture)
+
+                if (layerImage) {
+                    switch (layer.uvType) {
+                        case "Normal":
+                            composeInsts.push(await TextureComposer.simpleMesh(
+                                "CompositQuad",
+                                Shader_TextureComposer_FullscreenQuad,
+                                {
+                                    uTexture: {value: layerTexture},
+                                    uOffset: {value: new THREE.Vector2(0, 0)},
+                                    uSize: {value: new THREE.Vector2(1, 1)}
+                                }
+                            ))
+                            break
+                        case "Pants":
+                            noMipmaps = true
+                            if (!this.bodyPart) break
+                            if (this.avatarType === AvatarType.R15) {
+                                if (this.bodyPart !== BodyPart.LeftArm && this.bodyPart !== BodyPart.RightArm) {
+                                    composeInsts.push(await renderBodyPartClothingR15(this.bodyPart, layerTexture))
+                                }
+                            } else {
+                                composeInsts.push(await renderBodyPartClothingR6(layerTexture, "pants"))
+                            }
+                            break
+                        case "Shirt":
+                            noMipmaps = true
+                            if (!this.bodyPart) break
+                            if (this.avatarType === AvatarType.R15) {
+                                if (this.bodyPart !== BodyPart.LeftLeg && this.bodyPart !== BodyPart.RightLeg) {
+                                    composeInsts.push(await renderBodyPartClothingR15(this.bodyPart, layerTexture))
+                                }
+                            } else {
+                                composeInsts.push(await renderBodyPartClothingR6(layerTexture, "shirt"))
+                            }
+                            break
+                        case "TShirt":
+                            noMipmaps = true
+                            if (!this.bodyPart) break
+                            if (this.avatarType === AvatarType.R15 && this.bodyPart === BodyPart.Torso) {
+                                composeInsts.push(await TextureComposer.simpleMesh(
+                                    "CompositQuad",
+                                    Shader_TextureComposer_FullscreenQuad,
+                                    {
+                                        uTexture: {value: layerTexture},
+                                        uOffset: {value: new THREE.Vector2(2 / camWidth, 70 / camHeight)},
+                                        uSize: {value: new THREE.Vector2(128 / camWidth, 128 / camHeight)}
+                                    }
+                                ))
+                            } else if (this.avatarType === AvatarType.R6) {
+                                composeInsts.push(await renderBodyPartClothingR6(layerTexture, "tshirt"))
+                            }
+                            break
+                        case "Decal":
+                            if (meshDesc.mesh && meshDesc.mesh.length > 0) {
+                                const result = await API.Asset.GetMesh(meshDesc.mesh, undefined, auth)
+                                if (result instanceof FileMesh) {
+                                    const size = result.size
+                                    const geometry = fileMeshToTHREEGeometry(result)
+                                    const threeMesh = new THREE.Mesh(geometry, Shader_TextureComposer_Decal)
+
+                                    //direction of decal
+                                    const origin = new THREE.Vector3(0,0,0)
+                                    const up = new THREE.Vector3(0,1,0)
+
+                                    let sizeX = size[0]
+                                    let sizeY = size[1]
+                                    let direction = new THREE.Vector3(0,0,-1)
+
+                                    switch (layer.face) {
+                                        case NormalId.Front:
+                                            sizeX = -size[0]
+                                            sizeY = size[1]
+                                            direction = new THREE.Vector3(0,0,-1)
+                                            break
+                                        case NormalId.Back:
+                                            sizeX = -size[0]
+                                            sizeY = size[1]
+                                            direction = new THREE.Vector3(0,0,1)
+                                            break
+                                        case NormalId.Right:
+                                            sizeX = -size[2]
+                                            sizeY = size[1]
+                                            direction = new THREE.Vector3(1,0,0)
+                                            break
+                                        case NormalId.Left:
+                                            sizeX = -size[2]
+                                            sizeY = size[1]
+                                            direction = new THREE.Vector3(-1,0,0)
+                                            break
+                                        case NormalId.Top:
+                                            sizeX = -size[0]
+                                            sizeY = size[2]
+                                            direction = new THREE.Vector3(0,1,0)
+                                            break
+                                        case NormalId.Bottom:
+                                            sizeX = size[0]
+                                            sizeY = -size[2]
+                                            direction = new THREE.Vector3(0,-1,0)
+                                            break
+                                    }
+
+                                    //size and position of texture
+                                    const sizeMatrix = new THREE.Matrix4().makeScale(1 / sizeX, 1 / sizeY, 1)
+                                    const translationMatrix = new THREE.Matrix4().makeTranslation(sizeX / 2,sizeY / 2, 0)
+
+                                    const lookAt = new THREE.Matrix4().lookAt(origin, direction, up)
+
+                                    //calculate projection matrix
+                                    const decalProjMatrix = sizeMatrix.multiply(translationMatrix.multiply(lookAt.invert()))
+
+                                    threeMesh.onBeforeRender = () => {
+                                        threeMesh.material.uniforms.uTexture.value = layerTexture
+                                        threeMesh.material.uniforms.uTextureProjMat.value = decalProjMatrix
+                                        threeMesh.material.uniforms.uDecalNormal.value = direction
+                                        threeMesh.material.uniformsNeedUpdate = true
+                                    }
+
+                                    composeInsts.push(threeMesh)
+                                }
+                            }
+                            break
+                        //TODO: Decal
+                        default:
+                            composeInsts.push(await TextureComposer.simpleMesh(
+                                "CompositQuad",
+                                Shader_TextureComposer_FullscreenQuad,
+                                {
+                                    uTexture: {value: layerTexture},
+                                    uOffset: {value: new THREE.Vector2(0, 0)},
+                                    uSize: {value: new THREE.Vector2(1, 1)}
+                                }
+                            ))
+                            console.warn(`Unsupported uvType: ${layer.uvType}, treating as Normal`)
                     }
-                } else if (this.avatarType === AvatarType.R6) {
-                    canvas.width = 768
-                    canvas.height = 512
                 }
-            } else {
-                let imgWidth = 2
-                let imgHeight = 2
-                for (const [, img] of colorTextures) {
-                    imgWidth = Math.max(imgWidth, img.width)
-                    imgHeight = Math.max(imgHeight, img.height)
-                }
-                canvas.width = imgWidth
-                canvas.height = imgHeight
-            }
+            } else if (layer instanceof ColorLayer && textureType === "color") {
+                const color = layer.color
+                const colorValue = new THREE.Color(color.R, color.G, color.B).convertSRGBToLinear()
 
-            if (!ctx) {
-                throw new Error("Failed to get CanvasContext")
-            }
+                hasColorLayer = true
 
-            const texture = new THREE.CanvasTexture(canvas)
-            texture.colorSpace = THREE.SRGBColorSpace
-            texture.wrapS = THREE.RepeatWrapping
-            texture.wrapT = THREE.RepeatWrapping
-
-            for (const layer of this.layers) {
-                if (layer instanceof TextureLayer && layer.color) {
-                    const layerTexture = colorTextures.get(layer.color)
-
-                    if (layerTexture) {
-                        switch (layer.uvType) {
-                            case "Normal":
-                                mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 0, 0, canvas.width, canvas.height)
-                                break
-                            case "Pants":
-                                texture.generateMipmaps = false
-                                texture.minFilter = THREE.LinearFilter
-                                texture.magFilter = THREE.LinearFilter
-                                if (!this.bodyPart) break
-                                if (this.avatarType === AvatarType.R15) {
-                                    renderClothingToCanvasR15(ctx, this.bodyPart, undefined, layerTexture)
-                                } else {
-                                    renderClothingToCanvasR6(ctx, layerTexture, undefined, undefined)
-                                }
-                                break
-                            case "Shirt":
-                                texture.generateMipmaps = false
-                                texture.minFilter = THREE.LinearFilter
-                                texture.magFilter = THREE.LinearFilter
-                                if (!this.bodyPart) break
-                                if (this.avatarType === AvatarType.R15) {
-                                    renderClothingToCanvasR15(ctx, this.bodyPart, layerTexture, undefined)
-                                } else {
-                                    renderClothingToCanvasR6(ctx, undefined, layerTexture, undefined)
-                                }
-                                break
-                            case "TShirt":
-                                texture.generateMipmaps = false
-                                texture.minFilter = THREE.LinearFilter
-                                texture.magFilter = THREE.LinearFilter
-                                if (!this.bodyPart) break
-                                if (this.avatarType === AvatarType.R15 && this.bodyPart === BodyPart.Torso) {
-                                    mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 2, 74, 128, 128, 0)
-                                } else if (this.avatarType === AvatarType.R6) {
-                                    renderClothingToCanvasR6(ctx, undefined, undefined, layerTexture)
-                                }
-                                break
-                            //TODO: Decal
-                            default:
-                                mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 0, 0, canvas.width, canvas.height)
-                                console.warn(`Unsupported uvType: ${layer.uvType}, treating as Normal`)
+                if (this.avatarType === "R15" || this.bodyPart === BodyPart.Head) {
+                    composeInsts.push(await TextureComposer.simpleMesh(
+                        "CompositQuad",
+                        Shader_TextureComposer_FullscreenQuad_Color,
+                        {
+                            uColor: {value: colorValue}
                         }
+                    ))
+                } else {
+                    let meshName = "CompositQuad"
+
+                    switch (layer.bodyPart) {
+                        case BodyPart.LeftArm:
+                            meshName = "CompositLeftArmBase"
+                            break
+                        case BodyPart.LeftLeg:
+                            meshName = "CompositLeftLegBase"
+                            break
+                        case BodyPart.RightArm:
+                            meshName = "CompositRightArmBase"
+                            break
+                        case BodyPart.RightLeg:
+                            meshName = "CompositRightLegBase"
+                            break
+                        case BodyPart.Torso:
+                            meshName = "CompositTorsoBase"
+                            break
                     }
-                } else if (layer instanceof ColorLayer) {
-                    const color = layer.color.toColor3uint8()
-                    ctx.fillStyle = `rgb(${color.R},${color.G},${color.B})`
-                    ctx.fillRect(0,0,canvas.width,canvas.height)
+
+                    composeInsts.push(await TextureComposer.simpleMesh(
+                        meshName,
+                        Shader_TextureComposer_Flat_Color,
+                        {
+                            uColor: {value: colorValue}
+                        }
+                    ))
                 }
             }
+        }
 
-            //set transparent to false if color layer has no transparent pixels
-            const imageData = ctx.getImageData(0,0, canvas.width, canvas.height)
-            const data = imageData.data
+        //render texture
+        if (composeInsts.length === 0) {
+            return undefined
+        }
+
+        TextureComposer.new(width, height, textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace, THREE.RepeatWrapping, !noMipmaps)
+        TextureComposer.cameraSize(camWidth, camHeight)
+        for (const inst of composeInsts) {
+            TextureComposer.add(inst)
+        }
+        const renderTarget = TextureComposer.render()
+
+        for (const texture of texturesToDestroy) {
+            texture.dispose()
+        }
+
+        const texture = renderTarget.texture
+        texture.wrapS = THREE.RepeatWrapping
+        texture.wrapT = THREE.RepeatWrapping
+
+        //set transparent to false if color layer has no transparent pixels
+        let hasTransparency = false
+
+        if (!hasColorLayer) {
+            const data = new Uint8Array(width * height * 4)
+            await getRenderer().readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
             
-            let hasTransparency = false
             for (let i = 3; i < data.length; i += 4) {
                 if (data[i] < 255) {
                     hasTransparency = true
                     break
                 }
             }
-
-            if (!this.transparent) {
-                hasTransparency = false
-            }
-
-            //document.body.appendChild(canvas)
-            texture.needsUpdate = true
-            return [texture, hasTransparency]
-        } else { //non-color texture
-            let textureUrl: string | undefined = undefined
-
-            for (const layer of this.layers) {
-                if (layer instanceof TextureLayer) {
-                    if (layer[textureType]) {
-                        textureUrl = layer[textureType]
-                    }
-                }
-            }
-
-            if (textureUrl) {
-                const image = await API.Generic.LoadImage(textureUrl)
-                if (image) {
-                    const texture = new THREE.Texture(image)
-                    texture.wrapS = THREE.RepeatWrapping
-                    texture.wrapT = THREE.RepeatWrapping
-                    texture.needsUpdate = true
-                    return [texture, false]
-                }
-            }
         }
 
-        return undefined
+        if (!this.transparent) {
+            hasTransparency = false
+        }
+
+        //document.body.appendChild(canvas)
+        texture.needsUpdate = true
+        return [texture, hasTransparency]
     }
 
-    async compileMaterial(): Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial> {
-        const colorTexturePromise = this.compileTexture("color")
-        const normalTexturePromise = this.compileTexture("normal")
-        const roughnessTexturePromise = this.compileTexture("roughness")
-        const metalnessTexturePromise = this.compileTexture("metalness")
+    async compileMaterial(meshDesc: MeshDesc, auth: Authentication): Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial> {
+        const colorTexturePromise = this.compileTexture("color", auth, meshDesc)
+        const normalTexturePromise = this.compileTexture("normal", auth, meshDesc)
+        const roughnessTexturePromise = this.compileTexture("roughness", auth, meshDesc)
+        const metalnessTexturePromise = this.compileTexture("metalness", auth, meshDesc)
+        const emissiveTexturePromise = this.compileTexture("emissive", auth, meshDesc)
 
-        const [colorTextureInfo, normalTextureInfo, roughnessTextureInfo, metalnessTextureInfo] = await Promise.all([colorTexturePromise, normalTexturePromise, roughnessTexturePromise, metalnessTexturePromise])
+        const [colorTextureInfo, normalTextureInfo, roughnessTextureInfo, metalnessTextureInfo, emissiveTextureInfo] = await Promise.all([colorTexturePromise, normalTexturePromise, roughnessTexturePromise, metalnessTexturePromise, emissiveTexturePromise])
 
         let colorTexture = undefined
         let normalTexture = undefined
         let roughnessTexture = undefined
         let metalnessTexture = undefined
+        let emissiveTexture = undefined
 
+        let hasEmissive = false
         let hasTransparency = this.transparent
 
         if (colorTextureInfo) {
             colorTexture = colorTextureInfo[0]
-            hasTransparency = colorTextureInfo[1] //used to stop material from being transparent if there is no reason to do so
+            if (!colorTextureInfo[1]) {
+                hasTransparency = false //used to stop material from being transparent if there is no reason to do so
+            }
         }
         if (normalTextureInfo) {
             normalTexture = normalTextureInfo[0]
@@ -493,6 +496,12 @@ export class MaterialDesc {
         if (metalnessTextureInfo) {
             metalnessTexture = metalnessTextureInfo[0]
         }
+        if (emissiveTextureInfo) {
+            emissiveTexture = emissiveTextureInfo[0]
+            if (emissiveTexture) {
+                hasEmissive = true
+            }
+        }
 
         if (this.transparency > 0.01) {
             hasTransparency = true
@@ -500,12 +509,15 @@ export class MaterialDesc {
 
         let material = undefined
 
-        if (normalTexture || roughnessTexture || metalnessTexture) { //PBR
+        if (normalTexture || roughnessTexture || metalnessTexture || emissiveTexture) { //PBR
             material = new THREE.MeshStandardMaterial({
                 map: colorTexture,
                 normalMap: normalTexture,
                 roughnessMap: roughnessTexture,
                 metalnessMap: metalnessTexture,
+                emissiveMap: emissiveTexture,
+                emissiveIntensity: hasEmissive ? this.emissiveStrength : 0,
+                emissive: hasEmissive ? new THREE.Color(this.emissiveTint.R, this.emissiveTint.G, this.emissiveTint.B) : new THREE.Color(0,0,0),
                 transparent: hasTransparency,
                 opacity: 1 - this.transparency,
                 side: this.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
@@ -561,7 +573,7 @@ export class MaterialDesc {
     
         if (child.HasProperty("Transparency")) {
             const transparency = child.Prop("Transparency") as number
-            if (transparency > 0.01) {
+            if (transparency !== 0) {
                 if (transparency <= 0.99) {
                     this.transparent = true
                     this.transparency = transparency
@@ -616,18 +628,45 @@ export class MaterialDesc {
                 }
             }
 
-            const decal = child.FindFirstChildOfClass("Decal")
-            if (decal && ((specialMesh.Prop("TextureId") as string).length < 1 || !isAffectedByHumanoid(child))) {
-                const decalTexture = decal.Property("Texture") as string
-                const colorLayer = new TextureLayer()
-                colorLayer.color = decalTexture
-                this.layers.push(colorLayer)
+            //decal
+            if ((specialMesh.Prop("TextureId") as string).length < 1 || !isAffectedByHumanoid(child)) {
+                const decalsFound: [number, TextureLayer][] = []
+
+                const decals = child.GetChildren()
+                for (const decal of decals) {
+                    if (decal.className === "Decal") {
+                        const decalTexture = decal.Property("Texture") as string
+                        const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as Content : undefined
+                        const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as Content : undefined
+                        const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as Content : undefined
+
+                        console.log(decalTexture, metallnessMap, normalMap, roughnessMap)
+
+                        const decalLayer = new TextureLayer()
+                        decalLayer.color = decalTexture
+                        decalLayer.metalness = metallnessMap?.uri
+                        decalLayer.normal = normalMap?.uri
+                        decalLayer.roughness = roughnessMap?.uri
+                        decalLayer.uvType = "Normal"
+
+                        let ZIndex = 1
+                        if (decal.HasProperty("ZIndex")) {
+                            ZIndex = decal.Prop("ZIndex") as number
+                        }
+
+                        decalsFound.push([ZIndex, decalLayer])
+                    }
+                }
+
+                decalsFound.sort((a, b) => {
+                    return a[0] - b[0]
+                })
+
+                for (const decalFound of decalsFound) {
+                    this.layers.push(decalFound[1])
+                }
             }
         } else {
-            const partColor = (child.Prop("Color") as Color3uint8).toColor3()
-            const colorLayer = new ColorLayer(partColor)
-            this.layers.push(colorLayer)
-
             const affectedByHumanoid = isAffectedByHumanoid(child)
             if (affectedByHumanoid) { //clothing and stuff
                 const parent = child.parent
@@ -637,6 +676,17 @@ export class MaterialDesc {
                 if (bodyPart) {
                     this.bodyPart = bodyPart
                     this.avatarType = AvatarType.R6
+                }
+
+                if (parent) {
+                    const otherBodyParts = parent.GetChildren()
+                    for (const otherBodyPart of otherBodyParts) {
+                        if (otherBodyPart.className === "Part" && BodyPartNameToEnum[otherBodyPart.Prop("Name") as string]) {
+                            const partColor = (otherBodyPart.Prop("Color") as Color3uint8).toColor3()
+                            const colorLayer = new ColorLayer(partColor, BodyPartNameToEnum[otherBodyPart.Prop("Name") as string])
+                            this.layers.push(colorLayer)
+                        }
+                    }
                 }
 
                 if (parent && humanoid && humanoid.Property("RigType") === HumanoidRigType.R6) {
@@ -669,6 +719,10 @@ export class MaterialDesc {
                         this.layers.push(overlayTextureLayer)
                     }
                 }
+            } else {
+                const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                const colorLayer = new ColorLayer(partColor)
+                this.layers.push(colorLayer)
             }
         }
     }
@@ -684,13 +738,13 @@ export class MaterialDesc {
         }
 
         //part color
-        if (!(surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency)) {
+        if (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency) {
+            this.transparent = true
+        } else {
             if (affectedByHumanoid || (meshPartTexture.length < 1 || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay))) {
                 const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                 const colorLayer = new ColorLayer(partColor)
                 this.layers.push(colorLayer)
-            } else {
-                this.transparent = true
             }
         }
 
@@ -701,6 +755,17 @@ export class MaterialDesc {
             surfaceAppearanceLayer.normal = surfaceAppearance.Property("NormalMap") as string
             surfaceAppearanceLayer.roughness = surfaceAppearance.Property("RoughnessMap") as string
             surfaceAppearanceLayer.metalness = surfaceAppearance.Property("MetalnessMap") as string
+            if (surfaceAppearance.HasProperty("EmissiveMaskContent")) {
+                surfaceAppearanceLayer.emissive = (surfaceAppearance.Property("EmissiveMaskContent") as Content).uri
+                if (surfaceAppearanceLayer.emissive && surfaceAppearanceLayer.emissive.length > 0) {
+                    if (surfaceAppearance.HasProperty("EmissiveStrength")) {
+                        this.emissiveStrength = surfaceAppearance.Prop("EmissiveStrength") as number
+                    }
+                    if (surfaceAppearance.HasProperty("EmissiveTint")) {
+                        this.emissiveTint = surfaceAppearance.Prop("EmissiveTint") as Color3
+                    }
+                }
+            }
             this.layers.push(surfaceAppearanceLayer)
 
             if (surfaceAppearance.Prop("AlphaMode") === AlphaMode.Transparency) {
@@ -731,14 +796,47 @@ export class MaterialDesc {
         }
 
         //decal
-        const decal = child.FindFirstChildOfClass("Decal")
-        if (decal && ((meshPartTexture.length < 1 && !surfaceAppearance) || !isAffectedByHumanoid(child))) {
-            const decalTexture = decal.Property("Texture") as string
-            const decalLayer = new TextureLayer()
-            decalLayer.color = decalTexture
-            decalLayer.uvType = "Decal"
-            decalLayer.face = decal.Prop("Face") as number
-            this.layers.push(decalLayer)
+        if ((meshPartTexture.length < 1 && !surfaceAppearance) || !isAffectedByHumanoid(child)) {
+            const decalsFound: [number, TextureLayer][] = []
+
+            const decals = child.GetChildren()
+            for (const decal of decals) {
+                if (decal.className === "Decal") {
+                    const decalTexture = decal.Property("Texture") as string
+                    const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as Content : undefined
+                    const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as Content : undefined
+                    const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as Content : undefined
+
+                    console.log(decalTexture, metallnessMap, normalMap, roughnessMap)
+
+                    const decalLayer = new TextureLayer()
+                    decalLayer.color = decalTexture
+                    decalLayer.metalness = metallnessMap?.uri
+                    decalLayer.normal = normalMap?.uri
+                    decalLayer.roughness = roughnessMap?.uri
+
+                    if (child.Prop("Name") as string === "Head" && isAffectedByHumanoid(child)) {
+                        decalLayer.uvType = "Normal"
+                    } else {
+                        decalLayer.uvType = "Decal"
+                        decalLayer.face = decal.Prop("Face") as number
+                    }
+                    let ZIndex = 1
+                    if (decal.HasProperty("ZIndex")) {
+                        ZIndex = decal.Prop("ZIndex") as number
+                    }
+
+                    decalsFound.push([ZIndex, decalLayer])
+                }
+            }
+
+            decalsFound.sort((a, b) => {
+                return a[0] - b[0]
+            })
+
+            for (const decalFound of decalsFound) {
+                this.layers.push(decalFound[1])
+            }
         }
     }
 }
