@@ -805,8 +805,6 @@ export class MaterialDesc {
                     const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as Content : undefined
                     const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as Content : undefined
 
-                    console.log(decalTexture, metallnessMap, normalMap, roughnessMap)
-
                     const decalLayer = new TextureLayer()
                     decalLayer.color = decalTexture
                     decalLayer.metalness = metallnessMap?.uri

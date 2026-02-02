@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "./rbx"
 import { ENABLE_LC_WEIGHT_CACHE, INFLATE_LAYERED_CLOTHING } from '../misc/flags';
+import { Wait } from '../misc/misc';
 
 const WeightCache = new Map<string,WeightChunk[]>()
 
@@ -232,14 +233,6 @@ export function getDistVertArray(ref: FileMesh, dist: FileMesh) {
     }
 
     return offsetArray
-}
-
-async function Wait(time: number) {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(time)
-        }, time*1000)
-    })
 }
 
 export type MeshChunk = {

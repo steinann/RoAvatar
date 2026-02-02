@@ -15,7 +15,7 @@ import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from ".
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
 import AnimatorWrapper from "./Animator";
 import BodyPartDescriptionWrapper from "./BodyPartDescription";
-import InstanceWrapper from "./InstanceWrapper";
+import { InstanceWrapper } from "./InstanceWrapper";
 
 type ClothingDiffType = "Shirt" | "Pants" | "GraphicTShirt"
 type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory"
@@ -59,35 +59,35 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
     setup() {
         // BASIC
-        this.instance.addProperty(new Property("Name", DataType.String), "HumanoidDescription")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "HumanoidDescription")
         //stuff is missing here, but we dont care about it
 
         // SCALE
-        this.instance.addProperty(new Property("BodyTypeScale", DataType.Float32), 0.0)
-        this.instance.addProperty(new Property("ProportionScale", DataType.Float32), 0.0)
+        if (!this.instance.HasProperty("BodyTypeScale")) this.instance.addProperty(new Property("BodyTypeScale", DataType.Float32), 0.0)
+        if (!this.instance.HasProperty("ProportionScale")) this.instance.addProperty(new Property("ProportionScale", DataType.Float32), 0.0)
 
-        this.instance.addProperty(new Property("WidthScale", DataType.Float32), 1.0)
-        this.instance.addProperty(new Property("HeightScale", DataType.Float32), 1.0)
-        this.instance.addProperty(new Property("DepthScale", DataType.Float32), 1.0)
-        this.instance.addProperty(new Property("HeadScale", DataType.Float32), 1.0)
+        if (!this.instance.HasProperty("WidthScale")) this.instance.addProperty(new Property("WidthScale", DataType.Float32), 1.0)
+        if (!this.instance.HasProperty("HeightScale")) this.instance.addProperty(new Property("HeightScale", DataType.Float32), 1.0)
+        if (!this.instance.HasProperty("DepthScale")) this.instance.addProperty(new Property("DepthScale", DataType.Float32), 1.0)
+        if (!this.instance.HasProperty("HeadScale")) this.instance.addProperty(new Property("HeadScale", DataType.Float32), 1.0)
         
         // ANIMATION
-        this.instance.addProperty(new Property("ClimbAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("FallAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("IdleAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("JumpAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("MoodAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("RunAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("SwimAnimation", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("WalkAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("ClimbAnimation")) this.instance.addProperty(new Property("ClimbAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("FallAnimation")) this.instance.addProperty(new Property("FallAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("IdleAnimation")) this.instance.addProperty(new Property("IdleAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("JumpAnimation")) this.instance.addProperty(new Property("JumpAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("MoodAnimation")) this.instance.addProperty(new Property("MoodAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("RunAnimation")) this.instance.addProperty(new Property("RunAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("SwimAnimation")) this.instance.addProperty(new Property("SwimAnimation", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("WalkAnimation")) this.instance.addProperty(new Property("WalkAnimation", DataType.Int64), 0n)
 
         // CLOTHES
-        this.instance.addProperty(new Property("GraphicTShirt", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("Pants", DataType.Int64), 0n)
-        this.instance.addProperty(new Property("Shirt", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("GraphicTShirt")) this.instance.addProperty(new Property("GraphicTShirt", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("Pants")) this.instance.addProperty(new Property("Pants", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("Shirt")) this.instance.addProperty(new Property("Shirt", DataType.Int64), 0n)
 
         // OTHER
-        this.instance.addProperty(new Property("Face", DataType.Int64), 0n)
+        if (!this.instance.HasProperty("Face")) this.instance.addProperty(new Property("Face", DataType.Int64), 0n)
 
         //many properties are missing because theyre not actually serialized, check for accessorydescriptions and bodypartdescriptions that are children
     }

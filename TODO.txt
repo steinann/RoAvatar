@@ -16,16 +16,16 @@ ISSUES (Relating to renderer inaccuracy):
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
-    -MESHDESC: some meshes are barely/not visible, see 99432987207193 as an example (no idea of cause)
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
 
 FEATURES:
     HIGH PRIORITY:
+        -Search and filter in both marketplace and inventory
         -Saving outfits locally, that can also include unowned items
+        -Thumbnail customization
     MEDIUM PRIORITY:
         -Gear inside preview
     LOW PRIORITY:
         -Particle rendering
-        -Sounds for those accessories that have that

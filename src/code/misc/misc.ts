@@ -264,4 +264,20 @@ export function base64ToArrayBuffer(base64: string) {
     return bytes.buffer;
 }
 
+export async function Wait(time: number) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(time)
+        }, time*1000)
+    })
+}
+
+export function getRandomBetweenInclusive(min: number, max: number) {
+    return Math.random() * ((max + 1) - min) + min;
+}
+
+export function mathRandom(min: number, max: number) {
+    return Math.floor(getRandomBetweenInclusive(min,max))
+}
+
 export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

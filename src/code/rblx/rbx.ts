@@ -12,6 +12,7 @@ import type { Mat4x4, Vec3 } from './mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
 import * as LZ4 from './lz4'
 import * as fzstd from 'fzstd';
+import { GetWrapperForInstance } from './instance/InstanceWrapper';
 
 //datatype structs
 export class UDim {
@@ -356,7 +357,7 @@ export class Instance {
     Changed = new Event()
     AncestryChanged = new Event()
 
-    constructor(className: string) {
+    constructor(className: string, notComplete: boolean = false) {
         this._id = lastInstanceId
         lastInstanceId++
 
@@ -366,7 +367,7 @@ export class Instance {
 
         this.className = className
 
-        //Setup class logic
+        //Setup class logic (this is outdated, use InstanceWrapper instead)
         switch(this.className) {
             case "Motor6D":
             case "Weld":
@@ -542,10 +543,22 @@ export class Instance {
                 }
                 break
         }
+
+        if (!notComplete) {
+            this.createWrapper()
+        }
     }
 
     get id(): string {
         return "0x" + this._id.toString(16).toUpperCase()
+    }
+
+    createWrapper() {
+        //instance wrappers (notice how its way shorter than the legacy part)
+        const wrapper = GetWrapperForInstance(this)
+        if (wrapper) {
+            wrapper.created()
+        }
     }
 
     addConnectionReference(connection: Connection) {
@@ -1443,7 +1456,7 @@ export class RBX {
     }
 
     addItem(item: Element, itemParent?: Instance) {
-        const instance = new Instance(item.getAttribute("class") || "null")
+        const instance = new Instance(item.getAttribute("class") || "null", true)
 
         const properties = item.querySelectorAll(":scope > Properties > *")
         for (const propertyNode of properties) {
@@ -1750,7 +1763,7 @@ export class RBX {
             //instances
             for (const inst of this.instArray) {
                 for (let i = 0; i < inst.instanceCount; i++) {
-                    const instance = new Instance(inst.className)
+                    const instance = new Instance(inst.className, true)
                     instance.classID = inst.classID
                     instance.objectFormat = inst.objectFormat
 
@@ -1834,6 +1847,11 @@ export class RBX {
             const xml = new DOMParser().parseFromString(this.xmlString, "text/xml")
             this.fromXML(xml)
         }
+
+        for (const child of this.dataModel.GetDescendants()) {
+            child.createWrapper()
+        }
+
         return this.dataModel
     }
 }
@@ -1874,7 +1892,6 @@ export function isSameVector3(vec0: Vector3, vec1: Vector3) {
 export function isSameFloat(num0: number, num1: number) {
     return Math.round(num0 * 100) === Math.round(num1 * 100)
 }
-
 
 // EXAMPLE ON CALCULATING part1 CFRAME FOR MOTOR6D
 /*

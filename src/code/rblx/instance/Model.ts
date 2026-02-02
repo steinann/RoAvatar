@@ -1,7 +1,7 @@
 import { DataType } from "../constant";
 import { CFrame, Instance, Property, Vector3 } from "../rbx";
 import { traverseRigCFrame } from "../scale";
-import InstanceWrapper from "./InstanceWrapper";
+import { InstanceWrapper } from "./InstanceWrapper";
 
 function getCorners(cframe: CFrame, size: Vector3): CFrame[] {
     const halfX = size.X / 2
@@ -43,10 +43,10 @@ export default class ModelWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        this.instance.addProperty(new Property("Name", DataType.String), "Model")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Model")
 
         //specific
-        this.instance.addProperty(new Property("PrimaryPart", DataType.Referent), undefined)
+        if (!this.instance.HasProperty("PrimaryPart")) this.instance.addProperty(new Property("PrimaryPart", DataType.Referent), undefined)
     }
 
     GetModelCFrame(): CFrame {

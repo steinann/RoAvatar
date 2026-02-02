@@ -1,6 +1,15 @@
 import type { Instance } from "../rbx";
 
-export default class InstanceWrapper {
+const ClassNameToWrapper = new Map<string, typeof InstanceWrapper>()
+
+export function GetWrapperForInstance(instance: Instance): InstanceWrapper | undefined {
+    const staticWrapper = ClassNameToWrapper.get(instance.className)
+    if (staticWrapper) {
+        return new staticWrapper(instance)
+    }
+}
+
+export class InstanceWrapper {
     static className: string
     static requiredProperties: string[]
 
@@ -30,5 +39,19 @@ export default class InstanceWrapper {
 
     static() {
         return this.constructor as typeof InstanceWrapper
+    }
+
+    static register() {
+        ClassNameToWrapper.set(this.className, this)
+        console.log(ClassNameToWrapper)
+    }
+
+    //virtual functions
+    created() {
+
+    }
+
+    destroy() {
+
     }
 }

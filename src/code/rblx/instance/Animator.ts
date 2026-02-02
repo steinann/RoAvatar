@@ -1,8 +1,9 @@
 import { API, Authentication, idFromStr } from "../../api";
+import { getRandomBetweenInclusive } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
 import { CFrame, Property, RBX } from "../rbx";
-import InstanceWrapper from "./InstanceWrapper";
+import { InstanceWrapper } from "./InstanceWrapper";
 
 class AnimatorWrapperData {
     animationSet: AnimationSet = {}
@@ -20,20 +21,16 @@ class AnimatorWrapperData {
     currentMoodAnimationTrack?: AnimationTrack
 }
 
-function getRandomBetweenInclusive(min: number, max: number) {
-  return Math.random() * ((max + 1) - min) + min;
-}
-
 
 export default class AnimatorWrapper extends InstanceWrapper {
     static className: string = "Animator"
     static requiredProperties: string[] = ["Name", "_data", "_HasLoadedAnimation"]
 
     setup() {
-        this.instance.addProperty(new Property("Name", DataType.String), "Animator")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Animator")
 
-        this.instance.addProperty(new Property("_data", DataType.NonSerializable), new AnimatorWrapperData())
-        this.instance.addProperty(new Property("_HasLoadedAnimation", DataType.NonSerializable), false)
+        if (!this.instance.HasProperty("_data")) this.instance.addProperty(new Property("_data", DataType.NonSerializable), new AnimatorWrapperData())
+        if (!this.instance.HasProperty("_HasLoadedAnimation")) this.instance.addProperty(new Property("_HasLoadedAnimation", DataType.NonSerializable), false)
     }
 
     get data() {

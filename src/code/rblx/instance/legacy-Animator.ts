@@ -2,7 +2,7 @@ import { API, Authentication, idFromStr } from "../../api";
 import { AnimationTrack } from "../animation";
 import { DataType, MainToSubNames } from "../constant";
 import { Property, RBX } from "../rbx";
-import InstanceWrapper from "./InstanceWrapper";
+import { InstanceWrapper } from "./InstanceWrapper";
 
 const weightMult = 3
 
