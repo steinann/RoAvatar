@@ -3,7 +3,7 @@ import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } fro
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API, Authentication } from '../api'
 import { FileMesh } from '../rblx/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh } from '../rblx/mesh-deform'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude } from '../rblx/mesh-deform'
 import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 import { RBFDeformerPatch } from '../rblx/cage-mesh-deform'
@@ -275,6 +275,7 @@ export class MeshDesc {
 
             const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
             meshPromises.push(promiseForMesh(this.layerDesc.reference, auth))
+            meshPromises.push(promiseForMesh(this.layerDesc.cage, auth, true))
 
             const values = await Promise.all(meshPromises)
             for (const [url, mesh] of values) {
@@ -291,49 +292,72 @@ export class MeshDesc {
             }
             console.log(ref_mesh.coreMesh.verts.length - ref_mesh.coreMesh.removeDuplicateVertices(0.01))
 
-            //create destination cage
-            let dist_mesh = ref_mesh.clone()
-            if (!dist_mesh) {
-                throw new Error("this.layerDesc.reference is missing! That shouldn't be possible...")
+            const cage_mesh = meshMap.get(this.layerDesc.cage)
+            if (!cage_mesh) {
+                throw new Error("Should not happen")
             }
 
-            //offset ref_mesh
-            offsetMesh(ref_mesh, this.layerDesc.referenceOrigin)
+            //compare ref_mesh and cage_mesh, clothing should not be deformed if they are identical
+            let referenceAndCageIdentical = true
 
-            //get target mesh
-            const targetMeshes = await this.modelLayersDesc.compileTargetMeshes(auth)
-            if (!targetMeshes || (targetMeshes instanceof Response)) {
-                return targetMeshes
-            }
-
-            for (let i = 0; i < this.modelLayersDesc.layers.length; i++) {
-                if (this.modelLayersDesc.layers[i].isSame(this.layerDesc)) {
-                    dist_mesh = targetMeshes[i]
-                    break
+            const distVertArr = getDistVertArray(ref_mesh, cage_mesh)
+            for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
+                const distVert = distVertArr[i]
+                if (distVert) {
+                    const refVert = ref_mesh.coreMesh.verts[i]
+                    const diff = magnitude(minus(refVert.position, distVert.position))
+                    if (diff > 0.001) {
+                        referenceAndCageIdentical = false
+                        break
+                    }
                 }
             }
 
-            //layer the clothing
-            const layeredClothingCacheId = `${this.mesh}-${this.layerDesc.reference}`
+            if (!referenceAndCageIdentical) {
+                //offset ref_mesh
+                offsetMesh(ref_mesh, this.layerDesc.referenceOrigin)
 
-            switch (LAYERED_CLOTHING_ALGORITHM) {
-                case "rbf":
-                    { 
-                        const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
-                        await rbfDeformer.solveAsync()
-                        rbfDeformer.deformMesh()
+                //create destination cage
+                let dist_mesh = ref_mesh.clone()
+                if (!dist_mesh) {
+                    throw new Error("this.layerDesc.reference is missing! That shouldn't be possible...")
+                }
+
+                //get target mesh
+                const targetMeshes = await this.modelLayersDesc.compileTargetMeshes(auth)
+                if (!targetMeshes || (targetMeshes instanceof Response)) {
+                    return targetMeshes
+                }
+
+                for (let i = 0; i < this.modelLayersDesc.layers.length; i++) {
+                    if (this.modelLayersDesc.layers[i].isSame(this.layerDesc)) {
+                        dist_mesh = targetMeshes[i]
                         break
                     }
-                case "linearnormal":
-                    layerClothingChunkedNormals(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
-                    break
-                case "linearnormal2":
-                    layerClothingChunkedNormals2(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
-                    break
-                case "linear":
-                default:
-                    layerClothingChunked(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
-                    break
+                }
+
+                //layer the clothing
+                const layeredClothingCacheId = `${this.mesh}-${this.layerDesc.reference}`
+
+                switch (LAYERED_CLOTHING_ALGORITHM) {
+                    case "rbf":
+                        { 
+                            const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
+                            await rbfDeformer.solveAsync()
+                            rbfDeformer.deformMesh()
+                            break
+                        }
+                    case "linearnormal":
+                        layerClothingChunkedNormals(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
+                        break
+                    case "linearnormal2":
+                        layerClothingChunkedNormals2(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
+                        break
+                    case "linear":
+                    default:
+                        layerClothingChunked(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
+                        break
+                }
             }
 
             the_ref_mesh = undefined

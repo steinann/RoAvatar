@@ -7,7 +7,7 @@ import { Wait } from '../misc/misc';
 const WeightCache = new Map<string,WeightChunk[]>()
 
 export function hashVec2(x: number,y: number) {
-    return Math.round(x * 100000) + Math.round(y * 100)
+    return Math.round(x * 1000) * 10000 + Math.round(y * 1000)
 }
 
 export function hashVec3(x: number,y: number,z: number, distance: number) {
