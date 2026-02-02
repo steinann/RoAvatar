@@ -1,6 +1,6 @@
 # RoAvatar
 
-A full remake of the Roblox avatar editor with new and improved features
+## A full remake of the Roblox avatar editor with new and improved features
 
 ![A screenshot of RoAvatar](https://i.imgur.com/s4XENxg.png)
 
@@ -9,8 +9,10 @@ A full remake of the Roblox avatar editor with new and improved features
 The extension is currently under development and is not available in any extension stores. You will have to build the newest version yourself OR get the latest stable version from [releases](https://github.com/Mzigi/RoAvatar/releases).
 
 Instructions on building:
-- Install npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- Clone the repository (aka get it locally on your pc)
+- Install Node.js and npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- Install Git [(guide)](https://github.com/git-guides/install-git)
+- Run `git clone --recursive https://github.com/steinann/RoAvatar.git`
+- If you are missing submodules, run `git submodule init`
 - Run `npm install` in the project directory
 - Run `npm run build` to build the project
 - The build will be in the **dist** folder in the project directory
