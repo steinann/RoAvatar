@@ -63,7 +63,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
     //load equipped emotes
     useEffect(() => {
         if (!equippedEmotes && auth) {
-            API.Avatar.GetEmotes(auth).then((result) => {
+            API.Avatar.GetEmotes().then((result) => {
                 if (result.status === 200) {
                     result.json().then((body: EmoteInfo[]) => {
                         setEquippedEmotes(body)

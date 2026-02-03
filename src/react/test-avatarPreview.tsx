@@ -43,7 +43,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                 }
             })
 
-            API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
+            API.Avatar.GetAvatarDetails(idToUse).then(result => {
                 if (result instanceof Outfit) {
                     const humanoidDescriptionWrapper = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                     console.log(humanoidDescriptionWrapper.instance.Prop("Face"))
@@ -158,7 +158,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                         humanoidDescriptionWrapper.applyDescription(humanoid).then(() => {
                                             addInstance(rig, auth)
                                             setTimeout(() => {
-                                                API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
+                                                API.Avatar.GetAvatarDetails(idToUse).then(result => {
                                                     if (result instanceof Outfit) {
                                                         const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                                                         humanoidDescriptionWrapper2.fromOutfit(result).then(result => {
@@ -167,7 +167,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                                                     if (result instanceof Instance) {
                                                                         //addInstance(rig, auth)
                                                                         setInterval(() => {
-                                                                            API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
+                                                                            API.Avatar.GetAvatarDetails(idToUse).then(result => {
                                                                                 if (result instanceof Outfit) {
                                                                                     const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                                                                                     humanoidDescriptionWrapper2.fromOutfit(result).then(result => {

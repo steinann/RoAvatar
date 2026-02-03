@@ -199,7 +199,7 @@ function App() {
 
     //create marketplace data
     if (auth && !navigationMenuItems) {
-      API.Catalog.GetNavigationMenuItems(auth).then((result) => {
+      API.Catalog.GetNavigationMenuItems().then((result) => {
         if (result instanceof Response) {
           setAlertEnabled(true)
           setAlertText("Failed to load Marketplace")
@@ -357,7 +357,7 @@ function App() {
                   if (id && !isNaN(id) && id > 0 && auth) {
                     const newOutfit = outfit.clone()
                     if (!isBundle) {
-                      newOutfit.addAssetId(auth, id).then((success) => {
+                      newOutfit.addAssetId(id).then((success) => {
                         if (success) {
                           if (addAssetInputRef.current) {
                             addAssetInputRef.current.value = ""
@@ -373,7 +373,7 @@ function App() {
                         }
                       })
                     } else {
-                      newOutfit.addBundleId(auth, id).then((success) => {
+                      newOutfit.addBundleId(id).then((success) => {
                         if (success) {
                           if (addAssetInputRef.current) {
                             addAssetInputRef.current.value = ""

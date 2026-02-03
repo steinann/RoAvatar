@@ -49,7 +49,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
             if (sortOption !== "inventory") {
-                API.Avatar.GetAvatarInventory(auth, sortOption, nextPageToken, itemInfos).then(response => {
+                API.Avatar.GetAvatarInventory(sortOption, nextPageToken, itemInfos).then(response => {
                     if (loadId !== lastLoadId) return
                     if (response.status === 200) {
                         response.json().then(body => {
@@ -78,7 +78,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                         return
                     }
 
-                    API.Inventory.GetInventory(auth, userInfo.id, itemInfos[0].subType, nextPageToken).then(response => {
+                    API.Inventory.GetInventory(userInfo.id, itemInfos[0].subType, nextPageToken).then(response => {
                         if (loadId !== lastLoadId) return
                         if (response.status === 200) {
                             response.json().then((body) => {
@@ -252,7 +252,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(auth, item, outfit, setAnimName, setOutfit)
+                        defaultOnClick(item, outfit, setAnimName, setOutfit)
                     }
                 }}/>
             ))

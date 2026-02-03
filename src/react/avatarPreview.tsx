@@ -173,7 +173,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
     useEffect(() => {
         if (auth) {
             if (!hasLoadedAvatar) {
-                API.Users.GetUserInfo(auth).then(result => {
+                API.Users.GetUserInfo().then(result => {
                     if (result) {
                         const urlParams = new URLSearchParams(window.location.search)
                         const urlId = Number(urlParams.get("id"))
@@ -184,7 +184,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                             console.log("buffer", buffer)
                             const arrayBuffer = base64ToArrayBuffer(buffer.replace(/\s/g, ''))
                             const outfit = new Outfit()
-                            outfit.fromBuffer(arrayBuffer, auth).then(() => {
+                            outfit.fromBuffer(arrayBuffer).then(() => {
                                 setOutfit(outfit)
                                 hasLoadedAvatar = true
                             })
@@ -200,7 +200,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
 
                         if (!base64Json && !buffer) {
                             const idToUse = urlId || result.id
-                            API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
+                            API.Avatar.GetAvatarDetails(idToUse).then(result => {
                                 if (result instanceof Outfit) { 
                                     setOutfit(result)
                                     hasLoadedAvatar = true

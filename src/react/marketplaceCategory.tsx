@@ -48,7 +48,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
-            API.Catalog.Search(auth, searchData, nextPageToken).then(response => {
+            API.Catalog.Search(searchData, nextPageToken).then(response => {
                 if (loadId !== lastLoadId) return
                 if (!(response instanceof Response)) {
                     if (loadId !== lastLoadId) return
@@ -182,7 +182,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(auth, item, outfit, setAnimName, setOutfit)
+                        defaultOnClick(item, outfit, setAnimName, setOutfit)
                     }
                 }}/>
             ))

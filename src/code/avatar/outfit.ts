@@ -1,6 +1,6 @@
 //Dependencies: asset.js
 
-import { API, type Authentication } from "../api";
+import { API } from "../api";
 import SimpleView from "../lib/simple-view";
 import { BODYCOLOR3 } from "../misc/flags"
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
@@ -1017,8 +1017,8 @@ export class Outfit {
         return order
     }
 
-    async addAssetId(auth: Authentication, assetId: number): Promise<boolean> {
-        const assetDetailsResponse = await API.Economy.GetAssetDetails(auth, assetId)
+    async addAssetId(assetId: number): Promise<boolean> {
+        const assetDetailsResponse = await API.Economy.GetAssetDetails(assetId)
 
         if (assetDetailsResponse.status !== 200) {
             return false
@@ -1049,15 +1049,15 @@ export class Outfit {
         return true
     }
 
-    async addBundleId(auth: Authentication, bundleId: number): Promise<boolean> {
-        const bundleDetails = await API.Catalog.GetBundleDetails(auth, bundleId)
+    async addBundleId(bundleId: number): Promise<boolean> {
+        const bundleDetails = await API.Catalog.GetBundleDetails(bundleId)
 
         if (!(bundleDetails instanceof Response)) {
             const bundleType = CatalogBundleTypes[bundleDetails.bundleType]
 
             for (const item of bundleDetails.bundledItems) {
                 if (item.type === "UserOutfit") { //find first outfit in bundle
-                    const result = await API.Avatar.GetOutfitDetails(auth, item.id, this.creatorId || 1)
+                    const result = await API.Avatar.GetOutfitDetails(item.id, this.creatorId || 1)
                     if (result instanceof Outfit) {
                         for (const asset of result.assets) {
                             this.addAsset(asset.id, asset.assetType.id, asset.name)
@@ -1085,7 +1085,7 @@ export class Outfit {
         }
     }
 
-    async fromBuffer(buffer: ArrayBuffer, auth: Authentication) {
+    async fromBuffer(buffer: ArrayBuffer) {
         const view = new SimpleView(buffer)
 
         //flags
@@ -1176,7 +1176,7 @@ export class Outfit {
             }
 
             assetPromises.push(new Promise((resolve) => {
-                this.addAssetId(auth, id).then(() => {
+                this.addAssetId(id).then(() => {
                     let asset: Asset | undefined = undefined
                     for (const assetIn of this.assets) {
                         if (assetIn.id === id) {

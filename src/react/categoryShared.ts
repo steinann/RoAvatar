@@ -1,9 +1,9 @@
-import { API, type Authentication } from "../code/api";
+import { API } from "../code/api";
 import { CatalogBundleTypes, ItemInfo, ToRemoveBeforeBundleType, WearableAssetTypes } from "../code/avatar/asset";
 import { Outfit } from "../code/avatar/outfit";
 import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant";
 
-export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void) => {
+export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void) => {
     if (item.itemType !== "Asset") {
         setAnimName(`idle`)
     }
@@ -29,7 +29,7 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
         newOutfit.removeAsset(item.id);
         setOutfit(newOutfit)
     } else if (item.itemType === "Outfit" && (item.type === "Outfit" || item.type === "Character")) { //if full outfit
-        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+        API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
             if (result instanceof Outfit) {
                 if (item.type === "Character") {
                     result.bodyColors = outfit.bodyColors.clone()
@@ -46,7 +46,7 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
             newOutfit.removeAssetType(type)
         }
 
-        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+        API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
             if (result instanceof Outfit) {
                 for (const asset of result.assets) {
                     newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
@@ -56,13 +56,13 @@ export const defaultOnClick = (auth: Authentication, item: ItemInfo, outfit: Out
             }
         })
     } else if (item.itemType === "Bundle") { //if bundle
-        API.Catalog.GetBundleDetails(auth, item.id).then((result) => {
+        API.Catalog.GetBundleDetails(item.id).then((result) => {
             if (!(result instanceof Response)) {
                 const bundleType = CatalogBundleTypes[result.bundleType]
 
                 for (const item of result.bundledItems) {
                     if (item.type === "UserOutfit") { //find first outfit in bundle
-                        API.Avatar.GetOutfitDetails(auth, item.id, outfit.creatorId || 1).then((result) => {
+                        API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
                             if (result instanceof Outfit) {
                                 const newOutfit = outfit.clone()
                                 for (const asset of result.assets) {

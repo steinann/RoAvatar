@@ -20,7 +20,7 @@ class Authentication {
             return this.info
         }
 
-        const info = await API.Users.GetUserInfo(this)
+        const info = await API.Users.GetUserInfo()
         this.info = info
         return info
     }
@@ -220,8 +220,8 @@ const API = {
         }
     },
     "Economy": {
-        GetAssetDetails: async function(auth: Authentication, assetId: number) {
-            return RBLXGet("https://economy.roblox.com/v2/assets/" + assetId + "/details", auth)
+        GetAssetDetails: async function(assetId: number) {
+            return RBLXGet("https://economy.roblox.com/v2/assets/" + assetId + "/details")
         }
     },
     "Avatar": {
@@ -300,14 +300,14 @@ const API = {
 
             return RBLXPost(requestUrl, auth, outfit.toCleanJson())
         },
-        GetAvatarDetails: async function GetAvatarDetails(auth: Authentication, userId: number) {
+        GetAvatarDetails: async function GetAvatarDetails(userId: number) {
             let requestUrl = "https://avatar.roblox.com/v1/users/"
             
             if (BODYCOLOR3) {
                 requestUrl = "https://avatar.roblox.com/v2/avatar/users/"
             }
 
-            const response = await RBLXGet(requestUrl + userId + "/avatar", auth)
+            const response = await RBLXGet(requestUrl + userId + "/avatar")
 
             if (response.status == 200) {
                 const responseBody = await response.json()
@@ -323,7 +323,7 @@ const API = {
                 return response
             }
         },
-        GetAvatarInventory: async function (auth: Authentication, sortOption: string, pageToken: string | null | undefined, itemInfos: ItemSort[] = []) {
+        GetAvatarInventory: async function (sortOption: string, pageToken: string | null | undefined, itemInfos: ItemSort[] = []) {
             let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?"
             let needsAnd = false
 
@@ -343,16 +343,16 @@ const API = {
                 needsAnd = true
             }
 
-            return RBLXGet(requestUrl, auth)
+            return RBLXGet(requestUrl)
         },
-        GetOutfitDetails: async function(auth: Authentication, outfitId: number, userId: number): Promise<Response | Outfit> {
+        GetOutfitDetails: async function(outfitId: number, userId: number): Promise<Response | Outfit> {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
 
             if (BODYCOLOR3) {
                 requestUrl = "https://avatar.roblox.com/v3/outfits/"
             }
 
-            const response = await RBLXGet(requestUrl + outfitId + "/details", auth)
+            const response = await RBLXGet(requestUrl + outfitId + "/details")
 
             if (response.status == 200) {
                 const responseJson = await response.json()
@@ -441,8 +441,8 @@ const API = {
         DeleteOutfit: async function(auth: Authentication, outfitId: number) {
             return await RBLXPost(`https://avatar.roblox.com/v1/outfits/${outfitId}/delete`, auth, "")
         },
-        GetEmotes: async function(auth: Authentication): Promise<Response> {
-            return await RBLXGet("https://avatar.roblox.com/v1/emotes", auth)
+        GetEmotes: async function(): Promise<Response> {
+            return await RBLXGet("https://avatar.roblox.com/v1/emotes")
         },
         EquipEmote: async function(auth: Authentication, assetId: number, slot: number): Promise<Response> {
             return await RBLXPost(`https://avatar.roblox.com/v1/emotes/${assetId}/${slot}`, auth, "")
@@ -456,8 +456,8 @@ const API = {
         RedrawThumbnail: async function(auth: Authentication): Promise<Response> {
             return await RBLXPost("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", auth, "")
         },
-        GetThumbnailCustomization: async function(auth: Authentication): Promise<Response> {
-            return await RBLXGet("https://avatar.roblox.com/v1/avatar/thumbnail-customizations", auth)
+        GetThumbnailCustomization: async function(): Promise<Response> {
+            return await RBLXGet("https://avatar.roblox.com/v1/avatar/thumbnail-customizations")
         },
         SetThumbnailCustomization: async function(auth: Authentication, body: ThumbnailsCustomization_Payload): Promise<Response> {
             return await RBLXPost("https://avatar.roblox.com/v1/avatar/thumbnail-customization", auth, body)
@@ -572,8 +572,8 @@ const API = {
         }
     },
     "Catalog": {
-        GetNavigationMenuItems: async function(auth: Authentication) {
-            const response = await RBLXGet("https://catalog.roblox.com/v1/search/navigation-menu-items", auth)
+        GetNavigationMenuItems: async function() {
+            const response = await RBLXGet("https://catalog.roblox.com/v1/search/navigation-menu-items")
 
             if (response.status !== 200) {
                 return response
@@ -590,7 +590,7 @@ const API = {
 
             return (await response.json()) as GetTopics_Result
         },
-        Search: async function(auth: Authentication, {taxonomy, salesTypeFilter = 1, sortType, categoryFilter, keyword, topics, creatorName, minPrice, maxPrice, includeNotForSale, limit = 120}: Search_Payload, cursor?: string) {
+        Search: async function({taxonomy, salesTypeFilter = 1, sortType, categoryFilter, keyword, topics, creatorName, minPrice, maxPrice, includeNotForSale, limit = 120}: Search_Payload, cursor?: string) {
             /*https://catalog.roblox.com/v2/search/items/details?
             keyword=mariah&
             TriggeredByTopicDiscovery=true&
@@ -626,7 +626,7 @@ const API = {
             if (cursor !== undefined) url += `cursor=${cursor}&`
             url += `limit=${limit}`
 
-            const response = await RBLXGet(url, auth)
+            const response = await RBLXGet(url)
 
             if (response.status !== 200) {
                 return response
@@ -634,8 +634,8 @@ const API = {
 
             return (await response.json()) as Search_Result
         },
-        GetBundleDetails: async function(auth: Authentication, bundleId: number) {
-            const response = await RBLXGet(`https://catalog.roblox.com/v1/catalog/items/${bundleId}/details?itemType=Bundle`, auth)
+        GetBundleDetails: async function(bundleId: number) {
+            const response = await RBLXGet(`https://catalog.roblox.com/v1/catalog/items/${bundleId}/details?itemType=Bundle`)
 
             if (response.status !== 200) {
                 return response
@@ -645,16 +645,16 @@ const API = {
         }
     },
     "Inventory": {
-        GetInventory: async function(auth: Authentication, userId: number, assetType: number, cursor?: string) {
+        GetInventory: async function(userId: number, assetType: number, cursor?: string) {
             let requestUrl = `https://inventory.roblox.com/v2/users/${userId}/inventory/${assetType}?sortOrder=Desc&limit=100`
 
             if (cursor) {
                 requestUrl += `&cursor=${cursor}`
             }
 
-            return RBLXGet(requestUrl, auth)
+            return RBLXGet(requestUrl)
         },
-        IsItemOwned: async function(auth: Authentication, userId: number, itemType: string, assetId: number) {
+        IsItemOwned: async function(userId: number, itemType: string, assetId: number) {
             const cacheResult = CACHE.ItemOwned.get(`${userId}.${itemType}.${assetId}`)
             if (cacheResult) {
                 if (cacheResult[0]) return true
@@ -662,7 +662,7 @@ const API = {
                 if ((new Date().getTime() - cacheResult[1]) < 5) return false
             }
 
-            const response = await RBLXGet(`https://inventory.roblox.com/v1/users/${userId}/items/${itemType}/${assetId}/is-owned`, auth)
+            const response = await RBLXGet(`https://inventory.roblox.com/v1/users/${userId}/items/${itemType}/${assetId}/is-owned`)
          
             if (response.status !== 200) {
                 return response
@@ -680,8 +680,8 @@ const API = {
         }
     },
     "Users": {
-        GetUserInfo: async function(auth: Authentication) {
-            const response = await RBLXGet("https://users.roblox.com/v1/users/authenticated", auth)
+        GetUserInfo: async function() {
+            const response = await RBLXGet("https://users.roblox.com/v1/users/authenticated")
             
             if (response.status == 200) {
                 return await response.json() as {id: number, name: string, displayName: string}
