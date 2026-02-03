@@ -31,7 +31,6 @@ jobs:
           npm ci
           git submodule update --init
           npm run build
-
       - name: Zip build artifacts
         run: |
           if [ -d dist ]; then
@@ -41,16 +40,26 @@ jobs:
             echo "dist directory not found"
             exit 1
           fi
-
-      - name: Create GitHub Release (draft) and upload asset
+      - name: Create GitHub Release (draft)
         if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v1
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          name: Build ${{ github.run_number }}
+          release_name: Build ${{ github.run_number }}
           body: Automated release for run ${{ github.run_id }}
           draft: true
           prerelease: false
-          files: ./RoAvatar.zip
+
+      - name: Upload ZIP to Release
+        if: github.event_name == 'push'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RoAvatar.zip
+          asset_name: RoAvatar.zip
+          asset_content_type: application/zip
