@@ -12,7 +12,7 @@ Instructions on building:
 - Install Node.js and npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - Install Git [(guide)](https://github.com/git-guides/install-git)
 - Run `git clone --recursive https://github.com/steinann/RoAvatar.git`
-- If you are missing submodules, run `git submodule init`
+- If you are missing submodules, run `git submodule update --init`
 - Run `npm install` in the project directory
 - Run `npm run build` to build the project
 - The build will be in the **dist** folder in the project directory
