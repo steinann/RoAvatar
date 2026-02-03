@@ -29,8 +29,7 @@ jobs:
       - name: Install dependencies and build
         run: |
           npm ci
-          git submodule init
-          ls
+          git submodule update --init
           npm run build
 
       - name: Zip build artifacts
