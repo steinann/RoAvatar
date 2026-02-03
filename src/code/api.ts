@@ -2,29 +2,18 @@ import type { BundleDetails_Result, GetTopics_Payload, GetTopics_Result, Navigat
 import { OutfitOrigin } from "./avatar/constant"
 import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
-import { browserCookiesGet } from "./browser"
 import { BODYCOLOR3, ENABLE_API_CACHE } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
 import { FileMesh } from "./rblx/mesh"
 import { RBX } from "./rblx/rbx"
 
 class Authentication {
-    ROBLOSECURITY?: string
     TOKEN?: string
     SessionUUID?: string
 
     info?: {id: number, name: string, displayName: string}
 
     lastRefreshed = new Date().getTime()
-
-    async fill() {
-        this.ROBLOSECURITY = await API.Auth.GetCookie()
-        /*
-        if (this.ROBLOSECURITY) {
-            this.TOKEN = await API.Auth.GetToken(this.ROBLOSECURITY)
-        }
-        */
-    }
 
     async getUserInfo() {
         if (this.info) {
@@ -44,10 +33,6 @@ class Authentication {
         return this.TOKEN
     }
 
-    getROBLOSECURITY() {
-        return this.ROBLOSECURITY
-    }
-
     getSessionUUID() {
         if (!this.SessionUUID) {
             this.SessionUUID = generateUUIDv4()
@@ -63,16 +48,10 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
         body = JSON.stringify(body)
     }
 
-    let robloxSecurityCookie = ""
     let xCsrfToken = ""
 
     if (auth) {
-        robloxSecurityCookie = ".ROBLOSECURITY=" + auth.getROBLOSECURITY()
         xCsrfToken = auth.getCachedToken() || ""
-
-        if (!robloxSecurityCookie) {
-            throw new Error("User is not authenticated")
-        }
 
         if (!xCsrfToken) {
             xCsrfToken = ""
@@ -82,7 +61,6 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
     return new Promise((resolve) => {
         const fetchHeaders = new Headers({
             "Content-Type": "application/json",
-            "Cookie": robloxSecurityCookie,
             "X-CSRF-TOKEN": xCsrfToken,
         })
 
@@ -118,21 +96,10 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function RBLXGet(url: string, auth?: Authentication, headers?: any): Promise<Response> {
-    let robloxSecurityCookie = undefined
-
-    if (auth) {
-        robloxSecurityCookie = ".ROBLOSECURITY=" + auth.getROBLOSECURITY()
-    }
-
-    if (!robloxSecurityCookie) {
-        robloxSecurityCookie = ""
-    }
-
+async function RBLXGet(url: string, headers?: any): Promise<Response> {
     return new Promise((resolve) => {
         let newHeaders: HeadersInit = {
             "Content-Type": "application/json",
-            "Cookie": robloxSecurityCookie,
         }
 
         if (headers) {
@@ -246,40 +213,8 @@ const API = {
         }
     },
     "Auth": {
-        GetCookie: async function() {
-            let returnedCookie = await browserCookiesGet(".ROBLOSECURITY", "https://www.roblox.com")
-            if (returnedCookie) {
-                returnedCookie = returnedCookie.replace("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_", "")
-            } else {
-                returnedCookie = undefined
-            }
-
-            return returnedCookie;
-        },
-        GetToken: async function(ROBLOSECURITY: string) {
-            throw new Error("Deprecated function GetToken() called")
-
-            const response = await fetch("https://auth.roblox.com/v2/logout", {
-                method:"POST",
-                credentials:"include",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Cookie": ".ROBLOSECURITY=" + ROBLOSECURITY
-                },
-                body: JSON.stringify({})
-            })
-            
-            const token = response.headers.get("x-csrf-token")
-
-            if (token) {
-                return token
-            } else {
-                return undefined
-            }
-        },
         GetAuth: async function() {
             const auth = new Authentication()
-            await auth.fill()
 
             return auth
         }
@@ -529,7 +464,7 @@ const API = {
         },
     },
     "Asset": {
-        GetAssetBuffer: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
+        GetAssetBuffer: async function(url: string, headers?: HeadersInit) {
             const fetchStr = parseAssetString(url) || url
 
             let cacheStr = fetchStr
@@ -541,7 +476,7 @@ const API = {
             if (cachedBuffer) {
                 return cachedBuffer
             } else {
-                const response = await RBLXGet(fetchStr, auth, headers)
+                const response = await RBLXGet(fetchStr, headers)
                 if (response.status === 200) {
                     const data = await response.arrayBuffer()
                     if (ENABLE_API_CACHE) {
@@ -553,12 +488,8 @@ const API = {
                 }
             }
         },
-        GetRBX: async function(url: string, headers?: HeadersInit, auth?: Authentication) {
+        GetRBX: async function(url: string, headers?: HeadersInit) {
             const fetchStr = parseAssetString(url) || url
-
-            if (!auth && fetchStr.startsWith("http")) {
-                console.warn(`Fetching ${url} WITHOUT authentication, this is likely a mistake`)
-            }
 
             let cacheStr = fetchStr
             if (headers) {
@@ -569,7 +500,7 @@ const API = {
             if (cachedRBX) {
                 return cachedRBX.clone()
             } else {
-                const response = await this.GetAssetBuffer(fetchStr, headers, auth)
+                const response = await this.GetAssetBuffer(fetchStr, headers)
                 if (response instanceof ArrayBuffer) {
                     const buffer = response
                     const rbx = new RBX()
@@ -583,7 +514,7 @@ const API = {
                 }
             }
         },
-        GetMesh: async function(url: string, headers?: HeadersInit, auth?: Authentication, readOnly: boolean = false) {
+        GetMesh: async function(url: string, headers?: HeadersInit, readOnly: boolean = false) {
             const fetchStr = parseAssetString(url) || url
 
             let cacheStr = fetchStr
@@ -599,7 +530,7 @@ const API = {
                     return cachedMesh.clone()
                 }
             } else {
-                const response = await this.GetAssetBuffer(fetchStr, headers, auth)
+                const response = await this.GetAssetBuffer(fetchStr, headers)
                 if (response instanceof ArrayBuffer) {
                     const buffer = response
                     const mesh = new FileMesh()
@@ -613,13 +544,13 @@ const API = {
                 }
             }
         },
-        IsLayered: async function(id: number, auth: Authentication): Promise<boolean | Response> {
+        IsLayered: async function(id: number): Promise<boolean | Response> {
             const cached = CACHE.IsLayered.get(id)
             if (cached !== undefined) {
                 return cached
             }
 
-            const result = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth)
+            const result = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
             if (result instanceof RBX) {
                 const dataModel = result.generateTree()
                 const descendants = dataModel.GetDescendants()

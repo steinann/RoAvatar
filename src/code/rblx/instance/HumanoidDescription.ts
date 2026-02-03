@@ -3,7 +3,7 @@ ISSUES (++ Probably fixed, -- Not fixed)
 -- Face is included in dynamic head (but not rendered)
 */
 
-import { API, Authentication, idFromStr } from "../../api";
+import { API, idFromStr } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
@@ -346,7 +346,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
-    async fromOutfit(outfit: Outfit, auth: Authentication): Promise<Instance | Response> {
+    async fromOutfit(outfit: Outfit): Promise<Instance | Response> {
         // SCALE
         this.instance.setProperty("BodyTypeScale", outfit.scale.bodyType)
         this.instance.setProperty("ProportionScale", outfit.scale.proportion)
@@ -467,7 +467,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                             if (accessoryType === AccessoryType.Hair) {
                                 assetPromises.push(new Promise((resolve) => {
-                                    API.Asset.IsLayered(asset.id, auth).then((isLayered) => {
+                                    API.Asset.IsLayered(asset.id).then((isLayered) => {
                                         if (isLayered instanceof Response) {
                                             resolve(isLayered)
                                         } else {
@@ -650,7 +650,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyBodyParts(humanoid: Instance, auth: Authentication, toChange = AllBodyParts): Promise<Response | undefined> {
+    async _applyBodyParts(humanoid: Instance, toChange = AllBodyParts): Promise<Response | undefined> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -670,7 +670,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     }
 
                     //get body part
-                    API.Asset.GetRBX(`rbxassetid://${assetId}`, headers, auth).then(bodyPartRBX => {
+                    API.Asset.GetRBX(`rbxassetid://${assetId}`, headers).then(bodyPartRBX => {
                         if (this.cancelApply) resolve(undefined)
                         if (!(bodyPartRBX instanceof RBX)) {
                             resolve(bodyPartRBX)
@@ -749,7 +749,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 }))
             } else {
                 promises.push(new Promise((resolve) => {
-                    API.Asset.GetRBX(avatarType === AvatarType.R6 ? "../assets/RigR6.rbxm" : "../assets/RigR15.rbxm", undefined, auth).then(result => {
+                    API.Asset.GetRBX(avatarType === AvatarType.R6 ? "../assets/RigR6.rbxm" : "../assets/RigR15.rbxm", undefined).then(result => {
                         if (this.cancelApply) resolve(undefined)
                         if (result instanceof RBX) {
                             const dataModel = result.generateTree()
@@ -828,7 +828,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyClothing(humanoid: Instance, auth: Authentication, toChange: ClothingDiffType[] = ["Shirt", "Pants", "GraphicTShirt"]): Promise<undefined | Response> {
+    async _applyClothing(humanoid: Instance, toChange: ClothingDiffType[] = ["Shirt", "Pants", "GraphicTShirt"]): Promise<undefined | Response> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -841,7 +841,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
             if (id > 0) {
                 promises.push(new Promise((resolve) => {
-                    API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(rbx => {
+                    API.Asset.GetRBX(`rbxassetid://${id}`, undefined).then(rbx => {
                         if (this.cancelApply) resolve(undefined)
                         if (rbx instanceof RBX) {
                             const dataModel = rbx.generateTree()
@@ -889,7 +889,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyFace(humanoid: Instance, auth: Authentication): Promise<undefined | Response> {
+    async _applyFace(humanoid: Instance): Promise<undefined | Response> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -898,7 +898,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         const id = this.instance.Prop("Face") as bigint
 
         if (id > 0) {
-            const rbx = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth)
+            const rbx = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
             if (this.cancelApply) return undefined
             if (rbx instanceof RBX) {
                 const dataModel = rbx.generateTree()
@@ -948,7 +948,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyAccessories(humanoid: Instance, auth: Authentication, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
+    async _applyAccessories(humanoid: Instance, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
         if (!addedIds || !removedIds) {
             addedIds = this.getAccessoryIds()
             removedIds = []
@@ -990,7 +990,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             }
 
             promises.push(new Promise((resolve) => {
-                API.Asset.GetRBX(`rbxassetid://${id}`, headers, auth).then(rbx => {
+                API.Asset.GetRBX(`rbxassetid://${id}`, headers).then(rbx => {
                     if (this.cancelApply) resolve(undefined)
                     if (rbx instanceof RBX) {
                         const dataModel = rbx.generateTree()
@@ -1056,7 +1056,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
      * @returns undefined on success
      */
     //TODO: CLEAN UP THIS CODE, the comments are not enough!
-    async _applyAnimations(humanoid: Instance, auth: Authentication, toChange: AnimationProp[] = AllAnimations): Promise<undefined | Response> {
+    async _applyAnimations(humanoid: Instance, toChange: AnimationProp[] = AllAnimations): Promise<undefined | Response> {
         const animator = humanoid.FindFirstChildOfClass("Animator")
         if (!animator) {
             throw new Error("Humanoid is missing an Animator")
@@ -1072,7 +1072,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             if (this.instance.HasProperty(animationProp) && this.instance.Prop(animationProp) as bigint > 0n && avatarType === AvatarType.R15) { //if not a default animation
                 const id = this.instance.Prop(animationProp) as bigint
                 promises.push(new Promise((resolve) => {
-                    animatorW.loadAvatarAnimation(auth, id, false, true).then((result) => {
+                    animatorW.loadAvatarAnimation(id, false, true).then((result) => {
                         resolve(result)
                     })
                 }))
@@ -1114,7 +1114,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     for (const subAnim of animationSetEntries) {
                         //actual request
                         promises.push(new Promise((resolve) => {
-                            API.Asset.GetRBX(subAnim.id, undefined, auth).then(result => {
+                            API.Asset.GetRBX(subAnim.id, undefined).then(result => {
                                 if (result instanceof RBX) {
                                     //get and parse track
                                     const animTrackInstance = result.generateTree().GetChildren()[0]
@@ -1157,14 +1157,14 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyAll(humanoid: Instance, auth: Authentication): Promise<undefined | Response> {
+    async _applyAll(humanoid: Instance): Promise<undefined | Response> {
         const promises: Promise<Response | undefined>[] = []
 
-        promises.push(this._applyAccessories(humanoid, auth))
-        promises.push(this._applyClothing(humanoid, auth))
-        promises.push(this._applyBodyParts(humanoid, auth))
-        promises.push(this._applyFace(humanoid, auth))
-        promises.push(this._applyAnimations(humanoid, auth))
+        promises.push(this._applyAccessories(humanoid))
+        promises.push(this._applyClothing(humanoid))
+        promises.push(this._applyBodyParts(humanoid))
+        promises.push(this._applyFace(humanoid))
+        promises.push(this._applyAnimations(humanoid))
         
         const values = await Promise.all(promises)
         if (this.cancelApply) return undefined
@@ -1186,7 +1186,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns Instance on success
      */
-    async applyDescription(humanoid: Instance, auth: Authentication): Promise<Instance | Response | undefined> {
+    async applyDescription(humanoid: Instance): Promise<Instance | Response | undefined> {
         if (this.instance.parent?.className === "Humanoid") {
             throw new Error("This HumanoidDescription has already been applied! Create a new one instead")
         }
@@ -1197,7 +1197,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         const originalDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
 
         if (!originalDescription) {
-            promises.push(this._applyAll(humanoid, auth))
+            promises.push(this._applyAll(humanoid))
         } else {
             const originalDescriptionW = new HumanoidDescriptionWrapper(originalDescription)
             const [diffs, addedAccessories, removedAccessories] = this.compare(originalDescriptionW)
@@ -1208,12 +1208,12 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             this._inheritAccessoryReferences(originalDescriptionW)
 
             if (diffs.includes("accessory")) {
-                miniPromises.push(this._applyAccessories(humanoid, auth, originalDescriptionW, addedAccessories, removedAccessories))
+                miniPromises.push(this._applyAccessories(humanoid, originalDescriptionW, addedAccessories, removedAccessories))
             }
 
             //face
             if (diffs.includes("face")) {
-                miniPromises.push(this._applyFace(humanoid, auth))
+                miniPromises.push(this._applyFace(humanoid))
             }
 
             //clothing
@@ -1229,7 +1229,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     toChange.push("GraphicTShirt")
                 }
 
-                miniPromises.push(this._applyClothing(humanoid, auth, toChange))
+                miniPromises.push(this._applyClothing(humanoid, toChange))
             }
 
             //body parts
@@ -1241,7 +1241,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     }
                 }
 
-                miniPromises.push(this._applyBodyParts(humanoid, auth, toChange))
+                miniPromises.push(this._applyBodyParts(humanoid, toChange))
             }
 
             //animations
@@ -1261,7 +1261,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     toChange.push("dance3")
                 }
 
-                miniPromises.push(this._applyAnimations(humanoid, auth, toChange))
+                miniPromises.push(this._applyAnimations(humanoid, toChange))
             }
 
             const miniValues = await Promise.all(miniPromises)

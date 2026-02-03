@@ -31,7 +31,7 @@ function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: st
             }
             currentRigType = newRigType
 
-            API.Asset.GetRBX(`../assets/Rig${currentRigType}.rbxm`, undefined, auth).then(result => {
+            API.Asset.GetRBX(`../assets/Rig${currentRigType}.rbxm`, undefined).then(result => {
                 if (result instanceof RBX) {
                     const newRig = result.generateTree().GetChildren()[0]
 
@@ -84,7 +84,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
             //get humanoid description
             const hrp = new Instance("HumanoidDescription")
             const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
-            hrpWrapper.fromOutfit(outfit, auth)
+            hrpWrapper.fromOutfit(outfit)
             
             if (currentRig) {
                 const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
@@ -97,7 +97,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
                         }
                     }
 
-                    hrpWrapper.applyDescription(humanoid, auth).then((result) => {
+                    hrpWrapper.applyDescription(humanoid).then((result) => {
                         if (currentRig) {
                             addInstance(currentRig, auth)
                         }
@@ -241,7 +241,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                     const successfullyPlayed = animatorW.playAnimation(animName)
                     if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
                         const emoteId = BigInt(animName.split(".")[1])
-                        animatorW.loadAvatarAnimation(auth, emoteId, true, true).then(() => {
+                        animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
                             animatorW.playAnimation(animName)
                         })
                     }

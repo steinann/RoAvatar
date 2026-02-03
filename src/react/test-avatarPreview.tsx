@@ -33,7 +33,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
             console.log(hrpWrapper)
 
             
-            API.Asset.GetRBX("../assets/HumanoidDescriptionExample.rbxm", undefined, auth).then(result => {
+            API.Asset.GetRBX("../assets/HumanoidDescriptionExample.rbxm", undefined).then(result => {
                 if (result instanceof RBX) {
                     const humanoidDescription = result.generateTree()
                     console.log(result)
@@ -47,10 +47,10 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                 if (result instanceof Outfit) {
                     const humanoidDescriptionWrapper = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
                     console.log(humanoidDescriptionWrapper.instance.Prop("Face"))
-                    humanoidDescriptionWrapper.fromOutfit(result, auth).then(result => {
+                    humanoidDescriptionWrapper.fromOutfit(result).then(result => {
                         console.log(result)
                         if (result instanceof Instance) {
-                            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined, auth).then(result => {
+                            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined).then(result => {
                                 if (result instanceof RBX) {
                                     const dataModel = result.generateTree()
                                     const rig = dataModel.GetChildren()[0]
@@ -155,24 +155,24 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                     const humanoid = rig?.FindFirstChildOfClass("Humanoid")
                                     if (humanoid) {
                                         console.log("Starting to apply description...")
-                                        humanoidDescriptionWrapper.applyDescription(humanoid, auth).then(() => {
+                                        humanoidDescriptionWrapper.applyDescription(humanoid).then(() => {
                                             addInstance(rig, auth)
                                             setTimeout(() => {
                                                 API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
                                                     if (result instanceof Outfit) {
                                                         const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
-                                                        humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
+                                                        humanoidDescriptionWrapper2.fromOutfit(result).then(result => {
                                                             if (result instanceof Instance) {
-                                                                humanoidDescriptionWrapper2.applyDescription(humanoid, auth).then(result => {
+                                                                humanoidDescriptionWrapper2.applyDescription(humanoid).then(result => {
                                                                     if (result instanceof Instance) {
                                                                         //addInstance(rig, auth)
                                                                         setInterval(() => {
                                                                             API.Avatar.GetAvatarDetails(auth, idToUse).then(result => {
                                                                                 if (result instanceof Outfit) {
                                                                                     const humanoidDescriptionWrapper2 = new HumanoidDescriptionWrapper(new Instance("HumanoidDescription"))
-                                                                                    humanoidDescriptionWrapper2.fromOutfit(result, auth).then(result => {
+                                                                                    humanoidDescriptionWrapper2.fromOutfit(result).then(result => {
                                                                                         if (result instanceof Instance) {
-                                                                                            humanoidDescriptionWrapper2.applyDescription(humanoid, auth).then(result => {
+                                                                                            humanoidDescriptionWrapper2.applyDescription(humanoid).then(result => {
                                                                                                 if (!(result instanceof Response)) {
                                                                                                     //addInstance(rig, auth)
                                                                                                     console.log(rig)
@@ -205,7 +205,7 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                             console.log("lets compare itself with itself!")
                             console.log(humanoidDescriptionWrapper.compare(humanoidDescriptionWrapper))
 
-                            API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined, auth).then(result => {
+                            API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined).then(result => {
                                 if (result instanceof RBX) {
                                     console.log("lets compare itself with berry av (but from file!)")
                                     const hrp2 = result.generateTree().GetChildren()[0]

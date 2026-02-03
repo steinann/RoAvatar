@@ -3,7 +3,6 @@ import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx";
 import { MaterialDesc } from "./materialDesc";
 import { MeshDesc } from "./meshDesc";
 import { rad } from '../misc/misc';
-import type { Authentication } from '../api';
 import { MeshType } from '../rblx/constant';
 import { SkeletonDesc } from './skeletonDesc';
 import { USE_LEGACY_SKELETON } from '../misc/flags';
@@ -197,7 +196,7 @@ export class RenderableDesc {
         }
     }
 
-    async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene, auth: Authentication): Promise<THREE.Mesh | Response | undefined> {
+    async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
         const originalResult = this.result
         const originalSkeletonDesc = this.skeletonDesc
         this.result = undefined
@@ -205,8 +204,8 @@ export class RenderableDesc {
 
         //compile dependencies
         const promises: [Promise<THREE.Mesh | Response | undefined>, Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial>] = [
-            this.meshDesc.compileMesh(auth),
-            this.materialDesc.compileMaterial(this.meshDesc, auth)
+            this.meshDesc.compileMesh(),
+            this.materialDesc.compileMaterial(this.meshDesc)
         ]
 
         const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)

@@ -19,18 +19,18 @@ export default function Test(): React.JSX.Element {
             const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
             console.log(hrpWrapper)
 
-            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined, auth).then(result => {
+            API.Asset.GetRBX("../assets/RigR15.rbxm", undefined).then(result => {
                 if (result instanceof RBX) {
                     const dataModel = result.generateTree()
                     const rig = dataModel.GetChildren()[0]
                     const humanoid = rig?.FindFirstChildOfClass("Humanoid")
                     if (humanoid) {
-                        API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined, auth).then(result => {
+                        API.Asset.GetRBX("../assets/berryavHumanoidDescription.rbxm", undefined).then(result => {
                             if (result instanceof RBX) {
                                 const hrp2 = result.generateTree().GetChildren()[0]
                                 const hrpWrapper2 = new HumanoidDescriptionWrapper(hrp2)
                                 console.log("Starting to apply description (berry av)...")
-                                hrpWrapper2.applyDescription(humanoid, auth).then(result => {
+                                hrpWrapper2.applyDescription(humanoid).then(result => {
                                     console.log("Applied description (berry av!")
                                     console.log(result)
                                     console.log(rig)

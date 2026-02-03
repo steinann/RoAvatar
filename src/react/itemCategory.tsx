@@ -201,7 +201,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
 
     const isOutfits = categoryType === "Characters" && subCategoryType === "Creations"
 
-    if (auth && itemInfos.length > 0) {
+    if (auth && itemInfos.length > 0 || hasLoadedAll && auth) {
         let i = 0;
         itemComponents = <>
         {/*CREATE OUTFIT DIALOG */

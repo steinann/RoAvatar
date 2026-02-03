@@ -1,4 +1,4 @@
-import { API, Authentication, idFromStr } from "../../api";
+import { API, idFromStr } from "../../api";
 import { AnimationTrack } from "../animation";
 import { DataType, MainToSubNames } from "../constant";
 import { Property, RBX } from "../rbx";
@@ -95,14 +95,14 @@ export default class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    async loadAvatarAnimation(auth: Authentication, id: bigint, isEmote: boolean = false, forceLoop: boolean = false): Promise<Response | undefined> {
+    async loadAvatarAnimation(id: bigint, isEmote: boolean = false, forceLoop: boolean = false): Promise<Response | undefined> {
         const humanoid = this.instance.parent
         if (!humanoid) {
             throw new Error("Parent is missing from Animator")
         }
 
         return new Promise(resolve => {
-            API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth).then(result => { //get instance with animation ids
+            API.Asset.GetRBX(`rbxassetid://${id}`, undefined).then(result => { //get instance with animation ids
                 if (result instanceof RBX) {
                     const promises2: Promise<Response | undefined>[] = []
                     const root = result.generateTree().GetChildren()[0]
@@ -121,7 +121,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
 
                                     //load sub animation
                                     promises2.push(new Promise(resolve => {
-                                        API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined, auth).then(result => {
+                                        API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined).then(result => {
                                             if (result instanceof RBX) {
                                                 //get and parse animation track
                                                 console.log("loading anim", subAnimId)
@@ -160,7 +160,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
                         if (animIdStr.length > 0) {
                             //load empote animation
                             promises2.push(new Promise(resolve => {
-                                API.Asset.GetRBX(`rbxassetid://${animId}`, undefined, auth).then(result => {
+                                API.Asset.GetRBX(`rbxassetid://${animId}`, undefined).then(result => {
                                     if (result instanceof RBX) {
                                         //get and parse animation track
                                         const animTrackInstance = result.generateTree().GetChildren()[0]

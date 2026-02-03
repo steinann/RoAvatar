@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId, RenderedClassTypes } from "../rblx/constant"
 import { Color3, Color3uint8, Content, isAffectedByHumanoid, type Instance } from "../rblx/rbx"
 import { AvatarType } from '../avatar/constant'
-import { API, Authentication } from '../api'
+import { API } from '../api'
 import { TextureComposer } from './textureComposer'
 import { Shader_TextureComposer_Flat } from './shaders/textureComposer-flat'
 import { Shader_TextureComposer_FullscreenQuad } from './shaders/textureComposer-fullscreenquad'
@@ -184,7 +184,7 @@ export class MaterialDesc {
         return textures
     }
 
-    async compileTexture(textureType: TextureType, auth: Authentication, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
+    async compileTexture(textureType: TextureType, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
         const layerTextures = await this.loadTextures(textureType)
 
         let width = 2
@@ -292,7 +292,7 @@ export class MaterialDesc {
                             break
                         case "Decal":
                             if (meshDesc.mesh && meshDesc.mesh.length > 0) {
-                                const result = await API.Asset.GetMesh(meshDesc.mesh, undefined, auth)
+                                const result = await API.Asset.GetMesh(meshDesc.mesh, undefined)
                                 if (result instanceof FileMesh) {
                                     const size = result.size
                                     const geometry = fileMeshToTHREEGeometry(result)
@@ -463,12 +463,12 @@ export class MaterialDesc {
         return [texture, hasTransparency]
     }
 
-    async compileMaterial(meshDesc: MeshDesc, auth: Authentication): Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial> {
-        const colorTexturePromise = this.compileTexture("color", auth, meshDesc)
-        const normalTexturePromise = this.compileTexture("normal", auth, meshDesc)
-        const roughnessTexturePromise = this.compileTexture("roughness", auth, meshDesc)
-        const metalnessTexturePromise = this.compileTexture("metalness", auth, meshDesc)
-        const emissiveTexturePromise = this.compileTexture("emissive", auth, meshDesc)
+    async compileMaterial(meshDesc: MeshDesc): Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial> {
+        const colorTexturePromise = this.compileTexture("color", meshDesc)
+        const normalTexturePromise = this.compileTexture("normal", meshDesc)
+        const roughnessTexturePromise = this.compileTexture("roughness", meshDesc)
+        const metalnessTexturePromise = this.compileTexture("metalness", meshDesc)
+        const emissiveTexturePromise = this.compileTexture("emissive", meshDesc)
 
         const [colorTextureInfo, normalTextureInfo, roughnessTextureInfo, metalnessTextureInfo, emissiveTextureInfo] = await Promise.all([colorTexturePromise, normalTexturePromise, roughnessTexturePromise, metalnessTexturePromise, emissiveTexturePromise])
 

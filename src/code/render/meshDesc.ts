@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
-import { API, Authentication } from '../api'
+import { API } from '../api'
 import { FileMesh } from '../rblx/mesh'
 import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude } from '../rblx/mesh-deform'
 import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
@@ -183,9 +183,9 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
     return geometry
 }
 
-export async function promiseForMesh(url: string, auth: Authentication, readOnly: boolean = false): Promise<[string, Response | FileMesh]> {
+export async function promiseForMesh(url: string, readOnly: boolean = false): Promise<[string, Response | FileMesh]> {
     return new Promise((resolve) => {
-        API.Asset.GetMesh(url, undefined, auth, readOnly).then(result => {
+        API.Asset.GetMesh(url, undefined, readOnly).then(result => {
             resolve([url, result])
         })
     })
@@ -254,14 +254,14 @@ export class MeshDesc {
         return true
     }
 
-    async compileMesh(auth: Authentication): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
+    async compileMesh(): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
         if (!this.mesh) {
             return undefined
         }
 
         const meshToLoad = this.mesh
 
-        const mesh = await API.Asset.GetMesh(meshToLoad, undefined, auth)
+        const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
         if (mesh instanceof Response) {
             return mesh
         }
@@ -274,8 +274,8 @@ export class MeshDesc {
             const meshMap = new Map<string,FileMesh>()
 
             const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
-            meshPromises.push(promiseForMesh(this.layerDesc.reference, auth))
-            meshPromises.push(promiseForMesh(this.layerDesc.cage, auth, true))
+            meshPromises.push(promiseForMesh(this.layerDesc.reference))
+            meshPromises.push(promiseForMesh(this.layerDesc.cage, true))
 
             const values = await Promise.all(meshPromises)
             for (const [url, mesh] of values) {
@@ -324,7 +324,7 @@ export class MeshDesc {
                 }
 
                 //get target mesh
-                const targetMeshes = await this.modelLayersDesc.compileTargetMeshes(auth)
+                const targetMeshes = await this.modelLayersDesc.compileTargetMeshes()
                 if (!targetMeshes || (targetMeshes instanceof Response)) {
                     return targetMeshes
                 }

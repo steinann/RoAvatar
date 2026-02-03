@@ -1,6 +1,4 @@
 //I FORGOT THAT REFERENCE MESHES ARENT CONSISTENT SO THIS WONT WORK EASILY...
-
-import type { Authentication } from "../api"
 import { RBFDeformerPatch } from "../rblx/cage-mesh-deform"
 import { FileMesh } from "../rblx/mesh"
 import { mergeTargetWithReference, offsetMesh, scaleMesh } from "../rblx/mesh-deform"
@@ -206,7 +204,7 @@ export class ModelLayersDesc {
         this.layers = underneathLayers.sort((a,b) => {return (a.order || 0) - (b.order || 0)})
     }
 
-    async createTargetMeshes(auth: Authentication) {
+    async createTargetMeshes() {
         //load meshes
         const meshMap = new Map<string,FileMesh>()
 
@@ -216,11 +214,11 @@ export class ModelLayersDesc {
             throw new Error("ModelLayersDesc has not had fromModel() called")
         }
         for (const targetCage of this.targetCages) {
-            meshPromises.push(promiseForMesh(targetCage, auth, true))
+            meshPromises.push(promiseForMesh(targetCage, true))
         }
         for (const enclosedLayer of this.layers) {
-            meshPromises.push(promiseForMesh(enclosedLayer.cage, auth))
-            meshPromises.push(promiseForMesh(enclosedLayer.reference, auth))
+            meshPromises.push(promiseForMesh(enclosedLayer.cage))
+            meshPromises.push(promiseForMesh(enclosedLayer.reference))
         }
 
         const values = await Promise.all(meshPromises)
@@ -283,7 +281,7 @@ export class ModelLayersDesc {
         return targetMeshes
     }
 
-    async compileTargetMeshes(auth: Authentication) {
+    async compileTargetMeshes() {
         if (!this.layers || !this.targetCages || this.targetCages.length <= 0) {
             throw new Error("ModelLayersDesc has not had fromModel() called")
         }
@@ -293,7 +291,7 @@ export class ModelLayersDesc {
         }
 
         this._targetMeshes = new Promise((resolve) => {
-            this.createTargetMeshes(auth).then((result) => {
+            this.createTargetMeshes().then((result) => {
                 resolve(result)
             })
         })

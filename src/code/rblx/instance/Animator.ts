@@ -1,4 +1,4 @@
-import { API, Authentication, idFromStr } from "../../api";
+import { API, idFromStr } from "../../api";
 import { getRandomBetweenInclusive } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
@@ -224,13 +224,13 @@ export default class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    async loadAvatarAnimation(auth: Authentication, id: bigint, isEmote: boolean = false, forceLoop: boolean = false): Promise<Response | undefined> {
+    async loadAvatarAnimation(id: bigint, isEmote: boolean = false, forceLoop: boolean = false): Promise<Response | undefined> {
         const humanoid = this.instance.parent
         if (!humanoid) {
             throw new Error("Parent is missing from Animator")
         }
 
-        const animationInfo = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined, auth)
+        const animationInfo = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
         if (!(animationInfo instanceof RBX)) {
             return animationInfo
         }
@@ -259,7 +259,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
 
                         //load sub animation
                         promises.push(new Promise(resolve => {
-                            API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined, auth).then(result => {
+                            API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined).then(result => {
                                 if (result instanceof RBX) {
                                     //get and parse animation track
                                     console.log("loading anim", subAnimId)
@@ -300,7 +300,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
             if (animIdStr.length > 0) {
                 //load emote animation
                 promises.push(new Promise(resolve => {
-                    API.Asset.GetRBX(`rbxassetid://${animId}`, undefined, auth).then(result => {
+                    API.Asset.GetRBX(`rbxassetid://${animId}`, undefined).then(result => {
                         if (result instanceof RBX) {
                             //get and parse animation track
                             const animTrackInstance = result.generateTree().GetChildren()[0]

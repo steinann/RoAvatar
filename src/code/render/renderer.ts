@@ -226,7 +226,7 @@ export function addInstance(instance: Instance, auth: Authentication) {
                 isRenderingMesh.set(instance, true)
 
                 //get the mesh
-                newDesc.compileResult(renderer, scene, auth).then(result => {
+                newDesc.compileResult(renderer, scene).then(result => {
                     if (result && !(result instanceof Response)) {
                         newDesc.updateResult()
 

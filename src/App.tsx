@@ -180,18 +180,16 @@ function App() {
     if (!auth) {
       const newAuth = new Authentication()
 
-      newAuth.fill().then(() => {
-        setAuth(newAuth)
-        window.saveOutfit = (a: Outfit) => {
-          API.Avatar.SaveOutfit(newAuth, a)
-        }
-        window.getMesh = (a: string) => {
-          return API.Asset.GetMesh(a, undefined, newAuth)
-        }
-        window.getRBX = (a: string) => {
-          return API.Asset.GetRBX(a, undefined, newAuth)
-        }
-      })
+      setAuth(newAuth)
+      window.saveOutfit = (a: Outfit) => {
+        API.Avatar.SaveOutfit(newAuth, a)
+      }
+      window.getMesh = (a: string) => {
+        return API.Asset.GetMesh(a, undefined)
+      }
+      window.getRBX = (a: string) => {
+        return API.Asset.GetRBX(a, undefined)
+      }
     }
 
     //create outfit
