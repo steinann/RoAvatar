@@ -34,8 +34,7 @@ jobs:
       - name: Zip build artifacts
         run: |
           if [ -d dist ]; then
-            # Create the zip so that the contents of dist are at the root of the archive
-            (cd dist && zip -r ../RoAvatar.zip .)
+            zip -r RoAvatar.zip dist
           else
             echo "dist directory not found"
             exit 1
