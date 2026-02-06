@@ -78,12 +78,16 @@ class _TextureComposer {
             wrapT: wrapping,
             generateMipmaps: noMipmaps,
             minFilter: noMipmaps ? THREE.LinearMipMapLinearFilter : THREE.LinearFilter,
-            magFilter: THREE.LinearFilter
+            magFilter: THREE.LinearFilter,
+            type: THREE.UnsignedByteType
         })
 
         for (const child of this.scene.children.slice()) {
             this.scene.remove(child)
         }
+
+        //console.log(`--- COMPOSING TEXTURE`)
+        //console.log(`colorSpace: ${colorSpace}`)
     }
 
     cameraSize(width: number, height: number) {
@@ -94,6 +98,7 @@ class _TextureComposer {
 
     add(mesh: THREE.Mesh) {
         mesh.renderOrder = this.renderOrder++
+        //console.log("added", mesh)
 
         this.scene.add(mesh)
     }
@@ -128,10 +133,15 @@ class _TextureComposer {
         this.add(threeMesh)
     }
 
-    render() {
-        getRenderer().setRenderTarget(this.renderTarget)
+    render(skipRenderTargetSet: boolean = false) {
+        if (!skipRenderTargetSet) {
+            getRenderer().setRenderTarget(this.renderTarget)
+        } else {
+            getRenderer().setRenderTarget(null)
+        }
         getRenderer().render(this.scene, this.camera)
 
+        //console.log(`--- TEXTURE COMPOSED`)
         return this.renderTarget
     }
 }

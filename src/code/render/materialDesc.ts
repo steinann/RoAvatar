@@ -12,6 +12,7 @@ import { Shader_TextureComposer_Flat_Color } from './shaders/textureComposer-fla
 import { fileMeshToTHREEGeometry, type MeshDesc } from './meshDesc'
 import { FileMesh } from '../rblx/mesh'
 import { Shader_TextureComposer_Decal } from './shaders/textureComposer-decal'
+import { Shader_TextureComposer_Gamma } from './shaders/textureComposer-gamma'
 
 async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
     let instruction: THREE.Mesh
@@ -234,7 +235,7 @@ export class MaterialDesc {
             if (layer instanceof TextureLayer && layer[textureType]) {
                 const layerImage = layerTextures.get(layer[textureType])
                 const layerTexture = new THREE.Texture(layerImage)
-                layerTexture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                layerTexture.colorSpace = textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace
                 layerTexture.needsUpdate = true
                 texturesToDestroy.push(layerTexture)
 
@@ -375,7 +376,7 @@ export class MaterialDesc {
                 }
             } else if (layer instanceof ColorLayer && textureType === "color") {
                 const color = layer.color
-                const colorValue = new THREE.Color(color.R, color.G, color.B).convertSRGBToLinear()
+                const colorValue = new THREE.Color(color.R, color.G, color.B)
 
                 hasColorLayer = true
 
@@ -424,7 +425,7 @@ export class MaterialDesc {
             return undefined
         }
 
-        TextureComposer.new(width, height, textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace, THREE.RepeatWrapping, !noMipmaps)
+        TextureComposer.new(width, height, textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace, THREE.RepeatWrapping, !noMipmaps)
         TextureComposer.cameraSize(camWidth, camHeight)
         for (const inst of composeInsts) {
             TextureComposer.add(inst)
@@ -435,9 +436,39 @@ export class MaterialDesc {
             texture.dispose()
         }
 
-        const texture = renderTarget.texture
-        texture.wrapS = THREE.RepeatWrapping
-        texture.wrapT = THREE.RepeatWrapping
+        const lineartexture = renderTarget.texture
+        lineartexture.wrapS = THREE.RepeatWrapping
+        lineartexture.wrapT = THREE.RepeatWrapping
+        lineartexture.needsUpdate = true
+
+        let texture = lineartexture
+
+        //gamme correction pass
+        if (textureType === "color") {
+            const gammaInst = await TextureComposer.simpleMesh(
+                "CompositQuad",
+                Shader_TextureComposer_Gamma,
+                {
+                    uTexture: {value: lineartexture},
+                    uOffset: {value: new THREE.Vector2(0, 0)},
+                    uSize: {value: new THREE.Vector2(1, 1)}
+                }
+            )
+
+            TextureComposer.new(width, height, THREE.SRGBColorSpace, THREE.RepeatWrapping, !noMipmaps)
+            TextureComposer.cameraSize(camWidth, camHeight)
+            TextureComposer.add(gammaInst)
+            texture = TextureComposer.render().texture
+        }
+
+        /*if (textureType === "normal") {
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            const geometry = new THREE.PlaneGeometry(4, 4);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(4,2,0)
+            mesh.rotateY(Math.PI)
+            getScene().add(mesh);
+        }*/
 
         //set transparent to false if color layer has no transparent pixels
         let hasTransparency = false
@@ -612,9 +643,13 @@ export class MaterialDesc {
                         const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                         const partcolorLayer = new ColorLayer(partColor)
                         this.layers.push(partcolorLayer)
-                    } else {
-                        this.transparent = true
                     }
+                    
+                    if ((specialMesh.Prop("TextureId") as string).length > 0 && this.transparency === 0) {
+                        const colorLayer = new ColorLayer(new Color3(1,1,1))
+                        this.layers.push(colorLayer)
+                    }
+
                     const colorLayer = new TextureLayer()
                     colorLayer.color = specialMesh.Property("TextureId") as string
                     this.layers.push(colorLayer)
@@ -739,9 +774,13 @@ export class MaterialDesc {
         if (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency) {
             this.transparent = true
         } else {
-            if (affectedByHumanoid || (meshPartTexture.length < 1 || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay))) {
+            //part color underneath is used by r15 skin and overlay surface appearance, otherwise its just white if it has a texture
+            if (affectedByHumanoid || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay) || (meshPartTexture.length < 1 && !surfaceAppearance)) {
                 const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                 const colorLayer = new ColorLayer(partColor)
+                this.layers.push(colorLayer)
+            } else if (this.transparency === 0) {
+                const colorLayer = new ColorLayer(new Color3(1,1,1))
                 this.layers.push(colorLayer)
             }
         }

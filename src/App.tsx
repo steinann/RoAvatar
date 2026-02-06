@@ -490,3 +490,68 @@ window.arrayBufferToBase64 = arrayBufferToBase64
 window.base64ToArrayBuffer = base64ToArrayBuffer
 
 export default App
+
+/*import * as THREE from 'three'
+import { TextureComposer } from './code/render/textureComposer'
+import { Shader_TextureComposer_FullscreenQuad_Color } from './code/render/shaders/textureComposer-fullscreenquad-color'
+import { Shader_TextureComposer_FullscreenQuad } from './code/render/shaders/textureComposer-fullscreenquad'
+import { getRenderer } from './code/render/renderer'
+
+async function doRenderTest(img: HTMLImageElement) {
+  const layerTexture = new THREE.Texture(img)
+  layerTexture.colorSpace = THREE.LinearSRGBColorSpace
+  layerTexture.needsUpdate = true
+
+  const composeInsts = []
+  composeInsts.push(await TextureComposer.simpleMesh(
+      "CompositQuad",
+      Shader_TextureComposer_FullscreenQuad_Color,
+      {
+          uColor: {value: new THREE.Color(1,1,1).convertSRGBToLinear()}
+      }
+  ))
+
+  composeInsts.push(await TextureComposer.simpleMesh(
+      "CompositQuad",
+      Shader_TextureComposer_FullscreenQuad,
+      {
+          uTexture: {value: layerTexture},
+          uOffset: {value: new THREE.Vector2(0, 0)},
+          uSize: {value: new THREE.Vector2(1, 1)}
+      }
+  ))
+
+  console.log("to the texture!!")
+  TextureComposer.new(256, 256, THREE.SRGBColorSpace)
+  TextureComposer.cameraSize(1, 1)
+  for (const inst of composeInsts) {
+      TextureComposer.add(inst)
+  }
+  const renderTarget = TextureComposer.render()
+  renderTarget.texture.colorSpace = THREE.SRGBColorSpace
+
+  const composeInsts2 = [await TextureComposer.simpleMesh(
+      "CompositQuad",
+      Shader_TextureComposer_FullscreenQuad,
+      {
+          uTexture: {value: renderTarget.texture},
+          uOffset: {value: new THREE.Vector2(0, 0)},
+          uSize: {value: new THREE.Vector2(1, 1)}
+      }
+  )]
+
+  console.log("to the screen!!")
+  TextureComposer.new(256, 256)
+  TextureComposer.cameraSize(1,1)
+  TextureComposer.add(composeInsts2[0])
+  getRenderer().setRenderTarget(null)
+  TextureComposer.render(true)
+}
+
+API.Generic.LoadImage("../assets/transparency-tshirt.png").then(img => {
+  if (img) {
+    //setInterval(() => {
+      doRenderTest(img)
+    //}, 33)
+  }
+})*/
