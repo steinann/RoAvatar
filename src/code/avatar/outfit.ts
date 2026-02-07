@@ -992,16 +992,16 @@ export class Outfit {
     }
 
     fixOrders() {
-        for (const asset of this.assets) {
-            if (asset.meta && asset.meta.order) {
+        for (const asset of this.assets.slice().reverse()) {
+            if (asset.meta && asset.meta.order && this.isOrderUsed(asset.meta.order, asset)) {
                 asset.setOrder(this.getNextOrder(asset.meta.order))
             }
         }
     }
 
-    isOrderUsed(order: number): boolean {
+    isOrderUsed(order: number, self?: Asset): boolean {
         for (const asset of this.assets) {
-            if (asset.meta && asset.meta.order === order) {
+            if (asset !== self && asset.meta && asset.meta.order === order) {
                 return true
             }
         }
