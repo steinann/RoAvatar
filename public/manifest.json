@@ -27,6 +27,9 @@
             "resources": ["/*"]
         }
     ],
+    "permissions": [
+        "storage"
+    ],
     "host_permissions": ["https://*.roblox.com/*","https://*.rbxcdn.com/*"],
     "background": {
         "scripts":["background-script.js"],
