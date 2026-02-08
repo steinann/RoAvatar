@@ -121,7 +121,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
     //create item infos based on response
     const itemInfos: ItemInfo[] = []
     for (const item of searchedItems) {
-        const itemInfo = new ItemInfo("Bundle", "LocalOutfit", items.indexOf(item), item.name)
+        const itemInfo = new ItemInfo("None", "LocalOutfit", items.indexOf(item), item.name)
 
         itemInfos.push(itemInfo)
     }
