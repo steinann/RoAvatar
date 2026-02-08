@@ -519,6 +519,8 @@ export class MaterialDesc {
                     const texture = new THREE.Texture(image)
                     texture.wrapS = THREE.RepeatWrapping
                     texture.wrapT = THREE.RepeatWrapping
+                    texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                    
                     texture.needsUpdate = true
                     return [texture, hasTransparency]
                 }
