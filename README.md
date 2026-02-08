@@ -1,8 +1,8 @@
 # RoAvatar
 
-## A full remake of the Roblox avatar editor with new and improved features
+## A remake of the Roblox avatar editor with new and improved features
 
-![A screenshot of RoAvatar](https://i.imgur.com/s4XENxg.png)
+![A screenshot of RoAvatar v0.4.0](https://i.imgur.com/pr1Ul2b.png)
 
 ## Using the Extension
 
