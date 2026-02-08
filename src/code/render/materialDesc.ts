@@ -462,6 +462,10 @@ export class MaterialDesc {
                 texture = TextureComposer.render().texture
             }
 
+            if (texture !== lineartexture) {
+                lineartexture.dispose()
+            }
+
             /*if (textureType === "normal") {
                 const material = new THREE.MeshBasicMaterial({ map: texture });
                 const geometry = new THREE.PlaneGeometry(4, 4);
