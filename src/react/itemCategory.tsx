@@ -8,11 +8,14 @@ import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
 import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
 import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
+import type { Search_Payload } from "../code/api-constant"
+import NothingLoaded from "./nothingLoaded"
 
 let lastCategory = ""
 let lastSubCategory = ""
 let lastLoadId = 0
-function useItems(auth: Authentication | undefined, category: string, subCategory: string) {
+let lastSearchData: Search_Payload | undefined = undefined
+function useItems(auth: Authentication | undefined, category: string, subCategory: string, searchData: Search_Payload) {
     const [nextPageToken, setNextPageToken] = useState<string | null | undefined>("")
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [items, setItems] = useState<AvatarInventoryItem[]>([])
@@ -23,6 +26,25 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
         setIsLoading(false)
         lastLoadId++
     }
+
+    //refresh if searchData has changed
+    useEffect(() => {
+        if (searchData.taxonomy !== lastSearchData?.taxonomy ||
+            searchData.salesTypeFilter !== lastSearchData.salesTypeFilter ||
+            searchData.categoryFilter !== lastSearchData.categoryFilter ||
+            searchData.sortType !== lastSearchData.sortType ||
+            searchData.keyword !== lastSearchData.keyword ||
+            searchData.topics?.length !== lastSearchData.topics?.length || //is this okay?
+            searchData.creatorName !== lastSearchData.creatorName ||
+            searchData.minPrice !== lastSearchData.minPrice ||
+            searchData.maxPrice !== lastSearchData.maxPrice ||
+            searchData.includeNotForSale !== lastSearchData.includeNotForSale ||
+            searchData.limit !== lastSearchData.limit
+        ) {
+            lastSearchData = searchData
+            refresh()
+        }
+    }, [searchData])
 
     useEffect(() => {
         if (category !== lastCategory || subCategory !== lastSubCategory) {
@@ -49,28 +71,31 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
             if (sortOption !== "inventory") {
-                API.Avatar.GetAvatarInventory(sortOption, nextPageToken, itemInfos).then(response => {
+                API.Avatar.GetAvatarInventory(sortOption, nextPageToken, itemInfos).then(body => {
                     if (loadId !== lastLoadId) return
-                    if (response.status === 200) {
-                        response.json().then(body => {
-                            if (loadId !== lastLoadId) return
-                            //console.log(body)
-                            const pageToken = body.nextPageToken
-                            if (pageToken && pageToken.length > 0) {
-                                setNextPageToken(pageToken)
-                            } else {
-                                setNextPageToken(null)
+                    if (!(body instanceof Response)) {
+                        if (loadId !== lastLoadId) return
+                        //console.log(body)
+                        const pageToken = body.nextPageToken
+                        if (pageToken && pageToken.length > 0) {
+                            setNextPageToken(pageToken)
+                        } else {
+                            setNextPageToken(null)
+                        }
+                        
+                        const newItems: AvatarInventoryItem[] = []
+                        for (const item of body.avatarInventoryItems) {
+                            if (!searchData.keyword || item.itemName.toLowerCase().includes(searchData.keyword.toLowerCase())) {
+                                newItems.push(item)
                             }
-                            
-                            const newItems = body.avatarInventoryItems
-                            setItems(prev => [...prev, ...newItems])
-                        }).finally(() => {
-                            if (loadId !== lastLoadId) return
-                            setIsLoading(false)
-                        })
+                        }
+                        setItems(prev => [...prev, ...newItems])
                     } else {
                         setIsLoading(false)
                     }
+                }).finally(() => {
+                    if (loadId !== lastLoadId) return
+                    setIsLoading(false)
                 })
             } else {
                 auth.getUserInfo().then(userInfo => {
@@ -93,11 +118,13 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
 
                                 const newItems: AvatarInventoryItem[] = []
                                 for (const asset of body.data) {
-                                    newItems.push({
-                                        itemCategory: {itemType: 1, itemSubType: itemInfos[0].subType},
-                                        itemId: asset.assetId,
-                                        itemName: asset.assetName,
-                                    })
+                                    if (!searchData.keyword || asset.assetName.toLowerCase().includes(searchData.keyword.toLowerCase())) {
+                                        newItems.push({
+                                            itemCategory: {itemType: 1, itemSubType: itemInfos[0].subType},
+                                            itemId: asset.assetId,
+                                            itemName: asset.assetName,
+                                        })
+                                    }
                                 }
                                 setItems(prev => [...prev, ...newItems])
                             }).finally(() => {
@@ -130,7 +157,7 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
 }
 
-export default function ItemCategory({children, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -140,7 +167,7 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
 
     const [outfitDialogOpen, setOutfitDialogOpen] = useState(false)
 
-    const {items, isLoading, loadMore, hasLoadedAll, refresh } = useItems(auth, categoryType, subCategoryType)
+    const {items, isLoading, loadMore, hasLoadedAll, refresh } = useItems(auth, categoryType, subCategoryType, searchData)
 
     //manage open state of create outfit dialog
     useEffect(() => {
@@ -231,11 +258,11 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                             refresh()
                         } else {
                             if (setAlertEnabled && setAlertText) {
-                                setAlertText("Failed to save outfit")
+                                setAlertText("Failed to save outfit, if you're missing items try saving to Local instead")
                                 setAlertEnabled(true)
                                 setTimeout(() => {
                                     setAlertEnabled(false)
-                                }, 3000)
+                                }, 4000)
                             }
                         }
                 })
@@ -256,7 +283,9 @@ export default function ItemCategory({children, categoryType, subCategoryType, s
                     }
                 }}/>
             ))
-        }</>
+        }
+        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword}/>
+        </>
     } else if (!hasLoadedAll) { //fake items while loading
         itemComponents = <>{
             new Array(20).fill(0).map(() => (

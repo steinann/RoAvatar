@@ -75,6 +75,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
         "Characters": {
             "Creations": new SortInfo([new ItemSort(3, "Outfit")]),
             "Purchased": new SortInfo(AllCharacterSorts),
+            "Local": new SpecialInfo("LocalOutfits")
         },
         "Clothing": {
             "All": new SortInfo(AllClothingSorts),

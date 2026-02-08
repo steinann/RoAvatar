@@ -1,11 +1,14 @@
 import type { BundleDetails_Result, GetTopics_Payload, GetTopics_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
+import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
 import { BODYCOLOR3, ENABLE_API_CACHE } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
 import { FileMesh } from "./rblx/mesh"
 import { RBX } from "./rblx/rbx"
+
+declare const browser: typeof chrome;
 
 class Authentication {
     TOKEN?: string
@@ -168,7 +171,8 @@ const CACHE = {
     "Image": new Map<string,HTMLImageElement | undefined>(),
     "Thumbnails": new Map<string,string | undefined>(),
     "ItemOwned": new Map<string,[boolean,number]>(),
-    "IsLayered": new Map<number,boolean>()
+    "IsLayered": new Map<number,boolean>(),
+    "AvatarInventoryItem": new Map<string,unknown>()
 }
 
 type ThumbnailInfo = {
@@ -343,7 +347,26 @@ const API = {
                 needsAnd = true
             }
 
-            return RBLXGet(requestUrl)
+            if (pageToken) {
+                const cache = CACHE.AvatarInventoryItem.get(requestUrl)
+                if (cache !== undefined) {
+                    return cache
+                }
+            }
+
+            const response = await RBLXGet(requestUrl)
+            if (response.status !== 200) {
+                return response
+            } else {
+                const result = await response.json()
+
+                //we dont cache for outfits because it can change easily without updating page token (you can change their names)
+                if (pageToken && !requestUrl.includes("ItemType=Outfit")) {
+                    CACHE.AvatarInventoryItem.set(requestUrl, result)
+                }
+
+                return result
+            }
         },
         GetOutfitDetails: async function(outfitId: number, userId: number): Promise<Response | Outfit> {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
@@ -742,6 +765,64 @@ const API = {
             }
 
             CACHE.Thumbnails.delete(requestIdFromThumbnailInfo(thisThumbnailInfo))
+        },
+        RenderOutfit: async function(auth: Authentication, outfit: Outfit, attempt: number = 0): Promise<string | undefined> {
+            return new Promise((resolve) => {
+                if (attempt > 3) {
+                    resolve(undefined)
+                    return
+                }
+
+                const bodyToUse = {
+                    "thumbnailConfig":{
+                        "thumbnailId": 3,
+                        "thumbnailType": "2dWebp",
+                        "size": "150x150"
+                    },
+                    "avatarDefinition":{
+                        "assets": outfit.getAssetsJson(),
+                        "bodyColors":outfit.bodyColors.toHexJson(),
+                        "scales":outfit.scale.toJson(),
+                        "playerAvatarType":{
+                            "playerAvatarType":outfit.playerAvatarType
+                        }
+                    }
+                }
+
+                RBLXPost("https://avatar.roblox.com/v1/avatar/render", auth, bodyToUse).then(data => {
+                    return data.json()
+                }).then(body => {
+                    if (body.state != "Pending") {
+                        resolve(body.imageUrl)
+                    } else {
+                        setTimeout(() => {
+                            resolve(API.Thumbnails.RenderOutfit(auth, outfit, attempt + 1))
+                        }, 1000)
+                    }
+                })
+            })
+        }
+    },
+    "LocalOutfit": {
+        GetLocalOutfits: async function(): Promise<LocalOutfit[]> {
+            const data = await (chrome || browser).storage.local.get(["localOutfits"])
+            const localOutfitJsons = data["localOutfits"] as LocalOutfitJson[]
+            if (!localOutfitJsons) {
+                return []
+            }
+
+            const localOutfits: LocalOutfit[] = []
+            for (const json of localOutfitJsons) {
+                localOutfits.push(new LocalOutfit(new Outfit()).fromJson(json))
+            }
+            return localOutfits
+        },
+        SetLocalOutfits: async function(localOutfits: LocalOutfit[]): Promise<undefined> {
+            const localOutfitsJson: LocalOutfitJson[] = []
+            for (const localOutfit of localOutfits) {
+                localOutfitsJson.push(localOutfit.toJson())
+            }
+            await (chrome || browser).storage.local.set({"localOutfits": localOutfitsJson})
         }
     }
 }

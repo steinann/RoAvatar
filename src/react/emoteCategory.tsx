@@ -7,6 +7,7 @@ import BarCategory from "./barCategory"
 import { AuthContext } from "./context/auth-context"
 import React from "react"
 import ItemCard from "./itemCard"
+import type { Search_Payload } from "../code/api-constant"
 
 //Box that represents slot in emote wheel
 function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemInfo }: {setAnimName: (a: string) => void, setCurrentSlot: (a: number) => void, currentSlot: number, slot: number, auth?: Authentication, itemInfo?: ItemInfo}): React.JSX.Element {
@@ -54,7 +55,7 @@ type EmoteInfo = {
     position: number
 }
 
-export default function EmoteCategory({categoryType, setOutfit, setAnimName, setAlertText, setAlertEnabled}: {categoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function EmoteCategory({searchData, categoryType, setOutfit, setAnimName, setAlertText, setAlertEnabled}: {searchData: Search_Payload, categoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     
     const [currentSlot, setCurrentSlot] = useState(1)
@@ -130,7 +131,7 @@ export default function EmoteCategory({categoryType, setOutfit, setAnimName, set
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={7} itemInfo={itemInfos[6]}/>
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
     </BarCategory>
-    <ItemCategory categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
+    <ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
         if (!equippedEmotes) return
 
         let isEmoteEquipped = false

@@ -214,7 +214,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
 
                 const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)
                 const className = adjustAsset?.id === assetId ? "adjust-asset" : undefined
-                return <ItemCard showOrderArrows={orderOpen} buttonClassName={className} key={asset.id}  auth={auth} includeName={false} itemInfo={itemInfo} onClick={() => {
+                return <ItemCard key={asset._uuid} showOrderArrows={orderOpen} buttonClassName={className} auth={auth} includeName={false} itemInfo={itemInfo} onClick={() => {
                     //open adjust if set to adjust mode
                     if (adjustOpen) {
                         setAdjustAssetId(assetId)

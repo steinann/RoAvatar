@@ -280,4 +280,17 @@ export function mathRandom(min: number, max: number) {
     return Math.floor(getRandomBetweenInclusive(min,max))
 }
 
+export async function imageUrlToDataUrl(imageUrl: string): Promise<string> {
+    const response = await fetch(imageUrl)
+    const blob = await response.blob()
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(blob)
+    });
+}
+
+
 export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

@@ -4,8 +4,9 @@ import { API, Authentication } from "../code/api";
 import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
+import type { Outfit } from "../code/avatar/outfit";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false}: 
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false, isLocalOutfit = false, deleteCallback, updateCallback, renameCallback}: 
     {
         auth?: Authentication,
         itemInfo?: ItemInfo,
@@ -22,7 +23,11 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         refresh?: () => void,
         setAlertText?: (a: string) => void,
         setAlertEnabled?: (a: boolean) => void,
-        showViewButton?: boolean
+        showViewButton?: boolean,
+        isLocalOutfit?: boolean,
+        deleteCallback?: () => void,
+        updateCallback?: (a: Outfit) => void,
+        renameCallback?: (a: string) => void,
     }): React.JSX.Element {
     const outfit = useContext(OutfitContext)
     
@@ -35,6 +40,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [renameOpen, setRenameOpen] = useState(false)
 
+    const cardRef = useRef<HTMLAnchorElement>(null)
     const nameRef = useRef(null)
     const editRef = useRef<HTMLButtonElement>(null)
     const updateDialogRef = useRef<HTMLDialogElement>(null)
@@ -120,6 +126,21 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
     }, [auth, forceImage, imageUrl, itemInfo])
 
+    //close edit menu
+    useEffect(() => {
+        const mouseUpListener = (e: MouseEvent) => {
+            if (!cardRef.current?.contains(e.target as HTMLElement)) {
+                setEditOpen(false)
+            }
+        }
+
+        document.addEventListener("mouseup", mouseUpListener)
+        
+        return () => {
+            document.removeEventListener("mouseup", mouseUpListener)
+        }
+    })
+
     const cardImage = imageUrl !== "loading" ? (<img style={imageAffectedByTheme ? {filter:"var(--icon-filter)"} : {}} className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 
     const actualClassName = `item${className ? ` ${className}` : ""}`
@@ -148,18 +169,22 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     const newOutfit = outfit.clone()
                     newOutfit.name = itemInfo.name
 
-                    API.Avatar.UpdateOutfit(auth, itemInfo.id, newOutfit).then((result) => {
-                        API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
-                        if (result.status === 200 && refresh) {
-                            refresh()
-                        } else if (setAlertText && setAlertEnabled) {
-                            setAlertText("Failed to update character")
-                            setAlertEnabled(true)
-                            setTimeout(() => {
-                                setAlertEnabled(false)
-                            }, 3000)
-                        }
-                    })
+                    if (!isLocalOutfit) {
+                        API.Avatar.UpdateOutfit(auth, itemInfo.id, newOutfit).then((result) => {
+                            API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
+                            if (result.status === 200 && refresh) {
+                                refresh()
+                            } else if (setAlertText && setAlertEnabled) {
+                                setAlertText("Failed to update character")
+                                setAlertEnabled(true)
+                                setTimeout(() => {
+                                    setAlertEnabled(false)
+                                }, 3000)
+                            }
+                        })
+                    } else if (updateCallback) {
+                        updateCallback(outfit)
+                    }
                 }}>Update</RadialButton>
             </div>
         </dialog> : null}
@@ -173,18 +198,22 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 <RadialButton className="dialog-confirm roboto-600" onClick={() => {
                     setDeleteOpen(false)
 
-                    API.Avatar.DeleteOutfit(auth, itemInfo.id).then((result) => {
-                        API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
-                        if (result.status === 200 && refresh) {
-                            refresh()
-                        } else if (setAlertText && setAlertEnabled) {
-                            setAlertText("Failed to delete character")
-                            setAlertEnabled(true)
-                            setTimeout(() => {
-                                setAlertEnabled(false)
-                            }, 3000)
-                        }
-                    })
+                    if (!isLocalOutfit) {
+                        API.Avatar.DeleteOutfit(auth, itemInfo.id).then((result) => {
+                            API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
+                            if (result.status === 200 && refresh) {
+                                refresh()
+                            } else if (setAlertText && setAlertEnabled) {
+                                setAlertText("Failed to delete character")
+                                setAlertEnabled(true)
+                                setTimeout(() => {
+                                    setAlertEnabled(false)
+                                }, 3000)
+                            }
+                        })
+                    } else if (deleteCallback) {
+                        deleteCallback()
+                    }
                 }}>Delete</RadialButton>
             </div>
         </dialog> : null}
@@ -206,27 +235,31 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                         toUseName = nameValue
                     }
 
-                    API.Avatar.PatchOutfit(auth, itemInfo.id, {name: toUseName}).then((result) => {
-                        if (result.status === 200 && refresh) {
-                            if (outfitNameInputRef.current) {
-                                outfitNameInputRef.current.value = ""
-                            }
+                    if (!isLocalOutfit) {
+                        API.Avatar.PatchOutfit(auth, itemInfo.id, {name: toUseName}).then((result) => {
+                            if (result.status === 200 && refresh) {
+                                if (outfitNameInputRef.current) {
+                                    outfitNameInputRef.current.value = ""
+                                }
 
-                            refresh()
-                        } else if (setAlertText && setAlertEnabled) {
-                            setAlertText("Failed to rename character")
-                            setAlertEnabled(true)
-                            setTimeout(() => {
-                                setAlertEnabled(false)
-                            }, 3000)
-                        }
-                    })
+                                refresh()
+                            } else if (setAlertText && setAlertEnabled) {
+                                setAlertText("Failed to rename character")
+                                setAlertEnabled(true)
+                                setTimeout(() => {
+                                    setAlertEnabled(false)
+                                }, 3000)
+                            }
+                        })
+                    } else if (renameCallback) {
+                        renameCallback(toUseName)
+                    }
                 }}>Rename</RadialButton>
             </div>
         </dialog> : null}
         
         {/*Actual item element*/}
-        <a className={actualClassName} title={itemInfo.name} href={url} onClick={(e) => {
+        <a ref={cardRef} className={actualClassName} title={itemInfo.name} href={url} onClick={(e) => {
             e.preventDefault()
             if (url && e.target === nameRef.current) {
                 browserOpenURL(url)

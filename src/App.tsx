@@ -21,6 +21,7 @@ import MarketplaceCategory from './react/marketplaceCategory'
 import { HAIR_IS_BODYPART } from './code/misc/flags'
 import BarButton from './react/barButton'
 import RadialButton from './react/generic/radialButton'
+import SearchFilter from './react/searchFilter'
 
 const outfitHistory: Outfit[] = []
 
@@ -47,7 +48,6 @@ function App() {
 
   const [addAssetOpen, setAddAssetOpen] = useState<boolean>(false)
 
-  const searchRef = useRef<HTMLInputElement>(null)
   const addAssetDialogRef = useRef<HTMLDialogElement>(null)
   const addAssetInputRef = useRef<HTMLInputElement>(null)
 
@@ -189,6 +189,9 @@ function App() {
       }
       window.getRBX = (a: string) => {
         return API.Asset.GetRBX(a, undefined)
+      }
+      window.renderOutfit = (outfit: Outfit) => {
+        return API.Thumbnails.RenderOutfit(newAuth, outfit)
       }
     }
 
@@ -412,7 +415,7 @@ function App() {
               {/*worn items list*/}
               <div className='worn-items dark-scrollbar'>
                 {outfit.assets.map(asset => {
-                  return <ItemCard auth={auth} key={asset.id} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
+                  return <ItemCard key={asset._uuid} auth={auth} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
                     const newOutfit = outfit.clone()
                     newOutfit.removeAsset(asset.id)
                     setOutfit(newOutfit)
@@ -427,27 +430,12 @@ function App() {
             {/*RIGHT SIDE*/}
             <div className='main-right division-down'>
               {/*category source (inventory/marketplace)*/}
-              <BarCategory className="align-center" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
-
+              <div className="right-top">
+                <BarCategory className="" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
+                <SearchFilter tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword}/>
+              </div>
               {/*category picker*/}
-              <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}>
-                {categorySource === "Marketplace" ? 
-                <form onChange={() => {
-                  setTempSearchKeyword(searchRef.current?.value || "")
-                }} onSubmit={(e) => {
-                  e.preventDefault()
-
-                  const newValue = searchRef.current?.value
-
-                  setSearchKeyword(newValue && newValue.length > 0 ? newValue : undefined)
-                }}>
-                  <input value={tempSearchKeyword} ref={searchRef} className='marketplace-search' placeholder='Search'></input>
-                  <button type="submit" className='search-button'><span className='material-symbols-outlined'>search</span></button>
-                </form>
-                 : null
-                 /*<SearchFilter tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword}/>*/
-                 }
-              </BarCategory>
+              <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>
 
               {/*subcategorycategory picker*/}
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource][categoryType]} currentCategory={subCategoryType} setCurrentCategory={setSubCategoryType}/>
@@ -455,11 +443,11 @@ function App() {
               {/*appropriate category element for inventory*/
               subCategoryType ? <>
                 {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
-                (<ItemCategory categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}>
+                (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}>
 
                 </ItemCategory>)
                 :
-                <SpecialCategory specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
+                <SpecialCategory searchData={searchData} specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
                 }
               </> : null}
               {/*Marketplace category element*/
@@ -483,6 +471,7 @@ declare global {
         saveOutfit: (a: Outfit) => void;
         getMesh: (a: string) => void;
         getRBX: (a: string) => void;
+        renderOutfit: (outfit: Outfit) => Promise<string | undefined>
     }
 }
 

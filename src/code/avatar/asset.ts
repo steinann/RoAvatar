@@ -397,6 +397,8 @@ class AssetMeta {
     }
 }
 
+let uuidCount = 0
+
 class Asset {
     id: number = 0
     name: string = "Error"
@@ -408,6 +410,7 @@ class Asset {
 
     //class only
     notOwned?: boolean
+    _uuid = uuidCount++
 
     clone() {
         const copy = new Asset()

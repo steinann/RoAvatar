@@ -954,6 +954,10 @@ export class Outfit {
     }
 
     addAsset(id: number, type: string | number, name: string) {
+        if (this.containsAsset(id)) {
+            return
+        }
+
         let typeId = 0
         let typeName = ""
         if (typeof type === "number") {

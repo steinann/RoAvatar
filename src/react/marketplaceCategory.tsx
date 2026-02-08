@@ -7,6 +7,7 @@ import ItemCard from "./itemCard"
 import { AssetTypes, CatalogBundleTypes, ItemInfo } from "../code/avatar/asset"
 import { defaultOnClick } from "./categoryShared"
 import type { Search_Payload } from "../code/api-constant"
+import NothingLoaded from "./nothingLoaded"
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
 function useMarketplaceItems(auth: Authentication | undefined, searchData: Search_Payload) {
@@ -173,7 +174,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
     //create item cards
     let itemComponents = null
 
-    if (auth && itemInfos.length > 0) {
+    if (auth && itemInfos.length > 0 || auth && hasLoadedAll) {
         let i = 0;
         itemComponents = <>
         {
@@ -186,7 +187,9 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
                     }
                 }}/>
             ))
-        }</>
+        }
+        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword}/>
+        </>
     } else if (!hasLoadedAll) { //fake items while loading
         itemComponents = <>{
             new Array(20).fill(0).map(() => (

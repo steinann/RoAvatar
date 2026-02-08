@@ -7,7 +7,7 @@ import type { Authentication } from '../api';
 import { RenderedClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { getSkeletonFromHumanoid, setFACSMeshForHumanoid, updateSkeletonFromHumanoid } from './legacy-skeleton';
-import { USE_LEGACY_SKELETON, USE_POST_PROCESSING } from '../misc/flags';
+import { POST_PROCESSING_IS_DOUBLE_SIZE, USE_LEGACY_SKELETON, USE_POST_PROCESSING } from '../misc/flags';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 
 // MAIN DATA FOR THE RENDERER (i should have really made this a class...)
@@ -24,7 +24,7 @@ const lookAwayDistance = 6
 const orbitControlsTarget: [number, number, number] = [0,3,0]
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 1000 );
+const camera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 100 );
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setClearColor(new THREE.Color(1,0,1), 0)
@@ -33,6 +33,9 @@ renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.setPixelRatio(window.devicePixelRatio * 1)
 renderer.setSize( 420, 420 );
+if (USE_POST_PROCESSING && POST_PROCESSING_IS_DOUBLE_SIZE) {
+    renderer.setSize( 840, 840 )
+}
 renderer.domElement.setAttribute("style","width: 420px; height: 420; border-radius: 0px;")
 
 renderer.domElement.setAttribute("id","OutfitInfo-outfit-image-3d")
@@ -48,8 +51,10 @@ if (USE_POST_PROCESSING) {
     const bloomPass = new UnrealBloomPass(resolution, 0.15, 0.0001, 0.9)
     effectComposer.addPass(bloomPass)
 
-    const fxaaPass = new FXAAPass()
-    effectComposer.addPass( fxaaPass )
+    if (!POST_PROCESSING_IS_DOUBLE_SIZE) {
+        const fxaaPass = new FXAAPass()
+        effectComposer.addPass(fxaaPass)
+    }
 
     const outputPass = new OutputPass()
     effectComposer.addPass(outputPass)
@@ -112,6 +117,8 @@ directionalLight.shadow.camera.bottom = -shadowPhysicalSize + bottomOffset
 directionalLight.shadow.camera.near = 0.5; // default
 directionalLight.shadow.camera.far = 25;
 
+directionalLight.shadow.intensity = 0.5
+
 //const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
 //scene.add(shadowHelper);
 
@@ -133,7 +140,7 @@ if (lightingType === "WellLit") {
 }
 
 const planeGeometry = new THREE.PlaneGeometry( 20, 20, 32, 32 );
-const planeShadowMaterial = new THREE.ShadowMaterial({opacity: 0.5});
+const planeShadowMaterial = new THREE.ShadowMaterial({opacity: 1.0});
 const shadowPlane = new THREE.Mesh( planeGeometry, planeShadowMaterial );
 shadowPlane.rotation.set(rad(-90),0,0)
 shadowPlane.position.set(0,0,0)

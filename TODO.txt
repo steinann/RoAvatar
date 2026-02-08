@@ -24,9 +24,10 @@ ISSUES (General):
 
 FEATURES:
     HIGH PRIORITY:
-        -Search and filter in both marketplace and inventory
-        -Saving outfits locally, that can also include unowned items
+        -Filter in both marketplace and inventory? (do we really need this in inventory?)
+        -Settings, with a setting to make RoAvatar the default
         -Thumbnail customization
+        -Loading indicator for avatar preview
     MEDIUM PRIORITY:
         -Gear inside preview
     LOW PRIORITY:

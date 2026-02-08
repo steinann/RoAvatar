@@ -18,6 +18,7 @@ export const RBF_PATCH_SHAPE_SAMPLES = 32 //amount of far-away vertices (importa
 export const USE_VERTEX_COLOR = true
 export const USE_LEGACY_SKELETON = false
 export const USE_POST_PROCESSING = false //this is needed to enable bloom, but ugly since it disables anti aliasing...
+export const POST_PROCESSING_IS_DOUBLE_SIZE = true //does this count as anti aliasing?
 
 //debug
 export const LOAD_TEST_PLACE = false //"../assets/DecalTest2.rbxm" //"../assets/TransparentDominus.rbxm" //"../assets/EmissiveTest.rbxm" //"../assets/Mesh Deformation Test.rbxl" //set this to a string to load a place file

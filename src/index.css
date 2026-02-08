@@ -302,6 +302,8 @@ body {
 
     overflow-y: auto;
     height: 100%;
+
+    position: relative;
 }
 
 .item {
@@ -1331,22 +1333,72 @@ form {
     border-style: solid;
 }
 
-.search-button {
-    height: 100%;
-    aspect-ratio: 1;
-    background: transparent;
-    border: none;
-    color: var(--font-color);
-    cursor: pointer;
+.right-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: calc(100% - 15px);
 }
 
 .searchfilter {
-    position: relative
+    background-color: var(--item-background);
+    height: 2.5em;
+    border-radius: 1em;
+    border-style: solid;
+    border-color: var(--select-element-hover);
 }
 
 .searchfilter-search {
-    position: absolute;
-    right: 0;
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
 
-    background-color: var(--body-background);
+.searchfilter-search-button {
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    color: var(--font-color);
+    margin: 0 5px;
+    cursor: pointer;
+}
+
+.searchfilter-search-input {
+    display: flex;
+    height: 100%;
+    position: relative;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.searchfilter-search-input form input {
+    background-color: transparent;
+    border: none;
+    color: var(--font-color);
+    font-size: 1.5em;
+    outline: none;
+    width: 223px;
+}
+
+.searchfilter-search-input.empty form input {
+    width: calc(223px + 36px)
+}
+
+.searchfilter-search-cancel {
+    background-color: transparent;
+    border: none;
+    color: var(--font-color);
+    cursor: pointer;
+    width: 36px;
+}
+
+.nothing-loaded {
+    width: 100%;
+    position: absolute;
+    color: var(--font-color);
+    text-align: center;
+    font-size: 2em;
+    top: 40%;
 }
