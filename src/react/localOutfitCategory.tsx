@@ -17,9 +17,11 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
     const [nextPageToken, setNextPageToken] = useState<string | null | undefined>("")
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [items, setItems] = useState<LocalOutfit[]>([])
+    const [searchedItems, setSearchedItems] = useState<LocalOutfit[]>([])
 
     const refresh = () => {
         setItems([])
+        setSearchedItems([])
         setNextPageToken("")
         setIsLoading(false)
         lastLoadId++
@@ -56,13 +58,14 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
                 if (loadId !== lastLoadId) return
                 setNextPageToken(null)
 
-                const newItems: LocalOutfit[] = []
+                const newSearchedItems: LocalOutfit[] = []
                 for (const item of localOutfits) {
                     if (!searchData.keyword || item.name.toLowerCase().includes(searchData.keyword.toLowerCase())) {
-                        newItems.push(item)
+                        newSearchedItems.push(item)
                     }
                 }
-                setItems(prev => [...prev, ...newItems])
+                setItems(prev => [...prev, ...localOutfits])
+                setSearchedItems(prev => [...prev, ...newSearchedItems])
             }).finally(() => {
                 if (loadId !== lastLoadId) return
                 setIsLoading(false)
@@ -72,7 +75,7 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
 
     const hasLoadedAll = nextPageToken === null || nextPageToken === undefined
 
-    return {items, isLoading, loadMore, hasLoadedAll, refresh }
+    return {items, searchedItems, isLoading, loadMore, hasLoadedAll, refresh }
 }
 
 export default function LocalOutfitCategory({children, searchData, setOutfit, setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
@@ -86,7 +89,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
     const createOutfitDialogRef: React.RefObject<HTMLDialogElement | null> = useRef(null)
     const scrollDivRef: React.RefObject<HTMLDivElement | null> = useRef(null)
 
-    const {items, isLoading, loadMore, hasLoadedAll, refresh } = useLocalOutfitItems(auth, searchData)
+    const {items, searchedItems, isLoading, loadMore, hasLoadedAll, refresh } = useLocalOutfitItems(auth, searchData)
 
     //scroll to start when searchData changes
     useEffect(() => {
@@ -117,7 +120,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
 
     //create item infos based on response
     const itemInfos: ItemInfo[] = []
-    for (const item of items) {
+    for (const item of searchedItems) {
         const itemInfo = new ItemInfo("Bundle", "LocalOutfit", items.indexOf(item), item.name)
 
         itemInfos.push(itemInfo)
