@@ -955,7 +955,7 @@ export class Outfit {
 
     addAsset(id: number, type: string | number, name: string) {
         if (this.containsAsset(id)) {
-            //return
+            return
         }
 
         let typeId = 0
