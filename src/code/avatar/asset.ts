@@ -423,6 +423,7 @@ class Asset {
         if (this.meta) copy.meta = this.meta.clone()
 
         copy.notOwned = this.notOwned
+        copy._uuid = this._uuid
 
         return copy
     }
