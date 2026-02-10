@@ -1179,6 +1179,12 @@ export class Outfit {
                 assetScale = {X: scaleX, Y: scaleY, Z: scaleZ}
             }
 
+            //headshape
+            let assetHeadShape: number | undefined = undefined
+            if (flags & 32) {
+                assetHeadShape = Number(view.readUint64())
+            }
+
             assetPromises.push(new Promise((resolve) => {
                 this.addAssetId(id).then(() => {
                     let asset: Asset | undefined = undefined
@@ -1188,12 +1194,13 @@ export class Outfit {
                         }
                     }
 
-                    if (asset && (assetOrder || assetPos || assetRot || assetScale)) {
+                    if (asset && (assetOrder || assetPos || assetRot || assetScale || assetHeadShape !== undefined)) {
                         asset.meta = new AssetMeta()
                         asset.meta.order = assetOrder
                         asset.meta.position = assetPos
                         asset.meta.rotation = assetRot
                         asset.meta.scale = assetScale
+                        asset.meta.headShape = assetHeadShape
                     }
 
                     resolve(undefined)
@@ -1229,6 +1236,7 @@ export class Outfit {
             let pos = asset.meta?.position
             let rot = asset.meta?.rotation
             let scale = asset.meta?.scale
+            const headShape = asset.meta?.headShape
 
             if (pos && (Math.abs(pos.X) + Math.abs(pos.Y) + Math.abs(pos.Z)) < 0.01) {
                 pos = undefined
@@ -1249,6 +1257,7 @@ export class Outfit {
             if (pos) bufferSize += 3
             if (rot) bufferSize += 3
             if (scale) bufferSize += 3
+            if (headShape !== undefined) bufferSize += 8
         }
 
         //create buffer
@@ -1313,6 +1322,7 @@ export class Outfit {
             let pos = asset.meta?.position
             let rot = asset.meta?.rotation
             let scale = asset.meta?.scale
+            const headShape = asset.meta?.headShape
 
             if (pos && (Math.abs(pos.X) + Math.abs(pos.Y) + Math.abs(pos.Z)) < 0.01) {
                 pos = undefined
@@ -1334,6 +1344,7 @@ export class Outfit {
             if (rot) flags += 4
             if (scale) flags += 8
             if (idIs64bit) flags += 16
+            if (headShape !== undefined) flags += 32
 
             view.writeUint8(flags)
 
@@ -1363,6 +1374,10 @@ export class Outfit {
                 view.writeUint8(Math.floor(mapNum(scale.X, 0.5,2, 0,255)))
                 view.writeUint8(Math.floor(mapNum(scale.Y, 0.5,2, 0,255)))
                 view.writeUint8(Math.floor(mapNum(scale.Z, 0.5,2, 0,255)))
+            }
+
+            if (headShape !== undefined) {
+                view.writeUint64(BigInt(headShape))
             }
         }
 

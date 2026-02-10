@@ -8,6 +8,7 @@ type AssetMetaJson = {
     scale?: VecXYZ,
     order?: number
     puffiness?: number
+    headShape?: number
 }
 
 type AssetTypeJson = { id?: number; name?: string }
@@ -18,6 +19,7 @@ type AssetJson = {
     assetType?: AssetTypeJson,
     currentVersionId?: number,
     meta?: AssetMetaJson,
+    supportsHeadShapes?: boolean,
 }
 
 export const AssetTypes = [
@@ -348,6 +350,8 @@ class AssetMeta {
     rotation?: VecXYZ
     scale?: VecXYZ
 
+    headShape?: number
+
     constructor() {
         this.version = 1
     }
@@ -357,6 +361,7 @@ class AssetMeta {
         copy.version = this.version
         copy.order = this.order
         copy.puffiness = this.puffiness
+        copy.headShape = this.headShape
 
         if (this.position) copy.position = cloneVecXYZ(this.position)
         if (this.rotation) copy.rotation = cloneVecXYZ(this.rotation)
@@ -371,6 +376,7 @@ class AssetMeta {
             "position": this.position,
             "rotation": this.rotation,
             "scale": this.scale,
+            "headShape": this.headShape
         }
 
         if (this.order || this.order == 0) {
@@ -394,6 +400,8 @@ class AssetMeta {
         this.position = assetMetaJson.position
         this.rotation = assetMetaJson.rotation
         this.scale = assetMetaJson.scale
+
+        this.headShape = assetMetaJson.headShape
     }
 }
 
@@ -407,6 +415,8 @@ class Asset {
     currentVersionId?: number
 
     meta?: AssetMeta //only present on layered clothing and positioned assets
+
+    supportsHeadShapes?: boolean
 
     //class only
     notOwned?: boolean
@@ -422,6 +432,8 @@ class Asset {
 
         if (this.meta) copy.meta = this.meta.clone()
 
+        copy.supportsHeadShapes = this.supportsHeadShapes
+
         copy.notOwned = this.notOwned
         copy._uuid = this._uuid
 
@@ -434,6 +446,7 @@ class Asset {
             "name": this.name,
             "assetType": this.assetType.toJson(),
             "currentVersionId": this.currentVersionId,
+            "supportsHeadShapes": this.supportsHeadShapes,
         }
 
         if (this.meta) {
@@ -458,6 +471,8 @@ class Asset {
             this.meta = new AssetMeta()
             this.meta.fromJson(assetJson.meta)
         }
+
+        this.supportsHeadShapes = assetJson.supportsHeadShapes
     }
 
     setOrder(order: number) {
