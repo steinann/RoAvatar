@@ -142,7 +142,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
         <>
             <dialog style={outfitDialogOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={createOutfitDialogRef} onCancel={() => {setOutfitDialogOpen(false)}}>
                 <span className="dialog-title roboto-700">Create New Character</span>
-                <input ref={outfitNameInputRef} className="dialog-text-input roboto-300" placeholder="Name"></input>
+                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
                 <div className="dialog-actions">
                     <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                         setOutfitDialogOpen(false)

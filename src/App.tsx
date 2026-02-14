@@ -40,6 +40,7 @@ function App() {
   const [canUndo, setCanUndo] = useState<boolean>(false)
   const [canRedo, setCanRedo] = useState<boolean>(false)
   const [historyIndex, setHistoryIndex] = useState<number>(-1)
+  const [saveAlwaysOn, setSaveAlwaysOn] = useState<boolean>(false)
 
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
   const [categoryType, _setCategoryType] = useState<string>("Recent") //Recent
@@ -365,7 +366,7 @@ function App() {
 
             <dialog style={addAssetOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={addAssetDialogRef} onCancel={() => {setAddAssetOpen(false)}}>
               <span className="dialog-title roboto-700">Add Item</span>
-              <input ref={addAssetInputRef} className="dialog-text-input roboto-300" placeholder="Item URL"></input>
+              <input ref={addAssetInputRef} className="dialog-text-input roboto-400" placeholder="Item URL"></input>
               <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                   setAddAssetOpen(false)
@@ -427,25 +428,19 @@ function App() {
 
             {/*LEFT SIDE*/}
             <div className='main-left division-down'>
+              {/*header*/}
               <div className='main-left-top'>
-                <SettingsButton/>
-                <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
-                  (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
-                    setShowDefaultEditorTip(shouldActive);
-                  })
-                }}/>
-                <ShareButton/>
-                <TryInGameButton/>
+                <span className='editor-header roboto-600'>RoAvatar</span>
               </div>
 
               {/*avatar preview*/}
-              <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>
+              <AvatarPreview setSaveAlwaysOn={setSaveAlwaysOn} setOutfit={setOutfit} animName={currentAnimName}>
                 <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
               </AvatarPreview>
 
               {/*save and undo*/}
               <div className="save-and-history">
-                <SaveButton historyIndex={historyIndex} historyLength={outfitHistory.length} setAlertEnabled={setAlertEnabled} setAlertText={setAlertText}/>
+                <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitHistory.length} setAlertEnabled={setAlertEnabled} setAlertText={setAlertText}/>
                 <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
               </div>
 
@@ -462,6 +457,18 @@ function App() {
                   setAddAssetOpen(true)
                 }}></ItemCard>
               </div>
+
+              {/*extra buttons*/}
+              <div className='main-left-top'>
+                <SettingsButton/>
+                <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
+                  (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
+                    setShowDefaultEditorTip(shouldActive);
+                  })
+                }}/>
+                <ShareButton/>
+                <TryInGameButton/>
+              </div>
             </div>
 
             {/*RIGHT SIDE*/}
@@ -469,7 +476,7 @@ function App() {
               {/*category source (inventory/marketplace)*/}
               <div className="right-top">
                 <BarCategory className="" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
-                <SearchFilter tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword}/>
+                <SearchFilter searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword}/>
               </div>
               {/*category picker*/}
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>

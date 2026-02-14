@@ -1,6 +1,6 @@
 import { useRef } from "react"
 
-export default function SearchFilter({tempSearchKeyword, setSearchKeyword, setTempSearchKeyword}: {tempSearchKeyword: string, setSearchKeyword: (a: string | undefined) => void, setTempSearchKeyword: (a: string) => void}): React.JSX.Element {
+export default function SearchFilter({tempSearchKeyword, searchKeyword, setSearchKeyword, setTempSearchKeyword}: {tempSearchKeyword: string, searchKeyword: string | undefined, setSearchKeyword: (a: string | undefined) => void, setTempSearchKeyword: (a: string) => void}): React.JSX.Element {
     const searchRef = useRef<HTMLInputElement>(null)
     
     function updateSearch() {
@@ -21,9 +21,11 @@ export default function SearchFilter({tempSearchKeyword, setSearchKeyword, setTe
     const currentSearch = searchRef.current?.value
     const hasSearch = currentSearch && currentSearch.length > 0
 
+    const disabledIcon = searchKeyword == tempSearchKeyword || searchKeyword == undefined && tempSearchKeyword.length === 0
+
     return <div className="searchfilter">
         <div className="searchfilter-search">
-            <button className='searchfilter-search-button' onClick={updateSearch}><span className='material-symbols-outlined'>search</span></button>
+            <button className='searchfilter-search-button' onClick={updateSearch}><span style={disabledIcon ? {opacity: "50%"} : {}} className='material-symbols-outlined'>search</span></button>
             <div className={`searchfilter-search-input ${!hasSearch ? "empty" : ""}`}>
                 <form onSubmit={(e) => {
                     e.preventDefault()

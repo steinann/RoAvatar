@@ -150,6 +150,8 @@ body {
 .main-left-top {
     display: flex;
     flex-direction: row;
+    align-items: center;
+    height: auto;
 }
 
 .main-right {
@@ -1399,6 +1401,8 @@ form {
     border-radius: 1em;
     border-style: solid;
     border-color: var(--select-element-hover);
+    border-width: 2px;
+    padding: 0.25em;
 }
 
 .searchfilter-search {
@@ -1460,6 +1464,15 @@ form {
     margin: 10px 0px;
     height: calc(1.4em + 0.4em * 2 + 0.2em * 2 + 5px * 2);
     color: var(--font-color);
+    background-color: var(--item-background);
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--select-element-hover);
+    margin-right: 5px;
+}
+
+.left-top-button span {
+    transform: unset;
 }
 
 .toggle-button {
@@ -1472,7 +1485,7 @@ form {
 }
 
 .toggle-button.active {
-    background-color: #00b06f;
+    background-color: #335fff;
 }
 
 .toggle-button div {
@@ -1495,10 +1508,14 @@ form {
     justify-content: space-between;
     align-items: center;
     margin-top: 1em;
+    border-color: #0c0d1954;
+    border-width: 2px;
+    border-style: solid none none none;
+    padding: 5px 0;
 }
 
 .setting-name {
-    font-size: 2em;
+    font-size: 1.7em;
     color: var(--font-color);
     text-align: center;
     margin-right: 2em;
@@ -1511,6 +1528,11 @@ form {
 textarea {
     resize: none;
     font-size: 1.2em;
+    background-color: var(--item-background);
+    color: var(--font-color);
+    padding: 10px;
+    border-radius: 15px;
+    border-color: #0c0d1954;
 }
 
 .dialog-text {
@@ -1522,8 +1544,6 @@ textarea {
     background-color: #335fff;
     color: #f5f5f5;
     margin: 15px 2.5% 15px 0;
-    padding: 4%;
-    font-size: 2em;
     border-style: none;
     border-radius: 12px;
     cursor: pointer;
@@ -1532,8 +1552,32 @@ textarea {
     justify-content: center;
     align-items: center;
     text-wrap-mode: nowrap;
-    padding: 0 10px;
-    margin-left: 5px;
+    font-size: 1.5em;
+    padding: 0.4em 0.6em;
+
+    font-family: "Roboto", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+}
+
+.tryingame {
+    margin: 0;
+    height: 60%;
+    background-color: var(--item-background);
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--select-element-hover);
+    transition: none;
+}
+
+.tryingame:hover {
+    background-color: var(--select-element-hover);
+}
+
+.left-top-button:hover {
+    background-color: var(--select-element-hover)
 }
 
 .tip {
@@ -1588,4 +1632,10 @@ textarea {
 .settings-tip div {
     right: unset;
     left: 13px;
+}
+
+.editor-header {
+    font-size: 2.4em;
+    color: var(--font-color);
+    margin: 15px 5px;
 }

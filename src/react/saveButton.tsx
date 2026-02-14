@@ -4,11 +4,18 @@ import { API } from "../code/api"
 import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
 
-export default function SaveButton({historyIndex,historyLength,setAlertEnabled,setAlertText}: {historyIndex: number, historyLength: number, setAlertEnabled: (a: boolean) => void, setAlertText: (a: string) => void}): React.JSX.Element {
+let lastHistoryIndex: number | undefined = undefined
+
+export default function SaveButton({forceOn, historyIndex,historyLength,setAlertEnabled,setAlertText}: {forceOn: boolean, historyIndex: number, historyLength: number, setAlertEnabled: (a: boolean) => void, setAlertText: (a: string) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
     const [lastSaveIndex, setLastSaveIndex] = useState(0)
+    const [justSaved, setJustSaved] = useState(false)
+
+    if (!lastHistoryIndex) {
+        lastHistoryIndex = historyIndex
+    }
 
     const validationIssues = outfit.getValidationIssues()
     const hasIssue = validationIssues.length > 0
@@ -19,7 +26,14 @@ export default function SaveButton({historyIndex,historyLength,setAlertEnabled,s
         }
     }, [historyLength, lastSaveIndex])
 
-    const buttonEnabled = lastSaveIndex !== historyIndex && !hasIssue
+    useEffect(() => {
+        if (historyIndex !== lastHistoryIndex) {
+            lastHistoryIndex = historyIndex
+            setJustSaved(false)
+        }
+    }, [historyIndex, setJustSaved])
+
+    const buttonEnabled = (lastSaveIndex !== historyIndex || (forceOn && !justSaved)) && !hasIssue
 
     //TODO: compare the current outfit with the last saved one
     return <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
@@ -37,6 +51,7 @@ export default function SaveButton({historyIndex,historyLength,setAlertEnabled,s
                             setAlertEnabled(false)
                         }, 3000)
                     }
+                    setJustSaved(true)
                 } else {
                     setAlertText("Failed to save outfit")
                     setAlertEnabled(true)

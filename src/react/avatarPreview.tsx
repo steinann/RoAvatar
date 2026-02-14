@@ -127,7 +127,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
 
 let animationInterval: number | undefined = undefined
 
-export default function AvatarPreview({ children, setOutfit, animName }: React.PropsWithChildren & { setOutfit :(a: Outfit) => void, animName: string}): React.JSX.Element {
+export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, animName }: React.PropsWithChildren & { setSaveAlwaysOn: (a: boolean) => void, setOutfit: (a: Outfit) => void, animName: string}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const containerRef = useCallback(mount, [])
@@ -206,6 +206,8 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                                     hasLoadedAvatar = true
                                 } 
                             })
+                        } else {
+                            setSaveAlwaysOn(true)
                         }
                     }
                 })
@@ -214,7 +216,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
                 updatePreview(outfit, auth, setError)
             }
         }
-    }, [auth, outfit, setOutfit])
+    }, [auth, outfit, setOutfit, setSaveAlwaysOn])
 
     //load extra scene
     /*useEffect(() => {

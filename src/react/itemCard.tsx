@@ -220,7 +220,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         {//Rename outfit dialog
         canEditOutfit ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
             <span className="dialog-title roboto-700">Rename Character</span>
-            <input ref={outfitNameInputRef} className="dialog-text-input roboto-300" placeholder="Name"></input>
+            <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                     setRenameOpen(false)

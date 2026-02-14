@@ -39,7 +39,7 @@ export default function TryInGameButton(): React.JSX.Element {
 
     return <>
         {/*Share button*/}
-        <RadialButton className="basic-radial-button" onClick={() => {setTryOpen(true)}}>Try In-Game</RadialButton>
+        <RadialButton className="basic-radial-button tryingame" onClick={() => {setTryOpen(true)}}>Try In-Game</RadialButton>
 
         {/*Share menu*/}
         <dialog style={tryOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={tryDialogRef} onCancel={() => {setTryOpen(false)}}>
@@ -50,12 +50,12 @@ export default function TryInGameButton(): React.JSX.Element {
                     <span className="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <textarea style={{marginTop: "5px"}} className="roboto-600" readOnly={true} rows={8} cols={60}
+            <textarea style={{marginTop: "5px"}} className="roboto-400" readOnly={true} rows={8} cols={60}
                 value={
                     `${outfitData}`
                 }>
             </textarea>
-            <span className="dialog-text roboto-600" style={{marginTop: "5px"}}>Paste the outfit data after joining the game</span>
+            <span className="dialog-text roboto-500" style={{marginTop: "5px"}}>Paste the outfit data after joining the game</span>
             <RadialButton className="basic-radial-button" onClick={
                 ()=>{API.Generic.JoinPlace(135979364355750)}
             }>Play</RadialButton>
