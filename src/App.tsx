@@ -22,6 +22,7 @@ import { HAIR_IS_BODYPART } from './code/misc/flags'
 import RadialButton from './react/generic/radialButton'
 import SearchFilter from './react/searchFilter'
 import SettingsButton from './react/settingsButton'
+import ShareButton from './react/shareButton'
 
 const outfitHistory: Outfit[] = []
 
@@ -110,7 +111,7 @@ function App() {
     setCanUndo(historyIndex + 1 > 0)
     setCanRedo(historyIndex + 1 < outfitHistory.length - 1)
     //console.log(outfitHistory, outfitHistoryIndex)
-    console.log(newOutfit.toBuffer())
+    //console.log(newOutfit.toBuffer())
   }, [historyIndex])
 
   window.setOutfit = setOutfit
@@ -411,7 +412,10 @@ function App() {
 
             {/*LEFT SIDE*/}
             <div className='main-left division-down'>
-              <SettingsButton/>
+              <div className='main-left-top'>
+                <SettingsButton/>
+                <ShareButton/>
+              </div>
 
               {/*avatar preview*/}
               <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>

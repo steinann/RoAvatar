@@ -27,11 +27,11 @@ FEATURES:
     HIGH PRIORITY:
         -Remember unsaved outfit
         -Try in game
-        -Loading indicator for avatar preview
         -Filter in both marketplace and inventory? (do we really need this in inventory?)
-        -Share links
         -Thumbnail customization
+        -Load other peoples avatar/outfits
     MEDIUM PRIORITY:
+        -Loading indicator for avatar preview
         -Publish outfits to Roblox (like in the mobile app)
         -Save outfit as .rbxm
         -Gear inside preview

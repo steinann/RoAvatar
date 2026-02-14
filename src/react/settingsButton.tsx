@@ -54,7 +54,7 @@ export default function SettingsButton(): React.JSX.Element {
 
     return <>
         {/*Settings button*/}
-        <button className="settings-button icon-button" title="Settings" onClick={() => {setSettingsOpen(true)}}>
+        <button className="left-top-button icon-button" title="Settings" onClick={() => {setSettingsOpen(true)}}>
             <span className="material-symbols-outlined">settings</span>
         </button>
 
