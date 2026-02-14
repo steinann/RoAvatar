@@ -712,12 +712,17 @@ body {
     animation-timing-function: ease-out;
 }
 
+.bodycolor-left {
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+}
+
 .bodypart-select {
     display: flex;
     align-items: flex-start;
     flex-direction: column;
     justify-content: flex-start;
-    width: 30%;
     height: fit-content;
     margin: 0 0;
 }
@@ -809,6 +814,33 @@ body {
     justify-content: flex-start;
     align-items: flex-start;
     margin: 0 15px;
+}
+
+.bodycolor-custom {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2em;
+}
+
+.bodycolor-custom span {
+    font-size: 1.5em;
+    color: var(--font-color)
+}
+
+.bodycolor-custom input[type="color"] {
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 80%;
+    border-radius: 1em;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+    outline: 0;
+    border: none;
 }
 
 .select {

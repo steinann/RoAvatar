@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { hexToRgb } from "../code/misc/misc";
 import { OutfitContext } from "./context/outfit-context";
 import type { BodyColor3s, BodyColors, Outfit } from "../code/avatar/outfit";
@@ -61,6 +61,9 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
 
     const [partNames, _setPartNames] = useState<string[]>(AllPartNames)
     const [selectPart, _setSelectPart] = useState<string>("All")
+    const [mouseOverCustom, setMouseOverCustom] = useState<boolean>(false)
+
+    const customColorRef = useRef<HTMLInputElement>(null)
 
     //set selected partNames[] based on value in Select component (string)
     function setSelectPart(val: string) {
@@ -122,8 +125,8 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
     }
 
     //paint the avatar body parts that should be painted
-    function paint(color: string) {
-        console.log(_setOutfit)
+    function paint(color: string, addToHistory: boolean = true) {
+        const fakeSetOutfit = addToHistory ? setOutfit : _setOutfit
 
         const newOutfit = outfit.clone()
 
@@ -139,27 +142,27 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
             switch (partName) {
                 case "Head":
                     newBodyColors.headColor3 = color
-                    setOutfit(newOutfit)
+                    fakeSetOutfit(newOutfit)
                     break
                 case "RightArm":
                     newBodyColors.rightArmColor3 = color
-                    setOutfit(newOutfit)
+                    fakeSetOutfit(newOutfit)
                     break
                 case "LeftArm":
                     newBodyColors.leftArmColor3 = color
-                    setOutfit(newOutfit)
+                    fakeSetOutfit(newOutfit)
                     break
                 case "Torso":
                     newBodyColors.torsoColor3 = color
-                    setOutfit(newOutfit)
+                    fakeSetOutfit(newOutfit)
                     break
                 case "RightLeg":
                     newBodyColors.rightLegColor3 = color
-                    setOutfit(newOutfit)
+                    fakeSetOutfit(newOutfit)
                     break
                 case "LeftLeg":
                     newBodyColors.leftLegColor3 = color
-                    setOutfit(newOutfit)
+                    fakeSetOutfit(newOutfit)
                     break
             }
         }
@@ -197,21 +200,54 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
         }
     }
 
+    const rafRef = useRef<number | null>(null);
+
+    function schedulePaint(hex: string, addToHistory: boolean) {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            paint(hex, addToHistory)
+        })
+    }
+
     return <div className="bodycolor-category">
         {/*Body part selector*/}
-        <div className="bodypart-select">
-            <SelectInput value={selectPart} setValue={setSelectPart} alternatives={["All", "Head", "Torso", "Right Arm", "Left Arm", "Right Leg", "Left Leg"]}/>
-            <div className="bodycolor-section bodycolor-section-top">
-                <BodyPartSelect className="bodycolor-head" partName="Head" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+        <div className="bodycolor-left">
+            <div className="bodypart-select">
+                <SelectInput value={selectPart} setValue={setSelectPart} alternatives={["All", "Head", "Torso", "Right Arm", "Left Arm", "Right Leg", "Left Leg"]}/>
+                <div className="bodycolor-section bodycolor-section-top">
+                    <BodyPartSelect className="bodycolor-head" partName="Head" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+                </div>
+                <div className="bodycolor-section bodycolor-section-middle">
+                    <BodyPartSelect className="bodycolor-limb" partName="RightArm" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+                    <BodyPartSelect className="bodycolor-torso" partName="Torso" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+                    <BodyPartSelect className="bodycolor-limb" partName="LeftArm" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+                </div>
+                <div className="bodycolor-section bodycolor-section-bottom">
+                    <BodyPartSelect className="bodycolor-limb" partName="RightLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+                    <BodyPartSelect className="bodycolor-limb" partName="LeftLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+                </div>
             </div>
-            <div className="bodycolor-section bodycolor-section-middle">
-                <BodyPartSelect className="bodycolor-limb" partName="RightArm" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
-                <BodyPartSelect className="bodycolor-torso" partName="Torso" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
-                <BodyPartSelect className="bodycolor-limb" partName="LeftArm" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
-            </div>
-            <div className="bodycolor-section bodycolor-section-bottom">
-                <BodyPartSelect className="bodycolor-limb" partName="RightLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
-                <BodyPartSelect className="bodycolor-limb" partName="LeftLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
+            <div className="bodycolor-custom">
+                <span className="roboto-600">Color Picker</span>
+                <input value={"#" + currentColors[0].toLowerCase()} ref={customColorRef} type="color" onMouseLeave={() => {
+                        //when mouseleave after having changed color
+                        if (mouseOverCustom) {
+                            const value = customColorRef.current?.value
+                            if (value) {
+                                const cleanValue = value.replace("#","").toUpperCase()
+                                schedulePaint(cleanValue, true)
+                            }
+                        }
+
+                        setMouseOverCustom(false)
+                    }} onChange={() => {
+                        setMouseOverCustom(true)
+                        const value = customColorRef.current?.value
+                        if (value) {
+                            const cleanValue = value.replace("#","").toUpperCase()
+                            schedulePaint(cleanValue, false)
+                        }
+                }}></input>
             </div>
         </div>
         {/*Preset body colors*/}
