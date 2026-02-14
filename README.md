@@ -7,12 +7,13 @@
 ## Using the Extension
 <a href="https://chromewebstore.google.com/detail/roavatar/ifjleokejkklabhcfhppncfdbkmakhdp" title="Chrome Web Store">
     <img src="https://developer.chrome.com/static/docs/webstore/branding/image/mPGKYBIR2uCP0ApchDXE.png">
-</a>
+</a><br>
 The extension is WIP.
 You can build the newest version yourself OR get the latest stable version from <a href="https://github.com/Mzigi/RoAvatar/releases">releases</a>
-    
-    
-Instructions on building:
+<br>
+<br>
+
+**Instructions on building**:
 - Install Node.js and npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - Install Git [(guide)](https://github.com/git-guides/install-git)
 - Run `git clone --recursive https://github.com/steinann/RoAvatar.git`
@@ -23,7 +24,9 @@ Instructions on building:
 - You can then load the **dist** folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
 - The avatar editor will be available at https://www.roblox.com/my/avatar-plus
 
-Instructions on loading release:
+<br>
+
+**Instructions on installing release**:
 - Download RoAvatar.zip and unzip
 - Load the folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
 - The avatar editor will be available at https://www.roblox.com/my/avatar-plus
