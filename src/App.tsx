@@ -23,6 +23,7 @@ import RadialButton from './react/generic/radialButton'
 import SearchFilter from './react/searchFilter'
 import SettingsButton from './react/settingsButton'
 import ShareButton from './react/shareButton'
+import TryInGameButton from './react/tryInGame'
 
 const outfitHistory: Outfit[] = []
 
@@ -415,6 +416,7 @@ function App() {
               <div className='main-left-top'>
                 <SettingsButton/>
                 <ShareButton/>
+                <TryInGameButton/>
               </div>
 
               {/*avatar preview*/}

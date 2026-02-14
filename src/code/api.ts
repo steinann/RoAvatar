@@ -214,6 +214,9 @@ const API = {
                     image.src = fetchStr
                 }
             })
+        },
+        JoinPlace: function(placeId: number) {
+            window.location.href = `roblox://placeId=${placeId}`
         }
     },
     "Auth": {

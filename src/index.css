@@ -1517,3 +1517,21 @@ textarea {
     color: var(--font-color);
     font-size: 1.2em;
 }
+
+.basic-radial-button {
+    background-color: #335fff;
+    color: #f5f5f5;
+    margin: 15px 2.5% 15px 0;
+    padding: 4%;
+    font-size: 2em;
+    border-style: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition-duration: 0.1s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-wrap-mode: nowrap;
+    padding: 0 10px;
+    margin-left: 5px;
+}
