@@ -8,7 +8,8 @@
 <a href="https://chromewebstore.google.com/detail/roavatar/ifjleokejkklabhcfhppncfdbkmakhdp" title="Chrome Web Store">
     <img src="https://developer.chrome.com/static/docs/webstore/branding/image/mPGKYBIR2uCP0ApchDXE.png">
 </a>
-The extension is currently under development and is available in the Chrome Web Store. You still have the option to build the newest version yourself OR get the latest stable version from [releases](https://github.com/Mzigi/RoAvatar/releases).
+The extension is currently under development.
+You can build the newest version yourself OR get the latest stable version from <a href="https://github.com/Mzigi/RoAvatar/releases">releases</a>
 
 Instructions on building:
 - Install Node.js and npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
