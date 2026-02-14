@@ -18,7 +18,7 @@ function SettingsToggle({text, storage}: {text: string, storage: string}): React
     }
 
     return <div className="setting-row">
-            <span className="setting-name">{text}</span>
+            <span className="setting-name roboto-600">{text}</span>
             <ToggleButton value={value} setValue={setValue}></ToggleButton>
         </div>
 }

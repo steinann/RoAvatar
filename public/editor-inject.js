@@ -18,9 +18,11 @@ var observer = new MutationObserver(function (mutations) {
             aElement.href = "https://www.roblox.com/my/avatar-plus"
 
             avatarEditorHeader.insertBefore(aElement, catalogHeader)
-            avatarEditorHeader.style.position = "relative"
+            avatarEditorHeader.style.position = "relative";
+            console.log (chrome || browser);
 
-            chrome.storage.local.get(["hasSeenTip"]).then((result) => {
+            (chrome || browser).storage.local.get(["hasSeenTip"]).then((result) => {
+                console.log(result)
                 const hasSeen = result["hasSeenTip"]
                 
                 if (!hasSeen) {
@@ -72,8 +74,8 @@ var observer = new MutationObserver(function (mutations) {
                     button.innerText = "Okay"
 
                     button.addEventListener("click", () => {
-                        tipDiv.remove()
-                        chrome.storage.local.set({"hasSeenTip": true})
+                        tipDiv.remove();
+                        (chrome || browser).storage.local.set({"hasSeenTip": true})
                     })
 
                     tipDiv.appendChild(arrow)
@@ -92,7 +94,7 @@ observer.observe(document, {
     subtree: true
 });
 
-chrome.storage.local.get(["s-default"]).then((result => {
+(chrome || browser).storage.local.get(["s-default"]).then((result => {
     if (result["s-default"]) {
         const aElement = document.createElement("a")
         aElement.href = "https://www.roblox.com/my/avatar-plus"
