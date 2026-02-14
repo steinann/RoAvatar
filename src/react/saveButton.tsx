@@ -28,8 +28,15 @@ export default function SaveButton({historyIndex,historyLength,setAlertEnabled,s
             //API.Avatar.RedrawThumbnail(auth)
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
-                if (result) {
+                if (result[0]) {
                     setLastSaveIndex(historyIndex)
+                    if (result[1]) {
+                        setAlertText("W:Some items were removed, due to not being owned")
+                        setAlertEnabled(true)
+                        setTimeout(() => {
+                            setAlertEnabled(false)
+                        }, 3000)
+                    }
                 } else {
                     setAlertText("Failed to save outfit")
                     setAlertEnabled(true)

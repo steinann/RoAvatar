@@ -24,11 +24,16 @@ ISSUES (General):
 
 FEATURES:
     HIGH PRIORITY:
-        -Filter in both marketplace and inventory? (do we really need this in inventory?)
-        -Settings, with a setting to make RoAvatar the default
-        -Thumbnail customization
+        -Remember unsaved outfit
+        -Custom body colors
+        -Try in game
         -Loading indicator for avatar preview
+        -Filter in both marketplace and inventory? (do we really need this in inventory?)
+        -Share links
+        -Thumbnail customization
     MEDIUM PRIORITY:
+        -Publish outfits to Roblox (like in the mobile app)
+        -Save outfit as .rbxm
         -Gear inside preview
     LOW PRIORITY:
         -Particle rendering

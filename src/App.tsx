@@ -19,9 +19,9 @@ import AvatarAdjustment from './react/avatarAdjustment'
 import { type NavigationMenuItems, type Search_Payload } from './code/api-constant'
 import MarketplaceCategory from './react/marketplaceCategory'
 import { HAIR_IS_BODYPART } from './code/misc/flags'
-import BarButton from './react/barButton'
 import RadialButton from './react/generic/radialButton'
 import SearchFilter from './react/searchFilter'
+import SettingsButton from './react/settingsButton'
 
 const outfitHistory: Outfit[] = []
 
@@ -43,13 +43,25 @@ function App() {
   const [searchKeyword, setSearchKeyword] = useState<string | undefined>(undefined)
   const [tempSearchKeyword, setTempSearchKeyword] = useState<string>("")
 
-  const [alertText, setAlertText] = useState<string>("")
+  const [alertText, _setAlertText] = useState<string>("")
   const [alertEnabled, setAlertEnabled] = useState<boolean>(false)
+  const [alertIsWarning, setAlertIsWarning] = useState<boolean>(false)
 
   const [addAssetOpen, setAddAssetOpen] = useState<boolean>(false)
 
   const addAssetDialogRef = useRef<HTMLDialogElement>(null)
   const addAssetInputRef = useRef<HTMLInputElement>(null)
+
+  function setAlertText(text: string) {
+    if (text.startsWith("W:")) {
+      setAlertIsWarning(true)
+      text = text.replace("W:","")
+    } else {
+      setAlertIsWarning(false)
+    }
+
+    _setAlertText(text)
+  }
 
   function undo() {
     if (historyIndex > 0) {
@@ -331,7 +343,7 @@ function App() {
       <AuthContext value={auth}>
         <OutfitContext value={outfit}>
           <div className='main'>
-            <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}`} onMouseEnter={() => {setAlertEnabled(false)}}>
+            <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}`} onMouseEnter={() => {setAlertEnabled(false)}}>
               {alertText}
             </div>
 
@@ -399,7 +411,7 @@ function App() {
 
             {/*LEFT SIDE*/}
             <div className='main-left division-down'>
-              <BarCategory className="background-transparent bar-double-margin"><BarButton category='|' setCategory={(a) => {return a}}></BarButton></BarCategory>
+              <SettingsButton/>
 
               {/*avatar preview*/}
               <AvatarPreview setOutfit={setOutfit} animName={currentAnimName}>

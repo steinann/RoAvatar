@@ -19,7 +19,7 @@ var observer = new MutationObserver(function (mutations) {
 
             avatarEditorHeader.insertBefore(aElement, catalogHeader)
             avatarEditorHeader.style.position = "relative"
-            
+
             chrome.storage.local.get(["hasSeenTip"]).then((result) => {
                 const hasSeen = result["hasSeenTip"]
                 
@@ -90,3 +90,11 @@ observer.observe(document, {
     childList: true,
     subtree: true
 });
+
+chrome.storage.local.get(["s-default"]).then((result => {
+    if (result["s-default"]) {
+        const aElement = document.createElement("a")
+        aElement.href = "https://www.roblox.com/my/avatar-plus"
+        aElement.click()
+    }
+}))

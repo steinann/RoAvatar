@@ -317,7 +317,7 @@ export default function AvatarPreview({ children, setOutfit, animName }: React.P
         }
     }}>
         {/*Recenter camera button*/}
-        <button className={`avatar-preview-focus${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
+        <button className={`avatar-preview-focus icon-button${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
             e.preventDefault()
             setCameraLocked(true)
         }}>

@@ -229,7 +229,7 @@ const API = {
         }
     },
     "Avatar": {
-        WearOutfit: async function(auth: Authentication, outfit: Outfit, onlyItems: boolean): Promise<boolean> {
+        WearOutfit: async function(auth: Authentication, outfit: Outfit, onlyItems: boolean): Promise<[boolean, boolean]> {
             return new Promise((returnResolve) => {
                 const promises: Promise<Response>[] = []
 
@@ -276,8 +276,8 @@ const API = {
                                 }
                             }
 
-                            RBLXPost("https://avatar.roblox.com/v2/avatar/set-wearing-assets", auth, {"assets": currentAssets}).then(response => {
-                                resolve(response)
+                            RBLXPost("https://avatar.roblox.com/v2/avatar/set-wearing-assets", auth, {"assets": currentAssets}).then(() => {
+                                resolve(new Response("", {status:201}))
                             })
                         } else {
                             resolve(ogResponse || new Response("", {status: 200}))
@@ -287,15 +287,19 @@ const API = {
 
                 Promise.all<Response>(promises).then(values => {
                     let isSuccess = true
-                    
+                    let failedToWearAll = false
+
                     for (const value of values) {
                         console.log(value)
-                        if (value.status !== 200) {
+                        if (value.status !== 200 && value.status !== 201) {
                             isSuccess = false
+                        }
+                        if (value.status === 201) {
+                            failedToWearAll = true
                         }
                     }
 
-                    returnResolve(isSuccess)
+                    returnResolve([isSuccess, failedToWearAll])
                 })
             })
         },

@@ -730,6 +730,10 @@ export class Instance {
         return this.Property(name)
     }
 
+    PropertyType(name: string): number | undefined {
+        return this._properties.get(name)?.typeID
+    }
+
     getPropertyNames() {
         return Array.from(this._properties.keys())
     }
@@ -1740,16 +1744,207 @@ export class RBX {
         }
     }
 
-    /*async fromAssetId(id: number) { //Return: dataModel | null
-        const buffer = await GetAsset("https://assetdelivery.roblox.com/v1/asset?id=" + id)
+    fromInstance(root: Instance) {
+        let bufferLength = 0
 
-        this.fromBuffer(buffer)
-        this.generateTree()
+        //header
+        bufferLength += 8 + 6 + 2 + 4 + 4 + 8
 
-        return this.dataModel
-        
-        return null
-    }*/
+        //prepare for INST chunks
+        const instances = root.GetDescendants()
+        instances.push(root)
+
+        let currentReferent = 0
+        const instanceToReferent = new Map<Instance,number>()
+
+        let currentClassId = 0
+        const classIdMap = new Map<string,number>()
+        const instanceMap = new Map<number,Instance[]>()
+
+        for (const child of instances) {
+            //give instance a referent
+            instanceToReferent.set(child, currentReferent++)
+
+            //give classname an id
+            let classId = classIdMap.get(child.className)
+            if (classId === undefined) {
+                classId = currentClassId++
+                classIdMap.set(child.className, classId)
+            }
+
+            //add instance to map, class -> instances[]
+            let instanceArray = instanceMap.get(classId)
+            if (!instanceArray) {
+                instanceArray = []
+                instanceMap.set(classId, instanceArray)
+            }
+            instanceArray.push(child)
+        }
+
+        //create INST chunks
+        for (const className of classIdMap.keys()) {
+            bufferLength += 4 + 4 + 4 + 4
+
+            const inst = new INST()
+            inst.classID = classIdMap.get(className)!
+            inst.className = className
+            inst.instanceCount = instanceMap.get(inst.classID)!.length
+            inst.objectFormat = 0 //TODO: do this properly
+            bufferLength += 4 + 4 + inst.className.length + 1 + 4
+
+            inst.referents = []
+            for (const child of instanceMap.get(inst.classID)!) {
+                inst.referents.push(instanceToReferent.get(child)!)
+                bufferLength += 4
+            }
+
+            this.instArray.push(inst)
+            this.classIDtoINST.set(inst.classID, inst)
+        }
+
+        //prepare PROP chunks
+        const propertiesForClass = new Map<number,string[]>()
+        for (const child of instances) {
+            const classId = classIdMap.get(child.className)!
+
+            let properties = propertiesForClass.get(classId)
+            if (!properties) {
+                properties = child.getPropertyNames()
+                propertiesForClass.set(classId, properties)
+            } else {
+                for (const property of child.getPropertyNames()) {
+                    if (!properties.includes(property)) {
+                        properties.push(property)
+                    }
+                }
+            }
+        }
+
+        //create PROP chunks
+        for (const classId of classIdMap.values()) {
+            const properties = propertiesForClass.get(classId)
+            if (properties) {
+                for (const property of properties) {
+                    const prop = new PROP()
+                    prop.classID = classId
+                    prop.propertyName = property
+
+                    bufferLength += 4 + 4 + 4 + 4
+                    bufferLength += 4 + 4 + prop.propertyName.length + 1
+                    
+                    const instances = instanceMap.get(classId)
+                    if (instances) {
+                        for (const child of instances) {
+                            if (child.HasProperty(property)) {
+                                prop.typeID = child.PropertyType(property)!
+
+                                const value = child.Prop(property)
+                                prop.values.push(value)
+
+                                switch (prop.typeID) {
+                                    case DataType.String:
+                                        if (value instanceof ArrayBuffer) {
+                                            bufferLength += value.byteLength + 4
+                                        } else {
+                                            bufferLength += (value as string).length + 4
+                                        }
+                                        break
+                                    case DataType.Bool:
+                                        bufferLength += 1
+                                        break
+                                    case DataType.Int32:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.Float32:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.Float64:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.UDim:
+                                        bufferLength += 8
+                                        break
+                                    case DataType.UDim2:
+                                        bufferLength += 4 * 4
+                                        break
+                                    case DataType.Ray:
+                                        bufferLength += 4 * 6
+                                        break
+                                    case DataType.BrickColor:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.Color3:
+                                    case DataType.Vector3:
+                                        bufferLength += 4 * 3
+                                        break
+                                    case DataType.CFrame:
+                                        bufferLength += 1 + 4 * 9 + 4 * 3
+                                        break
+                                    case DataType.Enum:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.Referent:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.Color3uint8:
+                                        bufferLength += 4
+                                        break
+                                    case DataType.Int64:
+                                        bufferLength += 8
+                                        break
+                                    case DataType.Content:
+                                        if (value instanceof Content) {
+                                            bufferLength += 4
+                                            bufferLength += (value.uri?.length || 0) + 4
+                                            bufferLength += 4
+                                            bufferLength += 4
+                                        }
+                                        break
+                                }
+                            }
+                        }
+                    }
+
+                    this.propArray.push(prop)
+                }
+            }
+        }
+
+        const buffer = new ArrayBuffer(bufferLength)
+
+        //write data
+        const view = new RBXSimpleView(buffer)
+
+        //magic, signature, version
+        view.writeUtf8String("<roblox", false)
+        view.writeUint32(168689545)
+        view.writeUint16(2586)
+        view.writeUint16(0)
+
+        view.writeUint32(this.instArray.length)
+        view.writeUint32(this.instances.length)
+
+        view.writeUint32(0)
+        view.writeUint32(0)
+
+        //inst chunks
+        for (const inst of this.instArray) {
+            view.writeUtf8String("INST", false)
+
+            view.writeUint32(inst.classID)
+            view.writeUtf8String(inst.className)
+            view.writeUint8(0)
+
+            const instances = instanceMap.get(inst.classID)!
+            view.writeUint32(instances.length)
+            for (const child of instances) {
+                const referent = instanceToReferent.get(child)!
+                view.writeUint32(referent)
+            }
+        }
+
+        return buffer
+    }
 
     generateTree() {
         if (this.treeGenerated) {

@@ -27,13 +27,15 @@ export default class RBXSimpleView {
         }
     }
 
-    writeUtf8String(value: string) {
+    writeUtf8String(value: string, includeLength = true) {
         this.lockCheck()
 
         const stringBuffer = new TextEncoder().encode(value).buffer
         const stringSimpleView = new SimpleView(stringBuffer)
 
-        this.writeUint32(stringBuffer.byteLength)
+        if (includeLength) {
+            this.writeUint32(stringBuffer.byteLength)
+        }
 
         for (let i = 0; i < stringBuffer.byteLength; i++) {
             this.writeUint8(stringSimpleView.readUint8())
@@ -58,6 +60,19 @@ export default class RBXSimpleView {
 
         throw new Error("NOT IMPLEMENTED")
     }*/
+
+    writeFloat32(value: number, littleEndian = true) {
+        this.lockCheck()
+
+        const bitsValue = value.toString(2).padStart(32, '0')
+        const signBit = bitsValue.at(31)
+        const newBitsValue = signBit + bitsValue.substring(0,31)
+
+        const toWrite = parseInt(newBitsValue, 2)
+        
+        this.view.setUint32(this.viewOffset, toWrite, littleEndian)
+        this.viewOffset += 4
+    }
 
     readFloat32(littleEndian = true) {
         this.lockCheck()
@@ -87,11 +102,27 @@ export default class RBXSimpleView {
         return valueFloat
     }
 
+    writeNormalFloat32(value: number, littleEndian = true) {
+        this.lockCheck()
+
+        this.view.setFloat32(this.viewOffset, value, littleEndian)
+        this.viewOffset += 4
+    }
+
     readNormalFloat32(littleEndian = true) {
+        this.lockCheck()
+
         const value = this.view.getFloat32(this.viewOffset, littleEndian)
         this.viewOffset += 4
         
         return value
+    }
+
+    writeFloat64(value: number, littleEndian = true) {
+        this.lockCheck()
+
+        this.view.setFloat64(this.viewOffset, value, littleEndian)
+        this.viewOffset += 8
     }
 
     readFloat64(littleEndian = true) {
@@ -139,6 +170,26 @@ export default class RBXSimpleView {
         return value
     }
     
+    writeInterleaved32(values: (number | bigint)[], length: number, littleEndian = true, writeFunc = "writeInt32", byteOffset = 4) {
+        this.lockCheck()
+
+        length *= byteOffset
+
+        const valueBuffer = new ArrayBuffer(length)
+        const valueView = new RBXSimpleView(valueBuffer)
+
+        for (let i = 0; i < values.length; i++) {
+            (valueView as unknown as {[K in string]: (value: number | bigint, littleEndian: boolean) => void})[writeFunc](values[i], littleEndian)
+        }
+
+        for (let b = 0; b < byteOffset; b++) {
+            for (let i = 0; i < length / byteOffset; i++) {
+                valueView.viewOffset = i * byteOffset + b
+                this.writeUint8(valueView.readUint8())
+            }
+        }
+    }
+
     readInterleaved32(length: number, littleEndian = true, readFunc = "readInt32", byteOffset = 4): number[] | bigint[] {
         this.lockCheck()
 

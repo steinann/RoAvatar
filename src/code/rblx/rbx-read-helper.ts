@@ -44,7 +44,11 @@ function untransformInt32(num: number) {
 }
 
 function transformInt32(num: number) {
-    return num*2
+    if (num >= 0) {
+        return num*2
+    } else {
+        return 2*Math.abs(num) - 1
+    }
 }
 
 function untransformInt64(num: bigint) {
@@ -57,8 +61,20 @@ function untransformInt64(num: bigint) {
     return num
 }
 
+function bigintAbs(num: bigint) {
+    if (num < 0) {
+        return num * -1n
+    } else {
+        return num
+    }
+}
+
 function transformInt64(num: bigint) {
-    return num*2n
+    if (num >= 0n) {
+        return num*2n
+    } else {
+        return 2n * bigintAbs(num) - 1n
+    }
 }
 
 function readReferents(length: number, chunkView: RBXSimpleView) {

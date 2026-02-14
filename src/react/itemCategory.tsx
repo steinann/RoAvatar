@@ -226,7 +226,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
     //create item cards
     let itemComponents = null
 
-    const isOutfits = categoryType === "Characters" && subCategoryType === "Creations"
+    const isOutfits = categoryType === "Avatars" && subCategoryType === "Creations"
 
     if (auth && itemInfos.length > 0 || hasLoadedAll && auth) {
         let i = 0;

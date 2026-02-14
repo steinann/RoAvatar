@@ -1,5 +1,5 @@
 //ui
-export const HAIR_IS_BODYPART = false
+export const HAIR_IS_BODYPART = true
 
 //api
 export const BODYCOLOR3 = true
