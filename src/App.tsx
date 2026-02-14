@@ -24,6 +24,9 @@ import SearchFilter from './react/searchFilter'
 import SettingsButton from './react/settingsButton'
 import ShareButton from './react/shareButton'
 import TryInGameButton from './react/tryInGame'
+import Tip from './react/generic/tip'
+
+declare const browser: typeof chrome;
 
 const outfitHistory: Outfit[] = []
 
@@ -50,6 +53,8 @@ function App() {
   const [alertIsWarning, setAlertIsWarning] = useState<boolean>(false)
 
   const [addAssetOpen, setAddAssetOpen] = useState<boolean>(false)
+
+  const [showDefaultEditorTip, setShowDefaultEditorTip] = useState<boolean>(false)
 
   const addAssetDialogRef = useRef<HTMLDialogElement>(null)
   const addAssetInputRef = useRef<HTMLInputElement>(null)
@@ -340,6 +345,15 @@ function App() {
 
   const taxonomy = searchData.taxonomy
 
+  //get storage
+  useEffect(() => {
+    (chrome || browser).storage.local.get("hasSeenSettingsTip").then((result) => {
+      if (!result["hasSeenSettingsTip"]) {
+        setShowDefaultEditorTip(true)
+      }
+    })
+  })
+
   return (
     <>
       <AuthContext value={auth}>
@@ -415,6 +429,11 @@ function App() {
             <div className='main-left division-down'>
               <div className='main-left-top'>
                 <SettingsButton/>
+                <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
+                  (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
+                    setShowDefaultEditorTip(shouldActive);
+                  })
+                }}/>
                 <ShareButton/>
                 <TryInGameButton/>
               </div>

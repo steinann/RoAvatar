@@ -26,7 +26,6 @@ ISSUES (General):
 FEATURES:
     HIGH PRIORITY:
         -Remember unsaved outfit
-        -Try in game
         -Filter in both marketplace and inventory? (do we really need this in inventory?)
         -Thumbnail customization
         -Load other peoples avatar/outfits

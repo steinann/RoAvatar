@@ -1535,3 +1535,57 @@ textarea {
     padding: 0 10px;
     margin-left: 5px;
 }
+
+.tip {
+    position: absolute;
+    z-index: 100;
+    background-color: white;
+    color: black;
+    padding: 20px;
+    width: 277px;
+    border-radius: 20px 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(-10px);
+    border-style: solid;
+    border-color: gray;
+    border-width: 2px;
+}
+
+.tip div {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    background-color: white;
+    top: -11px;
+    right: 2px;
+    transform: rotate(45deg);
+    border-color: gray;
+    border-width: 2px;
+    border-style: solid none none solid;
+}
+
+.tip button {
+    background-color: #466eff;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: medium;
+    margin-top: 3px;
+    padding: 2px;
+    cursor: pointer;
+    font-size: 1.5em;
+}
+
+.tip span {
+    font-size: 1.2em;
+}
+
+.settings-tip {
+    top: 70px;
+}
+
+.settings-tip div {
+    right: unset;
+    left: 13px;
+}

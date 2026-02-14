@@ -67,6 +67,7 @@ var observer = new MutationObserver(function (mutations) {
                         font-size: medium;
                         margin-top: 3px;
                         padding: 2px;
+                        cursor: pointer;
                     `)
                     button.innerText = "Okay"
 
