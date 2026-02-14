@@ -5,8 +5,10 @@
 ![A screenshot of RoAvatar v0.4.0](https://i.imgur.com/pr1Ul2b.png)
 
 ## Using the Extension
-
-The extension is currently under development and is not available in any extension stores. You will have to build the newest version yourself OR get the latest stable version from [releases](https://github.com/Mzigi/RoAvatar/releases).
+<a href="https://chromewebstore.google.com/detail/roavatar/ifjleokejkklabhcfhppncfdbkmakhdp" title="Chrome Web Store">
+    <img src="https://developer.chrome.com/static/docs/webstore/branding/image/mPGKYBIR2uCP0ApchDXE.png">
+</a>
+The extension is currently under development and is available in the Chrome Web Store. You still have the option to build the newest version yourself OR get the latest stable version from [releases](https://github.com/Mzigi/RoAvatar/releases).
 
 Instructions on building:
 - Install Node.js and npm [(guide)](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
