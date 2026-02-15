@@ -227,7 +227,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
                     <BodyPartSelect className="bodycolor-limb" partName="LeftLeg" currentPartNames={partNames} setCurrentPartNames={setPartNames} outfit={outfit}/>
                 </div>
             </div>
-            <div className="bodycolor-custom">
+            <div className="bodycolor-custom mini-container">
                 <span className="roboto-600">Color Picker</span>
                 <input value={"#" + currentColors[0].toLowerCase()} ref={customColorRef} type="color" onMouseLeave={() => {
                         //when mouseleave after having changed color

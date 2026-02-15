@@ -301,6 +301,14 @@ body {
     color: var(--button-background);
 }
 
+.mini-container {
+    width: fit-content;
+    height: fit-content;
+    padding: 1em;
+    border-radius: 1em;
+    background-color: var(--container);
+}
+
 .container {
     display: flex;
     flex-direction: column;
@@ -737,6 +745,7 @@ body {
 .bodycolor-left {
     display: flex;
     flex-direction: column;
+    align-items: center;
     width: 30%;
 }
 
@@ -746,6 +755,7 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     height: fit-content;
+    width: 100%;
     margin: 0 0;
 }
 
@@ -844,6 +854,7 @@ body {
     justify-content: center;
     align-items: center;
     margin-top: 2em;
+    width: 80%;
 }
 
 .bodycolor-custom span {
@@ -1501,7 +1512,7 @@ form {
     background-color: var(--item-background);
     border-width: 2px;
     border-style: solid;
-    border-color: var(--select-element-hover);
+    border-color: var(--item-background);
     margin-right: 5px;
 }
 
@@ -1613,17 +1624,19 @@ textarea {
     color: var(--font-color);
     border-width: 2px;
     border-style: solid;
-    border-color: var(--select-element-hover);
+    border-color: var(--item-background);
     transition: none;
     border-radius: 1000px;
     padding: 0.6em;
 }
 
 .tryingame:hover {
+    border-color: var(--select-element-hover);
     background-color: var(--select-element-hover);
 }
 
 .left-top-button:hover {
+    border-color: var(--select-element-hover);
     background-color: var(--select-element-hover)
 }
 

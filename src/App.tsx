@@ -491,16 +491,16 @@ function App() {
               {/*appropriate category element for inventory*/
               subCategoryType ? <>
                 {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
-                (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}>
+                (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}>
 
                 </ItemCategory>)
                 :
-                <SpecialCategory searchData={searchData} specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
+                <SpecialCategory searchData={searchData} specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
                 }
               </> : null}
               {/*Marketplace category element*/
               categorySource === "Marketplace" && taxonomy.length > 0 ? <>
-                <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}/>
+                <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}/>
               </> : null}
             </div>
           </div>

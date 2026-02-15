@@ -3,7 +3,7 @@ import { CatalogBundleTypes, ItemInfo, ToRemoveBeforeBundleType, WearableAssetTy
 import { Outfit } from "../code/avatar/outfit";
 import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant";
 
-export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void) => {
+export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void, animName: string) => {
     if (item.itemType !== "Asset") {
         setAnimName(`idle`)
     }
@@ -19,7 +19,11 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
             
             setAnimName(`${mainName}`)
         } else if (item.type === "EmoteAnimation") {
-            setAnimName(`emote.${item.id}`)
+            if (animName !== `emote.${item.id}`) {
+                setAnimName(`emote.${item.id}`)
+            } else {
+                setAnimName(`idle`)
+            }
         } else {
             setAnimName(`idle`)
         }
@@ -34,10 +38,8 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                 //check if we need to unequip or equip
                 const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
 
-                if (!isWorn) {
+                if (!isWorn || item.type === "Outfit") {
                     if (item.type === "Outfit") {
-                        result.bodyColors = outfit.bodyColors.clone()
-
                         setOutfit(result)
                     } else {
                         const newOutfit = outfit.clone()

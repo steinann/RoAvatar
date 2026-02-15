@@ -55,7 +55,7 @@ type EmoteInfo = {
     position: number
 }
 
-export default function EmoteCategory({searchData, categoryType, setOutfit, setAnimName, setAlertText, setAlertEnabled}: {searchData: Search_Payload, categoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function EmoteCategory({searchData, categoryType, setOutfit, animName, setAnimName, setAlertText, setAlertEnabled}: {searchData: Search_Payload, categoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     
     const [currentSlot, setCurrentSlot] = useState(1)
@@ -131,7 +131,7 @@ export default function EmoteCategory({searchData, categoryType, setOutfit, setA
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={7} itemInfo={itemInfos[6]}/>
         <EmoteBox setAnimName={setAnimName} setCurrentSlot={setCurrentSlot} currentSlot={currentSlot} auth={auth} slot={8} itemInfo={itemInfos[7]}/>
     </BarCategory>
-    <ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
+    <ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={"_Emotes"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} setOutfit={setOutfit} animName={animName} setAnimName={setAnimName} wornItems={wornEmotes} onClickItem={(auth: Authentication, item: ItemInfo) => {
         if (!equippedEmotes) return
 
         let isEmoteEquipped = false

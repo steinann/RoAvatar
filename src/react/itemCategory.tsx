@@ -158,7 +158,7 @@ type AvatarInventoryItem = {
     outfitDetail?: {assets: {id: number}[]},
 }
 
-export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -289,7 +289,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(item, outfit, setAnimName, setOutfit)
+                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName)
                     }
                 }}/>
             ))
