@@ -6,7 +6,7 @@ import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import type { Outfit } from "../code/avatar/outfit";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false, isLocalOutfit = false, deleteCallback, updateCallback, renameCallback}: 
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false, isLocalOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
         auth?: Authentication,
         itemInfo?: ItemInfo,
@@ -25,6 +25,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         setAlertEnabled?: (a: boolean) => void,
         showViewButton?: boolean,
         isLocalOutfit?: boolean,
+        interactive?: boolean,
         deleteCallback?: () => void,
         updateCallback?: (a: Outfit) => void,
         renameCallback?: (a: string) => void,
@@ -159,6 +160,9 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         {/*Update outfit dialot*/
         canEditOutfit ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
             <span className="dialog-title roboto-700">Update Character</span>
+            <div className="dialog-line"></div>
+            <span className="dialog-text roboto-400">This will permanently overwrite your saved character with your current appearance</span>
+            <div className="dialog-line"></div>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                     setUpdateOpen(false)
@@ -191,6 +195,9 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         {/*Delete outfit dialog*/
         canEditOutfit ? <dialog style={deleteOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={deleteDialogRef} onCancel={() => {setDeleteOpen(false)}}>
             <span className="dialog-title roboto-700">Delete Character</span>
+            <div className="dialog-line"></div>
+            <span className="dialog-text roboto-400">This will permanently delete your saved character</span>
+            <div className="dialog-line"></div>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                     setDeleteOpen(false)
@@ -220,7 +227,10 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         {//Rename outfit dialog
         canEditOutfit ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
             <span className="dialog-title roboto-700">Rename Character</span>
+            <div className="dialog-line"></div>
+            <span className="dialog-text dialog-text-margin roboto-400">Choose a new name for your character</span>
             <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
+            <div className="dialog-line"></div>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                     setRenameOpen(false)
@@ -265,7 +275,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 browserOpenURL(url)
             }
         }}>
-            <RadialButton effectDisabled={editOpen} className={actualButtonClassName} onMouseEnter={() => {setMouseOver(true)}} onMouseLeave={() => {setMouseOver(false)}} onClick={(e) => {
+            <RadialButton effectDisabled={editOpen || !interactive} style={interactive ? {} : {cursor: "unset"}} className={actualButtonClassName} onMouseEnter={() => {setMouseOver(true)}} onMouseLeave={() => {setMouseOver(false)}} onClick={(e) => {
                     //on item clicked
                     e.preventDefault();
                     if ((e.target as HTMLButtonElement).classList.contains("item-view")) return;
@@ -318,7 +328,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
 
         return (<div className={actualClassName}>
-            <RadialButton className={actualButtonClassName}>
+            <RadialButton effectDisabled={true} className={actualButtonClassName}>
                 {cardImage}
             </RadialButton>
             {includeName ? <div ref={nameRef} className="item-name loading-gradient" style={nameStyle}></div> : null}

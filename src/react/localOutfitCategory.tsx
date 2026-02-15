@@ -142,7 +142,10 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
         <>
             <dialog style={outfitDialogOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={createOutfitDialogRef} onCancel={() => {setOutfitDialogOpen(false)}}>
                 <span className="dialog-title roboto-700">Create New Character</span>
+                <div className="dialog-line"></div>
+                <span className="dialog-text dialog-text-margin roboto-400">A saved character will be created locally from your current appearance</span>
                 <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
+                <div className="dialog-line"></div>
                 <div className="dialog-actions">
                     <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                         setOutfitDialogOpen(false)
@@ -201,7 +204,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
                     }}>Create</RadialButton>
                 </div>
             </dialog>
-            <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} onClick={() => {
+            <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} buttonClassName="item-template-button" onClick={() => {
                 setOutfitDialogOpen(true)
             }}/>
         </>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import ToggleButton from "./generic/toggleButton"
+import RadialButton from "./generic/radialButton";
 
 declare const browser: typeof chrome;
 
@@ -54,9 +55,9 @@ export default function SettingsButton(): React.JSX.Element {
 
     return <>
         {/*Settings button*/}
-        <button className="left-top-button icon-button" title="Settings" onClick={() => {setSettingsOpen(true)}}>
+        <RadialButton className="left-top-button icon-button" title="Settings" onClick={() => {setSettingsOpen(true)}}>
             <span className="material-symbols-outlined">settings</span>
-        </button>
+        </RadialButton>
 
         {/*Settings menu*/}
         <dialog style={settingsOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={settingsDialogRef} onCancel={() => {setSettingsOpen(false)}}>
@@ -69,6 +70,7 @@ export default function SettingsButton(): React.JSX.Element {
             </div>
             
             {/*Actual settings*/}
+            <div className="dialog-line"></div>
             <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default"/>
         </dialog>
     </>

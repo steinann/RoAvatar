@@ -202,6 +202,7 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
         {/*Accessory list on right, used for adjust list and order list*/}
         <ul className={`accessory-select${adjustOpen || orderOpen ? "" : " icons-collapsed"}`}>
             {/*Per asset*/}
+            {(adjustOpen ? adjustableAssets : orderableAssets).length === 0 ? <ItemCard auth={auth} key={0} interactive={false} imageAffectedByTheme={true} forceImage="../assets/blankline.png" itemInfo={new ItemInfo("None", "", 0, adjustOpen ? "Adjustable items appear here" : "Layered items appear here")} includeName={false} buttonClassName="item-template-button" /> : null}
             {(adjustOpen ? adjustableAssets : orderableAssets).map((assetId) => {
                 let asset = undefined
                 for (const outfitAsset of outfit.assets) {

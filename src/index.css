@@ -135,6 +135,12 @@ body {
     background-color: var(--body-background);
 }
 
+*:focus-visible {
+    outline-style: solid;
+    outline-color: #fff;
+    outline-width: 1px;
+}
+
 .main {
     width: 100%;
     height: 100vh;
@@ -152,6 +158,7 @@ body {
     flex-direction: row;
     align-items: center;
     height: auto;
+    position: relative;
 }
 
 .main-right {
@@ -495,7 +502,7 @@ body {
 }
 
 .save-button {
-    background-color: #335fff;
+    background-color: var(--blue);
     color: #f5f5f5;
     width: 45%;
     margin: 15px 2.5% 15px 0;
@@ -511,6 +518,10 @@ body {
     align-items: center;
 }
 
+.save-button:hover {
+    background-color: var(--blue-dark);
+}
+
 .save-button-text {
     justify-self: center;
     margin-right: 5px;
@@ -523,7 +534,7 @@ body {
 }
 
 .save-button:active {
-    background-color: #466eff;
+    background-color: var(--blue-light);
 }
 
 .undo-redo {
@@ -916,11 +927,13 @@ dialog {
     inset-block-start: 0px;
     inset-block-end: 0px;
     max-width: calc(100% - 2em - 6px);
-    min-width: 300px;
+    min-width: 400px;
     max-height: calc(100% - 2em - 6px);
     user-select: text;
     visibility: visible;
     overflow: auto;
+
+    transition: 0.3s;
 }
 
 dialog::backdrop {
@@ -943,15 +956,16 @@ dialog::backdrop {
 }
 
 .dialog-text-input {
-    font-size: 1.75em;
+    font-size: 1.5em;
     color: var(--font-color);
     margin: 0 0 10px;
     background-color: var(--button-background);
-    border-color: var(--font-color)24;
+    border-color: var(--select-element-hover);
     border-style: solid;
     border-radius: 12px;
-    padding: 9px 10px;
-    width: 20em;
+    padding: 0.7em;
+    min-width: 20em;
+    width: -webkit-fill-available;
 }
 
 .dialog-actions {
@@ -970,18 +984,34 @@ dialog::backdrop {
 
 .dialog-cancel {
     background-color: var(--button-background);
-    border-color: var(--font-color)24;
+    border-color: var(--select-element-hover);
     border-width: 2px;
     border-style: solid;
     color: var(--font-color);
+    transition: 0.1s;
+}
+
+.dialog-cancel:hover {
+    background-color: var(--button-hover);
 }
 
 .dialog-confirm {
-    background-color: var(--font-color);
-    border-color: var(--font-color);
+    background-color: var(--blue);
+    border-color: var(--blue);
     border-width: 2px;
     border-style: solid;
-    color: var(--button-background);
+    color: #fff;
+    transition: 0.1s;
+}
+
+.dialog-confirm:hover {
+    background-color: var(--blue-dark);
+    border-color: var(--blue-dark);
+}
+
+.dialog-confirm:active {
+    background-color: var(--blue-light);
+    border-color: var(--blue-light);
 }
 
 .menu-icons {
@@ -1507,10 +1537,8 @@ form {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-top: 1em;
-    border-color: #0c0d1954;
-    border-width: 2px;
-    border-style: solid none none none;
+    /*margin-top: 1em;*/
+    border-style: none;
     padding: 5px 0;
 }
 
@@ -1537,11 +1565,15 @@ textarea {
 
 .dialog-text {
     color: var(--font-color);
-    font-size: 1.2em;
+    font-size: 1.3em;
+}
+
+.dialog-text-margin {
+    margin: 0 50px 10px 0;
 }
 
 .basic-radial-button {
-    background-color: #335fff;
+    background-color: var(--blue);
     color: #f5f5f5;
     margin: 15px 2.5% 15px 0;
     border-style: none;
@@ -1562,14 +1594,25 @@ textarea {
     font-variation-settings: "wdth" 100;
 }
 
+.basic-radial-button:hover {
+    background-color: var(--blue-dark);
+}
+
+.basic-radial-button:active {
+    background-color: var(--blue-light);
+}
+
 .tryingame {
     margin: 0;
-    height: 60%;
+    height: auto;
     background-color: var(--item-background);
+    color: var(--font-color);
     border-width: 2px;
     border-style: solid;
     border-color: var(--select-element-hover);
     transition: none;
+    border-radius: 1000px;
+    padding: 0.6em;
 }
 
 .tryingame:hover {
@@ -1587,7 +1630,7 @@ textarea {
     color: black;
     padding: 20px;
     width: 277px;
-    border-radius: 20px 0 20px 20px;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     transform: translateY(-10px);
@@ -1596,7 +1639,7 @@ textarea {
     border-width: 2px;
 }
 
-.tip div {
+.tip-arrow {
     width: 20px;
     height: 20px;
     position: absolute;
@@ -1610,7 +1653,7 @@ textarea {
 }
 
 .tip button {
-    background-color: #466eff;
+    background-color: var(--blue);
     color: white;
     border: none;
     border-radius: 20px;
@@ -1619,6 +1662,15 @@ textarea {
     padding: 2px;
     cursor: pointer;
     font-size: 1.5em;
+    transition: 0.1s;
+}
+
+.tip button:hover {
+    background-color: var(--blue-dark);
+}
+
+.tip button:active {
+    background-color: var(--blue-light);
 }
 
 .tip span {
@@ -1626,16 +1678,41 @@ textarea {
 }
 
 .settings-tip {
-    top: 70px;
+    bottom: 60px;
 }
 
-.settings-tip div {
+.settings-tip .tip-arrow {
     right: unset;
     left: 13px;
+    top: unset;
+    bottom: -10px;
+    border-style: none solid solid none;
 }
 
 .editor-header {
     font-size: 2.4em;
     color: var(--font-color);
     margin: 15px 5px;
+}
+
+.header-icon {
+    border-radius: 12px;
+    height: 4em;
+    aspect-ratio: 1;
+    margin-right: 0.5em;
+}
+
+.dialog-line {
+    height: 1px;
+    width: 100%;
+    margin: 15px 0;
+    background-color: var(--select-element-hover);
+}
+
+.item-template-button {
+    outline-style: dashed;
+    outline-offset: -2px;
+    outline-width: 2px;
+    outline-color: var(--item-background);
+    background-color: var(--history-button-active);
 }

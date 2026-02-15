@@ -366,7 +366,10 @@ function App() {
 
             <dialog style={addAssetOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={addAssetDialogRef} onCancel={() => {setAddAssetOpen(false)}}>
               <span className="dialog-title roboto-700">Add Item</span>
+              <div className="dialog-line"></div>
+              <span className="dialog-text dialog-text-margin roboto-400">Paste in the URL for an item to add to the character</span>
               <input ref={addAssetInputRef} className="dialog-text-input roboto-400" placeholder="Item URL"></input>
+              <div className="dialog-line"></div>
               <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                   setAddAssetOpen(false)
@@ -430,6 +433,7 @@ function App() {
             <div className='main-left division-down'>
               {/*header*/}
               <div className='main-left-top'>
+                <img className='header-icon' src="../assets/icons/128x128.png"></img>
                 <span className='editor-header roboto-600'>RoAvatar</span>
               </div>
 
@@ -453,7 +457,7 @@ function App() {
                     setOutfit(newOutfit)
                   }}/>
                 })}
-                <ItemCard auth={auth} forceImage='../assets/newnewoutfit.png' className='worn-list-item' showViewButton={false} includeName={false} itemInfo={new ItemInfo("None", "", -1, "Add Asset")} onClick={() => {
+                <ItemCard auth={auth} forceImage='../assets/newnewoutfit.png' imageAffectedByTheme={true} className='worn-list-item' buttonClassName='item-template-button' showViewButton={false} includeName={false} itemInfo={new ItemInfo("None", "", -1, "Add Asset")} onClick={() => {
                   setAddAssetOpen(true)
                 }}></ItemCard>
               </div>

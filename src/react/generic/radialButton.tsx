@@ -29,15 +29,11 @@ export default function RadialButton({ children, title, className = "", circleCl
                 easing: "ease-out",
             })
         }
-
-        if (onClick) {
-            onClick(e);
-        }
     }
 
     return (
         <>
-            <button title={title} ref={buttonRef} style={style} className={`radialButton ${className}`} onClick={selfHandleOnClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+            <button title={title} ref={buttonRef} style={style} className={`radialButton ${className}`} onMouseDown={selfHandleOnClick} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
                 <div ref={circleRef} className={`radialButton-circle ${circleClassName}`}></div>
                 {children}
             </button>

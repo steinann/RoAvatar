@@ -171,7 +171,7 @@ export default function EmoteCategory({searchData, categoryType, setOutfit, setA
             unequipEmote()
         }
     }}>
-        <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} forceImage="../assets/newremove.png" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
+        <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} forceImage="../assets/newremove.png" buttonClassName="item-template-button" imageAffectedByTheme={true} auth={auth} itemInfo={new ItemInfo("None", "", -1, "Unequip")} onClick={() => {
             //unequip emote
             unequipEmote()
         }}/>
