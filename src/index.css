@@ -61,10 +61,10 @@
 }
 
 .icon-robux-16x16 {
-    background-image: url(/public/assets/economy.svg);
+    background-image: var(--economy-svg);
     background-position: 0 -20px;
-    margin-bottom: 2px;
-    margin-right: -2px;
+    margin-bottom: 3px;
+    margin-right: -1px;
     background-repeat: no-repeat;
     background-size: auto auto;
     width: 20px;
@@ -275,6 +275,10 @@ body {
     text-align: center;
     cursor: pointer;
     white-space: nowrap;
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
 }
 
 .bar-button:hover {
@@ -403,7 +407,7 @@ body {
 
 .item-price {
     margin-top: 3px;
-    color: var(--font-color);
+    color: var(--robux-color);
     font-size: 1.3em;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -638,7 +642,7 @@ body {
 }
 
 .slider-input-thumb-dragging {
-    box-shadow: #ffffff36 0 0 0px 7px;
+    box-shadow: var(--thumb-dragging) 0 0 0px 7px;
 }
 
 .slider-input-fill {
@@ -789,7 +793,7 @@ body {
 }
 
 .bodycolor-selected span {
-    color: var(--font-color);
+    color: #fff;
     transform: scale(1.5);
 }
 

@@ -886,6 +886,18 @@ export class Outfit {
         return contains
     }
 
+    containsAssets(assetIds: number[]) {
+        let isMissingAsset = false
+        for (const asset of assetIds) {
+            if (!this.containsAsset(asset)) {
+                isMissingAsset = true
+                break
+            }
+        }
+
+        return !isMissingAsset
+    }
+
     containsAssetType(assetType: string) {
         for (const asset of this.assets) {
             if (asset.assetType.name === assetType) {

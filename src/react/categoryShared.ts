@@ -31,11 +31,22 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
     } else if (item.itemType === "Outfit" && (item.type === "Outfit" || item.type === "Character")) { //if full outfit
         API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
             if (result instanceof Outfit) {
-                if (item.type === "Character") {
-                    result.bodyColors = outfit.bodyColors.clone()
-                }
+                //check if we need to unequip or equip
+                const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
 
-                setOutfit(result)
+                if (!isWorn) {
+                    if (item.type === "Character") {
+                        result.bodyColors = outfit.bodyColors.clone()
+                    }
+
+                    setOutfit(result)
+                } else {
+                    const newOutfit = outfit.clone()
+                    for (const asset of result.assets) {
+                        newOutfit.removeAsset(asset.id)
+                    }
+                    setOutfit(newOutfit)
+                }
             }
         })
     } else if (item.itemType === "Outfit" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack")) { //if partial outfit
@@ -48,8 +59,17 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
 
         API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
             if (result instanceof Outfit) {
-                for (const asset of result.assets) {
-                    newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                //check if we need to unequip or equip
+                const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
+
+                if (!isWorn) {
+                    for (const asset of result.assets) {
+                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                    }
+                } else {
+                    for (const asset of result.assets) {
+                        newOutfit.removeAsset(asset.id)
+                    }
                 }
 
                 setOutfit(newOutfit)
@@ -64,13 +84,23 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                     if (item.type === "UserOutfit") { //find first outfit in bundle
                         API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
                             if (result instanceof Outfit) {
-                                const newOutfit = outfit.clone()
-                                for (const asset of result.assets) {
-                                    newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
-                                }
+                                //check if we need to unequip or equip
+                                const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
 
-                                if (bundleType === "Character") {
-                                    newOutfit.scale = result.scale.clone()
+                                const newOutfit = outfit.clone()
+
+                                if (!isWorn) { //equip
+                                    for (const asset of result.assets) {
+                                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                                    }
+
+                                    if (bundleType === "Character") {
+                                        newOutfit.scale = result.scale.clone()
+                                    }
+                                } else { //unequip
+                                    for (const asset of result.assets) {
+                                        newOutfit.removeAsset(asset.id)
+                                    }
                                 }
 
                                 setOutfit(newOutfit)

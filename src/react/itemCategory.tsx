@@ -155,6 +155,7 @@ type AvatarInventoryItem = {
     itemName: string,
     itemId: number,
     itemCategory: {itemType: number, itemSubType: number},
+    outfitDetail?: {assets: {id: number}[]},
 }
 
 export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
@@ -216,8 +217,14 @@ export default function ItemCategory({children, searchData, categoryType, subCat
             itemSubType = BundleTypes[item.itemCategory.itemSubType]
         }
 
-        
-        itemInfos.push(new ItemInfo(itemType, itemSubType, item.itemId, item.itemName))
+        const itemInfo = new ItemInfo(itemType, itemSubType, item.itemId, item.itemName)
+        if (item.outfitDetail?.assets) {
+            for (const asset of item.outfitDetail.assets) {
+                itemInfo.bundledAssets.push(asset.id)
+            }
+        }
+
+        itemInfos.push(itemInfo)
     }
 
     //determine on click function for itemcards

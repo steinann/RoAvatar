@@ -68,38 +68,6 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
     }, [updateOpen, deleteOpen, renameOpen])
 
-    //Pre load item
-    /*useEffect(() => {
-        if (itemInfo && itemInfo.itemType === "Asset") {
-            let headers = undefined
-            if (itemInfo.type.includes("Accessory") || itemInfo.type.includes("Hat")) {
-                headers = {"Roblox-AssetFormat":"avatar_meshpart_accessory"}
-            }
-            API.Asset.GetRBX("rbxassetid://" + itemInfo.id, headers, auth).then(result => {
-                if (result instanceof RBX) {
-                    const tree = result.generateTree()
-                    for (const child of tree.GetChildren()) {
-                        if (child.HasProperty("MeshId")) {
-                            const meshId = child.Prop("MeshId") as string
-                            if (meshId.length > 0) {
-                                API.Asset.GetMesh(meshId, undefined, auth)
-                            }
-                        }
-                        const texturePropNames = ["TextureID", "TextureId", "Texture", "OverlayTextureId", "BaseTextureId", "ColorMap", "NormalMap", "RoughnessMap", "MetalnessMap"]
-                        for (const texturePropName of texturePropNames) {
-                            if (child.HasProperty(texturePropName)) {
-                                const textureId = child.Prop(texturePropName)
-                                if (typeof textureId === "string" && textureId.length > 0) {
-                                    API.Generic.LoadImage(textureId)
-                                }
-                            }
-                        }
-                    }
-                }
-            })
-        }
-    }, [auth,itemInfo])*/
-
     //load item image
     useEffect(() => {
         if (forceImage && imageUrl !== forceImage) {
@@ -141,6 +109,19 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             document.removeEventListener("mouseup", mouseUpListener)
         }
     })
+
+    //check if bundle is worn
+    if (!canEditOutfit && itemInfo && itemInfo.bundledAssets && itemInfo.bundledAssets.length > 0) {
+        let isMissingAsset = false
+        for (const assetId of itemInfo.bundledAssets) {
+            if (!outfit.containsAsset(assetId)) {
+                isMissingAsset = true
+                break
+            }
+        }
+
+        isWorn = isWorn || !isMissingAsset
+    }
 
     const cardImage = imageUrl !== "loading" ? (<img style={imageAffectedByTheme ? {filter:"var(--icon-filter)"} : {}} className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 

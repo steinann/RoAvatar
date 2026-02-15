@@ -283,6 +283,7 @@ export class ItemInfo {
     type: string
     id: number
     name: string
+    bundledAssets: number[] = []
 
     price?: number
     limitedType?: "Limited" | "LimitedUnique"

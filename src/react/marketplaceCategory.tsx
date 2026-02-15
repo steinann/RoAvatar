@@ -82,6 +82,17 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                             limitedType = "LimitedUnique"
                         }
 
+                        //bundled asset
+                        let bundledAssets = undefined
+                        if (item.bundledItems) {
+                            bundledAssets = []
+                            for (const asset of item.bundledItems) {
+                                if (asset.type === "Asset") {
+                                    bundledAssets.push(asset.id)
+                                }
+                            }
+                        }
+
                         //push item data
                         newItems.push({
                             itemName: item.name,
@@ -92,6 +103,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                             },
                             price: itemPrice,
                             limitedType: limitedType,
+                            bundledAssets: bundledAssets,
                         })
                     }
                     
@@ -113,6 +125,7 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
     price?: number,
     limitedType?: "Limited" | "LimitedUnique",
+    bundledAssets?: number[],
 }
 
 export default function MarketplaceCategory({children, searchData, setOutfit, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
@@ -164,6 +177,9 @@ export default function MarketplaceCategory({children, searchData, setOutfit, se
         const itemInfo = new ItemInfo(itemType, itemSubType, item.itemId, item.itemName)
         itemInfo.price = item.price
         itemInfo.limitedType = item.limitedType
+        if (item.bundledAssets) {
+            itemInfo.bundledAssets = item.bundledAssets
+        }
 
         itemInfos.push(itemInfo)
     }
