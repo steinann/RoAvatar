@@ -35,11 +35,23 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                 const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
 
                 if (!isWorn) {
-                    if (item.type === "Character") {
+                    if (item.type === "Outfit") {
                         result.bodyColors = outfit.bodyColors.clone()
-                    }
 
-                    setOutfit(result)
+                        setOutfit(result)
+                    } else {
+                        const newOutfit = outfit.clone()
+
+                        const toRemove = ToRemoveBeforeBundleType["Character"]
+                        for (const type of toRemove) {
+                            newOutfit.removeAssetType(type)
+                        }
+
+                        for (const asset of result.assets) {
+                            newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                        }
+                        setOutfit(newOutfit)
+                    }
                 } else {
                     const newOutfit = outfit.clone()
                     for (const asset of result.assets) {

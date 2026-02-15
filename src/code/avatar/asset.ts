@@ -242,6 +242,15 @@ export const ToRemoveBeforeBundleType = {
         "WalkAnimation",
         "PoseAnimation",
         "MoodAnimation",
+    ],
+    "Character": [
+        "DynamicHead",
+        "Head",
+        "Torso",
+        "LeftArm",
+        "RightArm",
+        "LeftLeg",
+        "RightLeg"
     ]
 }
 
