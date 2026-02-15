@@ -1,3 +1,8 @@
+/*
+This might be the worst css file ever, Control + F is REQUIRED to navigate this
+I was too lazy to import css in my components and now im too lazy to start doing that
+*/
+
 /*Fonts*/
 .roboto-400 {
   font-family: "Roboto", sans-serif;
@@ -1627,12 +1632,17 @@ textarea {
     border-color: var(--item-background);
     transition: none;
     border-radius: 1000px;
-    padding: 0.6em;
+    padding: 0.6em 1em;
 }
 
 .tryingame:hover {
     border-color: var(--select-element-hover);
     background-color: var(--select-element-hover);
+}
+
+.tryingame:active {
+    border-color: var(--item-background);
+    background-color: var(--item-background);
 }
 
 .left-top-button:hover {
