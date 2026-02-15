@@ -42,6 +42,8 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                     } else {
                         const newOutfit = outfit.clone()
 
+                        newOutfit.scale = result.scale.clone()
+
                         const toRemove = ToRemoveBeforeBundleType["Character"]
                         for (const type of toRemove) {
                             newOutfit.removeAssetType(type)
