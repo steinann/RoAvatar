@@ -2,11 +2,11 @@
 
 ## A remake of the Roblox avatar editor with new and improved features
 
-![A screenshot of RoAvatar v0.4.0](https://i.imgur.com/pr1Ul2b.png)
+![A screenshot of RoAvatar v0.4.0](https://i.imgur.com/SPYUn2Y.png)
 
 ## Using the Extension
 <a href="https://chromewebstore.google.com/detail/roavatar/ifjleokejkklabhcfhppncfdbkmakhdp" title="Chrome Web Store">
-    <img src="https://developer.chrome.com/static/docs/webstore/branding/image/mPGKYBIR2uCP0ApchDXE.png">
+    <img src="https://developer.chrome.com/static/docs/webstore/branding/image/iNEddTyWiMfLSwFD6qGq.png">
 </a><br>
 The extension is WIP.
 You can build the newest version yourself OR get the latest stable version from <a href="https://github.com/Mzigi/RoAvatar/releases">releases</a>
