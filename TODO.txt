@@ -30,8 +30,9 @@ FEATURES:
         -Thumbnail customization
         -Load other peoples avatar/outfits
 				-Lines and such when adjusting accessory
-    MEDIUM PRIORITY:
         -Loading indicator for avatar preview
+        -Better alert and warnings system
+    MEDIUM PRIORITY:
         -Publish outfits to Roblox (like in the mobile app)
         -Save outfit as .rbxm
         -Gear inside preview
