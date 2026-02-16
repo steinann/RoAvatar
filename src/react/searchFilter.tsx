@@ -39,6 +39,7 @@ export default function SearchFilter({categorySource, limitedOnly, setLimitedOnl
     
     const [filterOpen, setFilterOpen] = useState<boolean>(false)
     
+    const filterButtonRef = useRef<HTMLButtonElement>(null)
     const filterMenuRef = useRef<HTMLDivElement>(null)
     const searchRef = useRef<HTMLInputElement>(null)
     
@@ -70,7 +71,7 @@ export default function SearchFilter({categorySource, limitedOnly, setLimitedOnl
     //exit when click outside
     useEffect(() => {
         const mouseUpListener = (e: MouseEvent) => {
-            if (!filterMenuRef.current?.contains(e.target as HTMLElement)) {
+            if (!filterMenuRef.current?.contains(e.target as HTMLElement) && !filterButtonRef.current?.contains(e.target as HTMLElement)) {
                 setFilterOpen(false)
             }
         }
@@ -91,7 +92,7 @@ export default function SearchFilter({categorySource, limitedOnly, setLimitedOnl
         {/*Filter*/}
         <div className="searchfilter-filter">
             {/*Filter button*/}
-            <RadialButton style={{backgroundColor: filterIsDefault() ? "" : "var(--blue)"}} className="searchfilter-filter-button" onClick={()=>{setFilterOpen(!filterOpen)}}>
+            <RadialButton ref={filterButtonRef} style={{backgroundColor: filterIsDefault() ? "" : "var(--blue)"}} className="searchfilter-filter-button" onClick={()=>{setFilterOpen(!filterOpen)}}>
                 <Icon>filter_list</Icon>
             </RadialButton>
 

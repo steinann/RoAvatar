@@ -71,7 +71,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                         if (!item.isOffSale && !item.hasResellers) {
                             itemPrice = item.price
                         } else if (item.hasResellers) {
-                            itemPrice = item.lowestResalePrice
+                            itemPrice = item.lowestPrice
                         } else {
                             isOffsale = true
                         }
@@ -211,7 +211,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
                 }}/>
             ))
         }
-        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword}/>
+        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword} searchData={searchData}/>
         </>
     } else if (!hasLoadedAll) { //fake items while loading
         itemComponents = <>{

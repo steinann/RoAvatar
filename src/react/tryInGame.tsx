@@ -20,21 +20,6 @@ export default function TryInGameButton(): React.JSX.Element {
         }
     }, [tryOpen])
 
-    //exit when click outside
-    useEffect(() => {
-        const mouseUpListener = (e: MouseEvent) => {
-            if (!tryDialogRef.current?.contains(e.target as HTMLElement)) {
-                setTryOpen(false)
-            }
-        }
-
-        document.addEventListener("mouseup", mouseUpListener)
-        
-        return () => {
-            document.removeEventListener("mouseup", mouseUpListener)
-        }
-    })
-
     const outfitData = arrayBufferToBase64(outfit.toBuffer())
 
     return <>

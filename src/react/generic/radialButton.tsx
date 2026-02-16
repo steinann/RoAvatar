@@ -1,13 +1,13 @@
 import React, { useRef } from "react";
 
 //fancy button that has a circle come from the mouse on click
-export default function RadialButton({ children, title, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave }: React.PropsWithChildren & {title?: string, className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void}): React.JSX.Element {
+export default function RadialButton({ children, ref, title, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave }: React.PropsWithChildren & {ref?: React.RefObject<HTMLButtonElement | null>, title?: string, className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void}): React.JSX.Element {
     const circleRef = useRef(null);
     const buttonRef = useRef(null);
 
     function selfHandleOnClick(e: React.MouseEvent<HTMLButtonElement>): void {
         if (!effectDisabled) {
-            const button = buttonRef.current as unknown as HTMLButtonElement;
+            const button = (ref || buttonRef).current as unknown as HTMLButtonElement;
             const newTop = e.clientY - button.getBoundingClientRect().top;
             const newLeft = e.clientX - button.getBoundingClientRect().left;
             
@@ -33,7 +33,7 @@ export default function RadialButton({ children, title, className = "", circleCl
 
     return (
         <>
-            <button title={title} ref={buttonRef} style={style} className={`radialButton ${className}`} onMouseDown={selfHandleOnClick} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+            <button ref={ref || buttonRef} title={title} style={style} className={`radialButton ${className}`} onMouseDown={selfHandleOnClick} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
                 <div ref={circleRef} className={`radialButton-circle ${circleClassName}`}></div>
                 {children}
             </button>

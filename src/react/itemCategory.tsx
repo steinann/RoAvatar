@@ -81,8 +81,8 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
     const sortOption = sortInfo.sortOption
     const itemInfos = sortInfo.itemCategories
 
-    const loadMore = () => {
-        if (!auth || isLoading) return
+    const loadMore = (force: boolean = false) => {
+        if (!auth || (isLoading && !force)) return
 
         lastLoadId++
         const loadId = lastLoadId
@@ -94,8 +94,8 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                     if (loadId !== lastLoadId) return
                     if (!(body instanceof Response)) {
                         if (Date.now() / 1000 - lastDetailsRateLimit < 2) {
-                            setIsLoading(false)
-                            setTimeout(loadMore, 2000)
+                            //setIsLoading(false)
+                            setTimeout(loadMore, 2000, true)
                             return
                         }
                         //console.log(body)
@@ -259,9 +259,6 @@ export default function ItemCategory({children, searchData, categoryType, subCat
     function onScroll() {
         if (scrollDivRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
-            console.log(scrollTop + clientHeight)
-            console.log(scrollHeight - 200)
-            console.log(scrollTop + clientHeight >= scrollHeight - 200)
             if (scrollTop + clientHeight >= scrollHeight - 200) {
                 loadMore()
             }
@@ -357,7 +354,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                 }}/>
             ))
         }
-        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword}/>
+        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword} searchData={searchData}/>
         </>
     } else if (!hasLoadedAll) { //fake items while loading
         itemComponents = <>{

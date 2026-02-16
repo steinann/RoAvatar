@@ -256,7 +256,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
                 }}/>
             ))
         }
-        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword}/>
+        <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword} searchData={searchData}/>
         </>
     } else if (!hasLoadedAll || isSaving) { //fake items while loading
         itemComponents = <>{
