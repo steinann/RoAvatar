@@ -1,4 +1,4 @@
-import type { BundleDetails_Result, GetTopics_Payload, GetTopics_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetTopics_Payload, GetTopics_Result, ItemDetails_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { Outfit } from "./avatar/outfit"
@@ -172,7 +172,7 @@ const CACHE = {
     "Thumbnails": new Map<string,string | undefined>(),
     "ItemOwned": new Map<string,[boolean,number]>(),
     "IsLayered": new Map<number,boolean>(),
-    "AvatarInventoryItem": new Map<string,unknown>()
+    "AvatarInventoryItem": new Map<string,AvatarInventory_Result>()
 }
 
 type ThumbnailInfo = {
@@ -334,7 +334,7 @@ const API = {
                 return response
             }
         },
-        GetAvatarInventory: async function (sortOption: string, pageToken: string | null | undefined, itemInfos: ItemSort[] = []) {
+        GetAvatarInventory: async function (sortOption: string, pageToken: string | null | undefined, itemInfos: ItemSort[] = []): Promise<AvatarInventory_Result | Response> {
             let requestUrl = "https://avatar.roblox.com/v1/avatar-inventory?"
             let needsAnd = false
 
@@ -672,10 +672,21 @@ const API = {
             }
 
             return (await response.json()) as BundleDetails_Result
+        },
+        GetItemDetails: async function(auth: Authentication, assets: {itemType: "Asset" | "Bundle", id: number}) {
+            const response = await RBLXPost(`https://catalog.roblox.com/v1/catalog/items/details`, auth, {
+                items: assets,
+            })
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as ItemDetails_Result
         }
     },
     "Inventory": {
-        GetInventory: async function(userId: number, assetType: number, cursor?: string) {
+        GetInventory: async function(userId: number, assetType: number, cursor?: string): Promise<Response> {
             let requestUrl = `https://inventory.roblox.com/v2/users/${userId}/inventory/${assetType}?sortOrder=Desc&limit=100`
 
             if (cursor) {

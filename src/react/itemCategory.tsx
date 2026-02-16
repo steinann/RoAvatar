@@ -8,7 +8,7 @@ import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
 import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
 import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
-import type { Search_Payload } from "../code/api-constant"
+import type { Inventory_Result, Search_Payload } from "../code/api-constant"
 import NothingLoaded from "./nothingLoaded"
 
 let lastCategory = ""
@@ -106,7 +106,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                     API.Inventory.GetInventory(userInfo.id, itemInfos[0].subType, nextPageToken).then(response => {
                         if (loadId !== lastLoadId) return
                         if (response.status === 200) {
-                            response.json().then((body) => {
+                            response.json().then((body: Inventory_Result) => {
                                 if (loadId !== lastLoadId) return
 
                                 const pageToken = body.nextPageCursor

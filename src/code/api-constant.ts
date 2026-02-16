@@ -211,3 +211,83 @@ export interface ThumbnailsCustomization_Payload {
         distanceScale: number,
     }
 }
+
+export interface AvatarInventory_Result {
+    avatarInventoryItems: {
+        itemId: number,
+        itemName: string,
+        itemCategory: {
+            itemType: number,
+            itemSubType: number,
+        },
+        availabilityStatus: string,
+        acquisitionTime: string,
+        outfitDetail?: {
+            assets: {
+                id: number
+            }[],
+            bodyColor3s: {
+                headColor3: string,
+                leftArmColor3: string,
+                leftLegColor3: string,
+                rightArmColor3: string,
+                rightLegColor3: string,
+                torsoColor3: string,
+            },
+            playerAvatarType: "R6" | "R15",
+            scales: {
+                bodyType: number,
+                depth: number,
+                head: number,
+                height: number,
+                proportion: number,
+                width: number,
+            }
+        }
+    }[],
+    nextPageToken: string | null,
+}
+
+export interface Inventory_Result {
+    data: {
+        assetId: number,
+        assetName: string,
+        collectibleItemId: string | null,
+        collectibleItemInstanceId: string | null,
+        created: string,
+        owner: {
+            buildersClubMembershipType: string | "None",
+            userId: number,
+            username: string,
+        },
+        serialNumber: number,
+        updated: string,
+        userAssetId: number,
+    }[],
+    nextPageCursor: string | null,
+    previousPageCursor: string | null,
+}
+
+export interface ItemDetails_Result {
+    assetType: number,
+    bundledItems: [],
+    collectibleItemId: string | null,
+    creatorHasVerifiedBadge: boolean,
+    creatorName: string,
+    creatorTargetId: number,
+    creatorType: "User" | "Group",
+    description: string,
+    favoriteCount: number,
+    id: number,
+    isOffSale: boolean,
+    itemRestrictions: string[],
+    itemStatus: string[],
+    itemType: "Asset" | "Bundle",
+    name: string,
+    offsaleDeadline: null,
+    saleLocationType: string,
+    taxonomy: {
+        taxonomyId: string,
+        taxonomyName: string,
+    }[]
+}
