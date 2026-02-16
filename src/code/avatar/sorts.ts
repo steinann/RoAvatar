@@ -130,3 +130,14 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
         }
     }
 }
+
+export const DefaultSearchData: {[K in string]: {[K in string]: unknown}} = {
+    "Inventory": {
+        includeOffsale: true,
+        limitedOnly: false,
+    },
+    "Marketplace": {
+        includeOffsale: false,
+        limitedOnly: false,
+    }
+}

@@ -8,13 +8,32 @@ import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
 import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
 import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
-import type { Inventory_Result, Search_Payload } from "../code/api-constant"
+import type { Inventory_Result, ItemDetails_Result, Search_Payload } from "../code/api-constant"
 import NothingLoaded from "./nothingLoaded"
+
+type ItemList = {itemType: "Asset" | "Bundle", id: number}[]
+async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, searchData: Search_Payload): Promise<undefined | Response | ItemDetails_Result> {
+    const isNeeded = searchData.includeNotForSale === false || searchData.salesTypeFilter === 2
+
+    if (isNeeded) {
+        return await API.Catalog.GetItemDetails(auth, items)
+    }
+
+    return undefined
+}
+
+function itemPassesFilter(item: ItemDetails_Result["data"][0], searchData: Search_Payload): boolean {
+    return !!(
+        (!item.isOffSale || searchData.includeNotForSale) &&
+        ((item.itemRestrictions.includes("Limited") || item.itemRestrictions.includes("LimitedUnique")) || searchData.salesTypeFilter !== 2)
+    )
+}
 
 let lastCategory = ""
 let lastSubCategory = ""
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
+let lastDetailsRateLimit = 0
 function useItems(auth: Authentication | undefined, category: string, subCategory: string, searchData: Search_Payload) {
     const [nextPageToken, setNextPageToken] = useState<string | null | undefined>("")
     const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -74,28 +93,67 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                 API.Avatar.GetAvatarInventory(sortOption, nextPageToken, itemInfos).then(body => {
                     if (loadId !== lastLoadId) return
                     if (!(body instanceof Response)) {
-                        if (loadId !== lastLoadId) return
+                        if (Date.now() / 1000 - lastDetailsRateLimit < 2) {
+                            setIsLoading(false)
+                            setTimeout(loadMore, 2000)
+                            return
+                        }
                         //console.log(body)
-                        const pageToken = body.nextPageToken
-                        if (pageToken && pageToken.length > 0) {
-                            setNextPageToken(pageToken)
-                        } else {
-                            setNextPageToken(null)
-                        }
                         
-                        const newItems: AvatarInventoryItem[] = []
-                        for (const item of body.avatarInventoryItems) {
-                            if (!searchData.keyword || item.itemName.toLowerCase().includes(searchData.keyword.toLowerCase())) {
-                                newItems.push(item)
+                        getItemDetailsIfNeeded(auth, body.avatarInventoryItems.map((a) => {
+                            return {itemType: a.itemCategory.itemType === 1 ? "Asset" : "Bundle", id: a.itemId}
+                        }), searchData).then((itemDetails) => {
+                            //prevent too much spam
+                            if (loadId !== lastLoadId) return
+                            if (itemDetails instanceof Response) {
+                                lastDetailsRateLimit = Date.now() / 1000
+                                setIsLoading(false)
+                                return
                             }
-                        }
-                        setItems(prev => [...prev, ...newItems])
+
+                            //update page token
+                            const pageToken = body.nextPageToken
+                            if (pageToken && pageToken.length > 0) {
+                                setNextPageToken(pageToken)
+                            } else {
+                                setNextPageToken(null)
+                            }
+
+                            const newItems: AvatarInventoryItem[] = []
+                            for (const item of body.avatarInventoryItems) {
+                                const itemType = item.itemCategory.itemType === 1 ? "Asset" : "Bundle"
+
+                                if (itemDetails && itemType == "Bundle") continue
+
+                                //check if item passes filter
+                                let passedFilter = true
+                                if (itemDetails) {
+                                    const itemDetail = itemDetails.data.find((a) => {return a.id === item.itemId && a.itemType === itemType})
+
+                                    if (itemDetail) {
+                                        if (itemDetail.itemRestrictions.includes("Limited")) {
+                                            (item as AvatarInventoryItem).limitedType = "Limited";
+                                        }
+                                        if (itemDetail.itemRestrictions.includes("LimitedUnique")) {
+                                            (item as AvatarInventoryItem).limitedType = "LimitedUnique";
+                                        }
+                                        passedFilter = itemPassesFilter(itemDetail, searchData)
+                                    }
+                                }
+
+                                const passedSearch = !searchData.keyword || item.itemName.toLowerCase().includes(searchData.keyword.toLowerCase())
+
+                                if (passedSearch && passedFilter) {
+                                    newItems.push(item)
+                                }
+                            }
+                            setItems(prev => [...prev, ...newItems])
+                        }).finally(() => {
+                            setIsLoading(false)
+                        })
                     } else {
                         setIsLoading(false)
                     }
-                }).finally(() => {
-                    if (loadId !== lastLoadId) return
-                    setIsLoading(false)
                 })
             } else {
                 auth.getUserInfo().then(userInfo => {
@@ -156,6 +214,7 @@ type AvatarInventoryItem = {
     itemId: number,
     itemCategory: {itemType: number, itemSubType: number},
     outfitDetail?: {assets: {id: number}[]},
+    limitedType?: "Limited" | "LimitedUnique",
 }
 
 export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
@@ -200,6 +259,9 @@ export default function ItemCategory({children, searchData, categoryType, subCat
     function onScroll() {
         if (scrollDivRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
+            console.log(scrollTop + clientHeight)
+            console.log(scrollHeight - 200)
+            console.log(scrollTop + clientHeight >= scrollHeight - 200)
             if (scrollTop + clientHeight >= scrollHeight - 200) {
                 loadMore()
             }
@@ -218,6 +280,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
         }
 
         const itemInfo = new ItemInfo(itemType, itemSubType, item.itemId, item.itemName)
+        itemInfo.limitedType = item.limitedType
         if (item.outfitDetail?.assets) {
             for (const asset of item.outfitDetail.assets) {
                 itemInfo.bundledAssets.push(asset.id)

@@ -268,7 +268,7 @@ export interface Inventory_Result {
     previousPageCursor: string | null,
 }
 
-export interface ItemDetails_Result {
+export interface ItemDetail_Result {
     assetType: number,
     bundledItems: [],
     collectibleItemId: string | null,
@@ -289,5 +289,9 @@ export interface ItemDetails_Result {
     taxonomy: {
         taxonomyId: string,
         taxonomyName: string,
-    }[]
+    }
+}
+
+export interface ItemDetails_Result {
+    data: ItemDetail_Result[]
 }

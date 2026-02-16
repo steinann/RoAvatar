@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
 import { arrayBufferToBase64 } from "../code/misc/misc"
 import RadialButton from "./generic/radialButton"
+import Icon from "./generic/icon"
 
 export default function ShareButton(): React.JSX.Element {
     const outfit = useContext(OutfitContext)
@@ -19,27 +20,12 @@ export default function ShareButton(): React.JSX.Element {
         }
     }, [shareOpen])
 
-    //exit when click outside
-    useEffect(() => {
-        const mouseUpListener = (e: MouseEvent) => {
-            if (!shareDialogRef.current?.contains(e.target as HTMLElement)) {
-                setShareOpen(false)
-            }
-        }
-
-        document.addEventListener("mouseup", mouseUpListener)
-        
-        return () => {
-            document.removeEventListener("mouseup", mouseUpListener)
-        }
-    })
-
     const outfitData = arrayBufferToBase64(outfit.toBuffer())
 
     return <>
         {/*Share button*/}
         <RadialButton className="left-top-button icon-button" title="Share" onClick={() => {setShareOpen(true)}}>
-            <span className="material-symbols-outlined">share</span>
+            <Icon>share</Icon>
         </RadialButton>
 
         {/*Share menu*/}
@@ -47,8 +33,8 @@ export default function ShareButton(): React.JSX.Element {
             {/*Title and exit button*/}
             <div className="dialog-top">
                 <span className="dialog-title roboto-700" style={{margin:0}}>Share</span>
-                <button style={{height: "3em"}} className="exit-button icon-button" onClick={() => {setShareOpen(false)}}>
-                    <span className="material-symbols-outlined">close</span>
+                <button title="Close" style={{height: "3em"}} className="exit-button icon-button" onClick={() => {setShareOpen(false)}}>
+                    <Icon>close</Icon>
                 </button>
             </div>
             <div className="dialog-line"></div>

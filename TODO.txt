@@ -29,14 +29,14 @@ FEATURES:
         -Filter in both marketplace and inventory? (do we really need this in inventory?)
         -Thumbnail customization
         -Load other peoples avatar/outfits
-				-Lines and such when adjusting accessory
+		-Lines and such when adjusting accessory
         -Loading indicator for avatar preview
         -Better alert and warnings system
     MEDIUM PRIORITY:
         -Publish outfits to Roblox (like in the mobile app)
         -Save outfit as .rbxm
         -Gear inside preview
-				-Autosave setting
-				-Layered clothing quality setting
+		-Autosave setting
+		-Layered clothing quality setting
     LOW PRIORITY:
         -Particle rendering

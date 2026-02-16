@@ -298,7 +298,9 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 <span className="item-price roboto-600">
                     {itemInfo.price > 0 ? <><span className="icon-robux-16x16"></span>{new Intl.NumberFormat('no').format(itemInfo.price)}</> : "Free"}
                 </span>
-            : null}
+            : (itemInfo.offsale ? <span className="item-price roboto-600">
+                    Off Sale
+                </span> : null)}
         </a>
         </>)
     } else { //loading item

@@ -911,6 +911,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
     z-index: 2;
     max-height: 300px;
     transition: 0.1s;
+    box-shadow: black 0px 0px 8px 0px;
 }
 
 .select ul.icons-collapsed {
@@ -1446,6 +1447,15 @@ form {
 }
 
 .searchfilter {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.searchfilter-search {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
     background-color: var(--item-background);
     height: 2.5em;
     border-radius: 1em;
@@ -1453,12 +1463,6 @@ form {
     border-color: var(--select-element-hover);
     border-width: 2px;
     padding: 0.25em;
-}
-
-.searchfilter-search {
-    display: flex;
-    flex-direction: row;
-    height: 100%;
 }
 
 .searchfilter-search-button {
@@ -1498,6 +1502,64 @@ form {
     color: var(--font-color);
     cursor: pointer;
     width: 36px;
+}
+
+.searchfilter-filter {
+    position: relative;
+}
+
+.searchfilter-filter-button {
+    position: relative;
+    aspect-ratio: 1;
+    background-color: transparent;
+    border-radius: 100000px;
+    border: none;
+    cursor: pointer;
+    color: var(--font-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+}
+
+.searchfilter-filter-button:hover {
+    background-color: #ffffff36;
+}
+
+.searchfilter-filter-menu {
+    position: absolute;
+    height: auto;
+    display: none;
+    flex-direction: column;
+    background-color: var(--container);
+    right: 0;
+    padding: 0;
+    border-radius: 1em;
+    z-index: 1;
+    box-shadow: black 0 0 1em 0;
+}
+
+.searchfilter-filter-menu.open {
+    display: flex;
+    min-height: fit-content;
+}
+
+.searchfilter-filter-menu .filter {
+    padding: 0.7em 1.5em;
+}
+
+.filter .filter-entry {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2em;
+}
+
+.filter-entry .filter-name {
+    font-size: 1.6em;
+    color: var(--font-color);
+    text-wrap-mode: nowrap;
 }
 
 .nothing-loaded {

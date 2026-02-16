@@ -7,7 +7,7 @@ import { OutfitContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import ItemCategory from './react/itemCategory'
-import { CategoryDictionary, SortInfo, SpecialInfo } from './code/avatar/sorts'
+import { CategoryDictionary, DefaultSearchData, SortInfo, SpecialInfo } from './code/avatar/sorts'
 import SaveButton from './react/saveButton'
 import UndoRedo from './react/undoRedo'
 import SpecialCategory from './react/specialCategory'
@@ -48,6 +48,8 @@ function App() {
   const [searchData, setSearchData] = useState<Search_Payload>({taxonomy: "", salesTypeFilter: 1})
   const [searchKeyword, setSearchKeyword] = useState<string | undefined>(undefined)
   const [tempSearchKeyword, setTempSearchKeyword] = useState<string>("")
+  const [includeOffsale, setIncludeOffsale] = useState<boolean>(DefaultSearchData[categorySource]["includeOffsale"] as boolean)
+  const [limitedOnly, setLimitedOnly] = useState<boolean>(DefaultSearchData[categorySource]["limitedOnly"] as boolean)
 
   const [alertText, _setAlertText] = useState<string>("")
   const [alertEnabled, setAlertEnabled] = useState<boolean>(false)
@@ -142,8 +144,12 @@ function App() {
     _setCategorySource(categorySource)
     if (categorySource === "Inventory") {
       setCategoryType("Recent", categorySource)
+      setIncludeOffsale(DefaultSearchData[categorySource]["includeOffsale"] as boolean)
+      setLimitedOnly(DefaultSearchData[categorySource]["limitedOnly"] as boolean)
     } else {
       setCategoryType("All", categorySource)
+      setIncludeOffsale(DefaultSearchData[categorySource]["includeOffsale"] as boolean)
+      setLimitedOnly(DefaultSearchData[categorySource]["limitedOnly"] as boolean)
     }
   }
 
@@ -332,17 +338,18 @@ function App() {
     //create search data
     const newSearchData: Search_Payload = {
       taxonomy: taxonomy,
-      salesTypeFilter: 1,
+      salesTypeFilter: limitedOnly ? 2 : 1,
       keyword: searchKeyword,
+      includeNotForSale: includeOffsale,
     }
 
     //this makes the All category more personalized but only works if there are no filters
-    if (categoryType === "All" && !searchKeyword) {
+    if (categoryType === "All" && !searchKeyword && !limitedOnly && !includeOffsale) {
       newSearchData.categoryFilter = 6
     }
 
     setSearchData(newSearchData)
-  }, [navigationMenuItems, categorySource, categoryType, subCategoryType, searchKeyword])
+  }, [navigationMenuItems, categorySource, categoryType, subCategoryType, searchKeyword, includeOffsale, limitedOnly])
 
   const taxonomy = searchData.taxonomy
 
@@ -480,7 +487,7 @@ function App() {
               {/*category source (inventory/marketplace)*/}
               <div className="right-top">
                 <BarCategory className="" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
-                <SearchFilter searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword}/>
+                <SearchFilter categorySource={categorySource} limitedOnly={limitedOnly} setLimitedOnly={setLimitedOnly} searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword} includeOffsale={includeOffsale} setIncludeOffsale={setIncludeOffsale}/>
               </div>
               {/*category picker*/}
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>

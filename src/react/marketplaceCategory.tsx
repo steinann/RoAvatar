@@ -8,6 +8,7 @@ import { AssetTypes, CatalogBundleTypes, ItemInfo } from "../code/avatar/asset"
 import { defaultOnClick } from "./categoryShared"
 import type { Search_Payload } from "../code/api-constant"
 import NothingLoaded from "./nothingLoaded"
+
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
 function useMarketplaceItems(auth: Authentication | undefined, searchData: Search_Payload) {
@@ -65,11 +66,14 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                     const newItems: AvatarInventoryItem[] = []
                     for (const item of response.data) {
                         //price
+                        let isOffsale = false
                         let itemPrice = undefined
                         if (!item.isOffSale && !item.hasResellers) {
                             itemPrice = item.price
                         } else if (item.hasResellers) {
                             itemPrice = item.lowestResalePrice
+                        } else {
+                            isOffsale = true
                         }
 
                         //limitedType
@@ -104,6 +108,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                             price: itemPrice,
                             limitedType: limitedType,
                             bundledAssets: bundledAssets,
+                            offsale: isOffsale,
                         })
                     }
                     
@@ -126,6 +131,7 @@ type AvatarInventoryItem = {
     price?: number,
     limitedType?: "Limited" | "LimitedUnique",
     bundledAssets?: number[],
+    offsale: boolean,
 }
 
 export default function MarketplaceCategory({children, searchData, setOutfit, animName, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
@@ -180,6 +186,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
         if (item.bundledAssets) {
             itemInfo.bundledAssets = item.bundledAssets
         }
+        itemInfo.offsale = item.offsale
 
         itemInfos.push(itemInfo)
     }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import ToggleButton from "./generic/toggleButton"
 import RadialButton from "./generic/radialButton";
+import Icon from "./generic/icon";
 
 declare const browser: typeof chrome;
 
@@ -38,25 +39,10 @@ export default function SettingsButton(): React.JSX.Element {
         }
     }, [settingsOpen])
 
-    //exit when click outside
-    useEffect(() => {
-        const mouseUpListener = (e: MouseEvent) => {
-            if (!settingsDialogRef.current?.contains(e.target as HTMLElement)) {
-                setSettingsOpen(false)
-            }
-        }
-
-        document.addEventListener("mouseup", mouseUpListener)
-        
-        return () => {
-            document.removeEventListener("mouseup", mouseUpListener)
-        }
-    })
-
     return <>
         {/*Settings button*/}
         <RadialButton className="left-top-button icon-button" title="Settings" onClick={() => {setSettingsOpen(true)}}>
-            <span className="material-symbols-outlined">settings</span>
+            <Icon>settings</Icon>
         </RadialButton>
 
         {/*Settings menu*/}
@@ -64,8 +50,8 @@ export default function SettingsButton(): React.JSX.Element {
             {/*Title and exit button*/}
             <div className="dialog-top">
                 <span className="dialog-title roboto-700" style={{margin:0}}>Settings</span>
-                <button style={{height: "3em"}} className="exit-button icon-button" onClick={() => {setSettingsOpen(false)}}>
-                    <span className="material-symbols-outlined">close</span>
+                <button title="Close" style={{height: "3em"}} className="exit-button icon-button" onClick={() => {setSettingsOpen(false)}}>
+                    <Icon>close</Icon>
                 </button>
             </div>
             

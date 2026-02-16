@@ -1,4 +1,4 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetTopics_Payload, GetTopics_Result, ItemDetails_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetTopics_Payload, GetTopics_Result, ItemDetail_Result, ItemDetails_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { Outfit } from "./avatar/outfit"
@@ -172,7 +172,8 @@ const CACHE = {
     "Thumbnails": new Map<string,string | undefined>(),
     "ItemOwned": new Map<string,[boolean,number]>(),
     "IsLayered": new Map<number,boolean>(),
-    "AvatarInventoryItem": new Map<string,AvatarInventory_Result>()
+    "AvatarInventoryItem": new Map<string,AvatarInventory_Result>(),
+    "ItemDetails": new Map<string,ItemDetail_Result>(),
 }
 
 type ThumbnailInfo = {
@@ -673,16 +674,40 @@ const API = {
 
             return (await response.json()) as BundleDetails_Result
         },
-        GetItemDetails: async function(auth: Authentication, assets: {itemType: "Asset" | "Bundle", id: number}) {
-            const response = await RBLXPost(`https://catalog.roblox.com/v1/catalog/items/details`, auth, {
-                items: assets,
-            })
-
-            if (response.status !== 200) {
-                return response
+        GetItemDetails: async function(auth: Authentication, items: {itemType: "Asset" | "Bundle", id: number}[]) {
+            const finalResult: ItemDetails_Result = {
+                data: []
             }
 
-            return (await response.json()) as ItemDetails_Result
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i]
+
+                const cacheDetail = CACHE.ItemDetails.get(item.itemType + item.id)
+                if (cacheDetail) {
+                    finalResult.data.push(cacheDetail)
+                    items.splice(items.indexOf(item), 1)
+                }
+            }
+
+            if (items.length > 0) {
+                const response = await RBLXPost(`https://catalog.roblox.com/v1/catalog/items/details`, auth, {
+                    items
+                })
+
+                if (response.status !== 200) {
+                    return response
+                }
+
+                const result = await response.json() as ItemDetails_Result
+
+                for (const itemDetail of result.data) {
+                    CACHE.ItemDetails.set(itemDetail.itemType + itemDetail.id, itemDetail)
+                }
+
+                finalResult.data = finalResult.data.concat(result.data)
+            }
+
+            return finalResult
         }
     },
     "Inventory": {
