@@ -30,3 +30,5 @@ You can build the newest version yourself OR get the latest stable version from 
 - Download RoAvatar.zip and unzip
 - Load the folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
 - The avatar editor will be available at https://www.roblox.com/my/avatar-plus
+
+Copyright (C) 2026 RoAvatar authors & @steinann on GitHub
