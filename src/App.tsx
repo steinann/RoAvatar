@@ -140,16 +140,21 @@ function App() {
     _setCurrentAnimName(name)
   }
 
-  function setCategorySource(categorySource: string) {
-    _setCategorySource(categorySource)
-    if (categorySource === "Inventory") {
-      setCategoryType("Recent", categorySource)
-      setIncludeOffsale(DefaultSearchData[categorySource]["includeOffsale"] as boolean)
-      setLimitedOnly(DefaultSearchData[categorySource]["limitedOnly"] as boolean)
+  function setCategorySource(newCategorySource: string) {
+    _setCategorySource(newCategorySource)
+    if (newCategorySource === "Inventory") {
+      setCategoryType("Recent", newCategorySource)
+      setIncludeOffsale(DefaultSearchData[newCategorySource]["includeOffsale"] as boolean)
+      setLimitedOnly(DefaultSearchData[newCategorySource]["limitedOnly"] as boolean)
     } else {
-      setCategoryType("All", categorySource)
-      setIncludeOffsale(DefaultSearchData[categorySource]["includeOffsale"] as boolean)
-      setLimitedOnly(DefaultSearchData[categorySource]["limitedOnly"] as boolean)
+      setCategoryType("All", newCategorySource)
+      setIncludeOffsale(DefaultSearchData[newCategorySource]["includeOffsale"] as boolean)
+      setLimitedOnly(DefaultSearchData[newCategorySource]["limitedOnly"] as boolean)
+    }
+
+    if (newCategorySource !== categorySource) {
+      setSearchKeyword(undefined)
+      setTempSearchKeyword("")
     }
   }
 
