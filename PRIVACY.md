@@ -1,0 +1,1 @@
+RoAvatar does not collect any data
