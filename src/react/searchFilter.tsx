@@ -120,8 +120,7 @@ export default function SearchFilter({categorySource, minPrice, setMinPrice, max
         setSortType(0)
         setTempCreator("")
         setCreator("")
-        setMinPrice(-1)
-        setMaxPrice(-1)
+        clearPrice()
     }
 
     //exit when click outside
