@@ -141,3 +141,12 @@ export const DefaultSearchData: {[K in string]: {[K in string]: unknown}} = {
         limitedOnly: false,
     }
 }
+
+export const SortTypes: {[K in string]: number | undefined} = {
+    "Relevance": undefined,
+    "MostFavorited": 1,
+    "MostPopular": 2,
+    "RecentlyPublished": 3,
+    "PriceHighToLow": 5,
+    "PriceLowToHigh": 4,
+}

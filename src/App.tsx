@@ -45,11 +45,16 @@ function App() {
   const [categorySource, _setCategorySource] = useState<string>("Inventory")
   const [categoryType, _setCategoryType] = useState<string>("Recent") //Recent
   const [subCategoryType, _setSubCategoryType] = useState<string | undefined>("All") //All
+
   const [searchData, setSearchData] = useState<Search_Payload>({taxonomy: "", salesTypeFilter: 1})
   const [searchKeyword, setSearchKeyword] = useState<string | undefined>(undefined)
   const [tempSearchKeyword, setTempSearchKeyword] = useState<string>("")
   const [includeOffsale, setIncludeOffsale] = useState<boolean>(DefaultSearchData[categorySource]["includeOffsale"] as boolean)
   const [limitedOnly, setLimitedOnly] = useState<boolean>(DefaultSearchData[categorySource]["limitedOnly"] as boolean)
+  const [sortType, setSortType] = useState<number>(0)
+  const [creator, setCreator] = useState<string>("")
+  const [minPrice, setMinPrice] = useState<number>(-1)
+  const [maxPrice, setMaxPrice] = useState<number>(-1)
 
   const [alertText, _setAlertText] = useState<string>("")
   const [alertEnabled, setAlertEnabled] = useState<boolean>(false)
@@ -153,8 +158,12 @@ function App() {
     }
 
     if (newCategorySource !== categorySource) {
+      setCreator("")
+      setSortType(0)
       setSearchKeyword(undefined)
       setTempSearchKeyword("")
+      setMinPrice(-1)
+      setMaxPrice(-1)
     }
   }
 
@@ -348,13 +357,29 @@ function App() {
       includeNotForSale: includeOffsale,
     }
 
+    if (sortType) {
+      newSearchData.sortType = sortType
+    }
+
+    if (creator.length > 0) {
+      newSearchData.creatorName = creator
+    }
+
+    if (minPrice > -1) {
+      newSearchData.minPrice = minPrice
+    }
+
+    if (maxPrice > -1) {
+      newSearchData.maxPrice = maxPrice
+    }
+
     //this makes the All category more personalized but only works if there are no filters
-    if (categoryType === "All" && !searchKeyword && !limitedOnly && !includeOffsale) {
+    if (categoryType === "All" && !searchKeyword && !limitedOnly && !includeOffsale && !sortType && creator.length === 0 && minPrice < 0 && maxPrice < 0) {
       newSearchData.categoryFilter = 6
     }
 
     setSearchData(newSearchData)
-  }, [navigationMenuItems, categorySource, categoryType, subCategoryType, searchKeyword, includeOffsale, limitedOnly])
+  }, [navigationMenuItems, categorySource, categoryType, subCategoryType, searchKeyword, includeOffsale, limitedOnly, sortType, creator, minPrice, maxPrice])
 
   const taxonomy = searchData.taxonomy
 
@@ -492,7 +517,7 @@ function App() {
               {/*category source (inventory/marketplace)*/}
               <div className="right-top">
                 <BarCategory className="" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
-                <SearchFilter categorySource={categorySource} limitedOnly={limitedOnly} setLimitedOnly={setLimitedOnly} searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword} includeOffsale={includeOffsale} setIncludeOffsale={setIncludeOffsale}/>
+                <SearchFilter categorySource={categorySource} minPrice={minPrice} setMinPrice={setMinPrice} maxPrice={maxPrice} setMaxPrice={setMaxPrice} creator={creator} setCreator={setCreator} sortType={sortType} setSortType={setSortType} limitedOnly={limitedOnly} setLimitedOnly={setLimitedOnly} searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword} includeOffsale={includeOffsale} setIncludeOffsale={setIncludeOffsale}/>
               </div>
               {/*category picker*/}
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>

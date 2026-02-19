@@ -895,6 +895,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
     position: relative;
     display: flex;
     flex-direction: row;
+    text-wrap-mode: nowrap;
 }
 
 .select ul {
@@ -910,7 +911,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
     overflow: hidden;
     z-index: 2;
     max-height: 300px;
-    transition: 0.1s;
+    transition: 0s;
     box-shadow: black 0px 0px 8px 0px;
 }
 
@@ -1804,4 +1805,30 @@ textarea {
     outline-width: 2px;
     outline-color: var(--item-background);
     background-color: var(--history-button-active);
+}
+
+.filter-text-div {
+    min-width: 10em;
+    padding: 0.4em;
+    margin: 0;
+    flex-direction: row;
+    display: flex;
+    align-items: center;
+}
+
+.filter-text-input {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    height: 100%;
+    font-size: 1em;
+    color: var(--font-color);
+}
+
+.filter-text-cancel {
+    height: 24px;
+    aspect-ratio: 1;
+    justify-content: center;
+    align-items: center;
 }

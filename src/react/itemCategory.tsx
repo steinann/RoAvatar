@@ -13,7 +13,11 @@ import NothingLoaded from "./nothingLoaded"
 
 type ItemList = {itemType: "Asset" | "Bundle", id: number}[]
 async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, searchData: Search_Payload): Promise<undefined | Response | ItemDetails_Result> {
-    const isNeeded = searchData.includeNotForSale === false || searchData.salesTypeFilter === 2
+    const isNeeded = searchData.includeNotForSale === false ||
+    searchData.salesTypeFilter === 2 ||
+    searchData.creatorName && searchData.creatorName.length > 0 ||
+    searchData.minPrice !== undefined ||
+    searchData.maxPrice !== undefined
 
     if (isNeeded) {
         return await API.Catalog.GetItemDetails(auth, items)
@@ -25,7 +29,10 @@ async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, sea
 function itemPassesFilter(item: ItemDetails_Result["data"][0], searchData: Search_Payload): boolean {
     return !!(
         (!item.isOffSale || searchData.includeNotForSale) &&
-        ((item.itemRestrictions.includes("Limited") || item.itemRestrictions.includes("LimitedUnique")) || searchData.salesTypeFilter !== 2)
+        ((item.itemRestrictions.includes("Limited") || item.itemRestrictions.includes("LimitedUnique")) || searchData.salesTypeFilter !== 2) &&
+        (!searchData.creatorName || searchData.creatorName.length < 0 || item.creatorName.toLowerCase() === searchData.creatorName.toLowerCase()) &&
+        (searchData.minPrice == undefined || item.lowestPrice && item.lowestPrice >= searchData.minPrice) &&
+        (searchData.maxPrice == undefined || item.lowestPrice && item.lowestPrice <= searchData.maxPrice)
     )
 }
 

@@ -4,7 +4,7 @@ export default function NothingLoaded({loadedAll, itemCount, keyword, searchData
     const shouldShow = loadedAll && itemCount === 0
     
     let textToShow = keyword && keyword.length > 0 ? `No "${keyword}" items found` : "No items found"
-    if (searchData.salesTypeFilter === 2 || searchData.includeNotForSale === false) {
+    if (searchData.salesTypeFilter === 2 || searchData.includeNotForSale === false || searchData.creatorName && searchData.creatorName.length > 0) {
         textToShow += " with filter"
     }
 

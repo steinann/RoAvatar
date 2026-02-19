@@ -283,6 +283,7 @@ export interface ItemDetail_Result {
     itemRestrictions: string[],
     itemStatus: string[],
     itemType: "Asset" | "Bundle",
+    lowestPrice?: number,
     name: string,
     offsaleDeadline: null,
     saleLocationType: string,
