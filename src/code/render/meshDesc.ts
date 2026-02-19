@@ -7,7 +7,7 @@ import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunke
 import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 import { RBFDeformerPatch } from '../rblx/cage-mesh-deform'
-import { getModelLayersDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
+import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -199,6 +199,7 @@ export class MeshDesc {
     forceVertexColor: Vector3 | undefined
 
     //layering
+    deformerDesc?: WrapDeformerDesc
     layerDesc?: WrapLayerDesc
     modelLayersDesc?: ModelLayersDesc
 
@@ -221,6 +222,18 @@ export class MeshDesc {
             return singularTrue
         }
 
+        //deformer desc
+        if ((this.deformerDesc && !other.deformerDesc) || (!this.deformerDesc && other.deformerDesc)) {
+            return false
+        }
+
+        if (this.deformerDesc && other.deformerDesc) {
+            if (!this.deformerDesc.isSame(other.deformerDesc)) {
+                return false
+            }
+        }
+
+        //layer desc
         if ((this.layerDesc && !other.layerDesc) || (!this.layerDesc && other.layerDesc)) {
             return false
         }
@@ -231,6 +244,7 @@ export class MeshDesc {
             }
         }
 
+        //model layer desc
         if ((!this.modelLayersDesc && other.modelLayersDesc) || (this.modelLayersDesc && !other.modelLayersDesc)) {
             return false
         }
@@ -241,6 +255,7 @@ export class MeshDesc {
             }
         }
 
+        //vertex color
         if ((!this.forceVertexColor && other.forceVertexColor) || (this.forceVertexColor && !other.forceVertexColor)) {
             return false
         }
@@ -268,7 +283,46 @@ export class MeshDesc {
 
         let the_ref_mesh = undefined
 
-        //layered clothing
+        //wrapdeformer
+        if (this.deformerDesc) {
+            //load meshes
+            const meshMap = new Map<string,FileMesh>()
+
+            const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
+            meshPromises.push(promiseForMesh(this.deformerDesc.cage))
+            meshPromises.push(promiseForMesh(this.deformerDesc.targetCage))
+
+            const values = await Promise.all(meshPromises)
+            for (const [url, mesh] of values) {
+                if (mesh instanceof FileMesh) {
+                    meshMap.set(url, mesh)
+                } else {
+                    return mesh
+                }
+            }
+
+            const cage_mesh = meshMap.get(this.deformerDesc.cage)
+            if (!cage_mesh) {
+                throw new Error("not possible")
+            }
+            console.log(cage_mesh.coreMesh.verts.length - cage_mesh.coreMesh.removeDuplicateVertices(0.01))
+
+            const targetCage_mesh = meshMap.get(this.deformerDesc.targetCage)
+            if (!targetCage_mesh) {
+                throw new Error("Should not happen")
+            }
+
+            //offset meshes
+            offsetMesh(cage_mesh, this.deformerDesc.cageOrigin)
+            offsetMesh(targetCage_mesh, this.deformerDesc.targetCageOrigin)
+
+            //deform self cage to match target cage
+            const targetDeformer = new RBFDeformerPatch(cage_mesh, targetCage_mesh, mesh)
+            await targetDeformer.solveAsync()
+            targetDeformer.deformMesh()
+        }
+
+        //wraplayer
         if (this.layerDesc && this.modelLayersDesc && this.modelLayersDesc.targetCages && this.modelLayersDesc.targetCages.length > 0 && this.modelLayersDesc.targetCFrames && this.modelLayersDesc.targetSizes && this.modelLayersDesc.layers) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
@@ -504,6 +558,8 @@ export class MeshDesc {
 
         //wrap layer
         const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+        const wrapDeformer = child.FindFirstChildOfClass("WrapDeformer")
+        const wrapTarget = child.FindFirstChildOfClass("WrapTarget")
 
         let model = undefined
         if (child.parent?.className === "Model") {
@@ -516,13 +572,29 @@ export class MeshDesc {
         if (wrapLayer && model) {
             this.scaleIsRelative = false
             //this.size = new Vector3(1,1,1)
+            const layerOrder = wrapLayer.Prop("Order") as number
             const deformationReference = wrapLayer.Prop("ReferenceMeshId") as string
             const referenceOrigin = wrapLayer.Prop("ReferenceOrigin") as CFrame
             const deformationCage = wrapLayer.Prop("CageMeshId") as string
             const cageOrigin = wrapLayer.Prop("CageOrigin") as CFrame
 
             this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
+            if (wrapLayer.HasProperty("AutoSkin")) {
+                this.layerDesc.autoSkin = wrapLayer.Prop("AutoSkin") as number
+            }
+            this.layerDesc.order = layerOrder
+            
             this.modelLayersDesc = getModelLayersDesc(model)
+        } else if (wrapDeformer && wrapTarget) {
+            this.scaleIsRelative = false
+
+            const cage = wrapTarget.Prop("CageMeshId") as string
+            const cageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+
+            const targetCage = wrapDeformer.Prop("CageMeshId") as string
+            const targetCageOrigin = wrapDeformer.Prop("CageOrigin") as CFrame
+
+            this.deformerDesc = new WrapDeformerDesc(cage, cageOrigin, targetCage, targetCageOrigin)
         }
     }
 }

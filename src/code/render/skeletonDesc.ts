@@ -3,7 +3,7 @@ import type { MeshDesc } from "./meshDesc";
 import { CFrame, Instance, Vector3 } from '../rblx/rbx';
 import { deg, rad } from '../misc/misc';
 import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../rblx/scale';
-import { ANIMATE_SKELETON, SHOW_SKELETON_HELPER, USE_LEGACY_SKELETON } from '../misc/flags';
+import { ANIMATE_SKELETON, SHOW_SKELETON_HELPER, UPDATE_SKELETON, USE_LEGACY_SKELETON } from '../misc/flags';
 import { divide, multiply } from '../rblx/mesh-deform';
 import FaceControlsWrapper from '../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../rblx/constant';
@@ -284,7 +284,7 @@ export class SkeletonDesc {
     }
 
     update(instance: Instance) {
-        if (!instance.parent) return
+        if (!UPDATE_SKELETON || !instance.parent) return
 
         this.resetRestPos(instance)
         

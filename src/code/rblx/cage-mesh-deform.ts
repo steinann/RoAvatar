@@ -269,7 +269,7 @@ export class RBFDeformerPatch {
         console.time(`RBFDeformerPatch.solve.usedPatches.${this.id}`);
         //get used patches
         const isUsedArr = new Array(this.patches.length).fill(false)
-        this.nearestPatch = new Uint16Array(this.mesh.coreMesh.verts.length)
+        this.nearestPatch = new Uint16Array(this.mesh.coreMesh.verts.length + this.mesh.skinning.bones.length)
 
         for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
             const vert = this.mesh.coreMesh.verts[i]
@@ -280,6 +280,17 @@ export class RBFDeformerPatch {
             isUsedArr[nearestPatchNode.index] = true
             this.nearestPatch[i] = nearestPatchNode.index
         }
+
+        for (let i = 0; i < this.mesh.skinning.bones.length; i++) {
+            const bone = this.mesh.skinning.bones[i]
+            const vec = bone.position
+
+            //find nearest patch center
+            const nearestPatchNode = nearestSearch(this.patchKD, vec)
+            isUsedArr[nearestPatchNode.index] = true
+            this.nearestPatch[i + this.mesh.coreMesh.verts.length] = nearestPatchNode.index
+        }
+
         console.timeEnd(`RBFDeformerPatch.solve.usedPatches.${this.id}`);
 
         console.time(`RBFDeformerPatch.solve.patchNeighbors.${this.id}`);
@@ -366,7 +377,9 @@ export class RBFDeformerPatch {
             throw new Error("RBF has not been solved")
         }
 
-        const vec = this.mesh.coreMesh.verts[i].position
+        const vertLen = this.mesh.coreMesh.verts.length
+
+        const vec = i < vertLen ? this.mesh.coreMesh.verts[i].position : this.mesh.skinning.bones[i - vertLen].position
 
         //find nearest patch center
         const patch = this.patches[this.nearestPatch[i]]
@@ -394,12 +407,16 @@ export class RBFDeformerPatch {
         return add(vec, [dx, dy, dz])
     }
 
-
     deformMesh() {
         console.time("RBFDeformerPatch.deformMesh");
         for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
             const vert = this.mesh.coreMesh.verts[i]
-            vert.position = this.deform(i);
+            vert.position = this.deform(i)
+        }
+
+        for (let i = 0; i < this.mesh.skinning.bones.length; i++) {
+            const bone = this.mesh.skinning.bones[i]
+            bone.position = this.deform(this.mesh.coreMesh.verts.length + i)
         }
         console.timeEnd("RBFDeformerPatch.deformMesh");
     }

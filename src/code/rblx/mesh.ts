@@ -1124,6 +1124,10 @@ export class FileMesh {
                 console.warn(`Failed to read mesh, unknown version: ${version}`)
         }
 
+        if (this.skinning) {
+            console.log(this.skinning)
+        }
+
         console.log(`Bytes left: ${view.view.byteLength - view.viewOffset}`)
     }
 

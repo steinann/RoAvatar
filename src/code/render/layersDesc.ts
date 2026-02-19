@@ -79,11 +79,33 @@ function arrIsSameOrder<T>(arr0: T[], arr1: T[]) {
     return true
 }
 
+export class WrapDeformerDesc {
+    cage: string
+    cageOrigin: CFrame
+    targetCage: string
+    targetCageOrigin: CFrame
+
+    isSame(other: WrapDeformerDesc) {
+        return this.cage === other.cage &&
+                this.cageOrigin.isSame(other.cageOrigin) &&
+                this.targetCage === other.targetCage &&
+                this.targetCageOrigin.isSame(other.targetCageOrigin)
+    }
+
+    constructor(cage: string, cageOrigin: CFrame, targetCage: string, targetCageOrigin: CFrame) {
+        this.cage = cage
+        this.cageOrigin = cageOrigin
+        this.targetCage = targetCage
+        this.targetCageOrigin = targetCageOrigin
+    }
+}
+
 export class WrapLayerDesc {
     reference: string
     referenceOrigin: CFrame
     cage: string
     cageOrigin: CFrame
+    autoSkin?: number
 
     //temporary, order of array is used instead
     order?: number
@@ -92,7 +114,8 @@ export class WrapLayerDesc {
         return this.reference === other.reference &&
                 this.referenceOrigin.isSame(other.referenceOrigin) &&
                 this.cage === other.cage &&
-                this.cageOrigin.isSame(other.cageOrigin)
+                this.cageOrigin.isSame(other.cageOrigin) &&
+                this.autoSkin === other.autoSkin
     }
 
     constructor(reference: string, referenceOrigin: CFrame, cage: string, cageOrigin: CFrame) {
@@ -107,6 +130,7 @@ export class ModelLayersDesc {
     targetCages?: string[]
     targetCFrames?: CFrame[]
     targetSizes?: Vector3[]
+    targetDeformers?: (WrapDeformerDesc | undefined)[]
 
     layers?: WrapLayerDesc[]
 
@@ -161,10 +185,13 @@ export class ModelLayersDesc {
         this.targetCages = []
         this.targetCFrames = []
         this.targetSizes = []
+        this.targetDeformers = []
 
         //wrap targets
         for (const wrapTarget of model.GetDescendants()) {
             if (wrapTarget.className === "WrapTarget" && wrapTarget.parent && wrapTarget.parent.className === "MeshPart") {
+                const wrapDeformer = wrapTarget.parent.FindFirstChildOfClass("WrapDeformer")
+                
                 const bodyPartCage = wrapTarget.Prop("CageMeshId") as string
 
                 const bodyPartCageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
@@ -181,6 +208,18 @@ export class ModelLayersDesc {
                 this.targetCages.push(bodyPartCage)
                 this.targetCFrames.push(bodyPartTargetCFrame)
                 this.targetSizes.push(bodyPartSize)
+
+                if (wrapDeformer && wrapTarget) {
+                    const cage = wrapTarget.Prop("CageMeshId") as string
+                    const cageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+
+                    const targetCage = wrapDeformer.Prop("CageMeshId") as string
+                    const targetCageOrigin = wrapDeformer.Prop("CageOrigin") as CFrame
+
+                    this.targetDeformers.push(new WrapDeformerDesc(cage, cageOrigin, targetCage, targetCageOrigin))
+                } else {
+                    this.targetDeformers.push(undefined)
+                }
             }
         }
 
@@ -197,6 +236,10 @@ export class ModelLayersDesc {
 
                 const underneathLayer = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
                 underneathLayer.order = layerOrder
+                if (otherWrapLayer.HasProperty("AutoSkin")) {
+                    underneathLayer.autoSkin = otherWrapLayer.Prop("AutoSkin") as number
+                }
+
                 underneathLayers.push(underneathLayer)
             }
         }
@@ -210,11 +253,20 @@ export class ModelLayersDesc {
 
         const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
         
-        if (!this.layers || !this.targetCages || this.targetCages.length <= 0 || !this.targetSizes || !this.targetCFrames) {
+        if (!this.layers || !this.targetCages || this.targetCages.length <= 0 || !this.targetSizes || !this.targetCFrames || !this.targetDeformers) {
             throw new Error("ModelLayersDesc has not had fromModel() called")
         }
-        for (const targetCage of this.targetCages) {
-            meshPromises.push(promiseForMesh(targetCage, true))
+        for (let i = 0; i < this.targetCages.length; i++) {
+            const targetCage = this.targetCages[i]
+            const targetDeformer = this.targetDeformers[i]
+            if (!targetDeformer) {
+                meshPromises.push(promiseForMesh(targetCage, true))
+            }
+        }
+        for (const deformer of this.targetDeformers) {
+            if (deformer) {
+                meshPromises.push(promiseForMesh(deformer.targetCage))
+            }
         }
         for (const enclosedLayer of this.layers) {
             meshPromises.push(promiseForMesh(enclosedLayer.cage))
@@ -231,12 +283,15 @@ export class ModelLayersDesc {
         }
 
         //create dist_mesh (body cage)
-        const dist_mesh = meshMap.get(this.targetCages[0])!.clone()
+        const distDeformer = this.targetDeformers[0]
+        const dist_mesh = distDeformer ? meshMap.get(distDeformer.targetCage)!.clone() : meshMap.get(this.targetCages[0])!.clone()
+        
         scaleMesh(dist_mesh, this.targetSizes[0].divide(new Vector3().fromVec3(dist_mesh.size)))
         offsetMesh(dist_mesh, this.targetCFrames[0])
 
         for (let i = 1; i < this.targetCages.length; i++) {
-            const targetCage = meshMap.get(this.targetCages[i])!.clone()
+            const deformer = this.targetDeformers[i]
+            const targetCage = deformer ? meshMap.get(deformer.targetCage)!.clone() : meshMap.get(this.targetCages[i])!.clone()
             scaleMesh(targetCage, this.targetSizes[i].divide(new Vector3().fromVec3(targetCage.size)))
             offsetMesh(targetCage, this.targetCFrames[i])
 

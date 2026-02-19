@@ -5,6 +5,12 @@ export const xmlMagic = "<roblox "
 
 export const RenderedClassTypes = ["Part", "MeshPart"]
 
+export const WrapLayerAutoSkin = {
+    "Disabled": 0,
+    "EnabledPreserve": 1,
+    "EnabledOverride": 2,
+}
+
 export const NormalId = {
     "Right": 0,
     "Top": 1,

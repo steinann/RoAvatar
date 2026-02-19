@@ -152,18 +152,31 @@ export function offsetMesh(mesh: FileMesh, cframe: CFrame) {
     for (const vert of mesh.coreMesh.verts) {
         vert.position = add(vert.position, cframe.Position)
     }
+
+    for (const bone of mesh.skinning.bones) {
+        bone.position = add(bone.position, cframe.Position)
+    }
 }
 
 export function scaleMesh(mesh: FileMesh, scale: Vector3) {
     for (const vert of mesh.coreMesh.verts) {
         vert.position = new Vector3().fromVec3(vert.position).multiply(scale).toVec3()
     }
+
+    for (const bone of mesh.skinning.bones) {
+        bone.position = new Vector3().fromVec3(bone.position).multiply(scale).toVec3()
+    }
 }
 
 export function offsetMeshWithRotation(mesh: FileMesh, cframe: CFrame) {
     for (const vert of mesh.coreMesh.verts) {
-        const vertCF = new CFrame(vert.position[0], vert.position[1], vert.position[2])
+        const vertCF = new CFrame(...vert.position)
         vert.position = cframe.multiply(vertCF).Position
+    }
+
+    for (const bone of mesh.skinning.bones) {
+        const boneCF = new CFrame(...bone.position)
+        bone.position = cframe.multiply(boneCF).Position
     }
 }
 
