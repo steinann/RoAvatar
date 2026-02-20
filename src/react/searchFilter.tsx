@@ -200,7 +200,7 @@ export default function SearchFilter({categorySource, minPrice, setMinPrice, max
                         <form onSubmit={(e) => {
                             e.preventDefault()
                             const newMin = minPriceRef.current?.value && minPriceRef.current?.value.length > 0 ? Number(minPriceRef.current.value) : -1
-                            if (newMin > -1 && newMin > maxPrice) {
+                            if (newMin > -1 && newMin > maxPrice && maxPrice > -1) {
                                 setTempMaxPrice(newMin.toString())
                                 setMaxPrice(newMin)
                             }
