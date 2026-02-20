@@ -1,1 +1,2 @@
-RoAvatar does not collect any data
+RoAvatar uses the storage permission to store various data (including settings and local outfits) on your local device, this data is never sent to RoAvatar and stays on your device.
+No other data is ever saved by RoAvatar anywhere.
