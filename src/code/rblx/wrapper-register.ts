@@ -4,8 +4,8 @@ import BodyPartDescriptionWrapper from "./instance/BodyPartDescription";
 import FaceControlsWrapper from "./instance/FaceControls";
 import HumanoidDescriptionWrapper from "./instance/HumanoidDescription";
 import ModelWrapper from "./instance/Model";
-import ScriptWrapper from "./instance/ScriptWrapper";
-import SoundWrapper from "./instance/SoundWrapper";
+import ScriptWrapper from "./instance/Script";
+import SoundWrapper from "./instance/Sound";
 
 //register wrappers
 export default function RegisterWrappers() {

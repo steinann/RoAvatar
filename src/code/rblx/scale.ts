@@ -1,3 +1,5 @@
+//Based on code found in https://web.archive.org/web/20251113121120/https://roblox.github.io/avatar-evolution/
+
 //scaling notes
 /*
 R15 --> Slim = R15_Wide * R15_Proportions

@@ -2,7 +2,7 @@ import { mathRandom, Wait } from "../../misc/misc";
 import { DataType } from "../constant";
 import { Instance, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
-import SoundWrapper from "./SoundWrapper";
+import SoundWrapper from "./Sound";
 
 class ScriptWrapperData {
     shouldStop: boolean = false
