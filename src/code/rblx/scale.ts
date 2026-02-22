@@ -1,4 +1,4 @@
-//Based on code found in https://web.archive.org/web/20251113121120/https://roblox.github.io/avatar-evolution/
+//Based on code found in https://roblox.github.io/avatar-evolution/
 
 //scaling notes
 /*
