@@ -27,7 +27,6 @@ FEATURES:
         -Thumbnail customization
         -Load other peoples avatar/outfits
 		-Lines and such when adjusting accessory
-        -Loading indicator for avatar preview
         -Better alert and warnings system
         -Button that shows assets in bundle
         -Reset to currently wearing
@@ -39,5 +38,6 @@ FEATURES:
 		-Layered clothing quality setting
         -Write custom number in scale sliders
         -Snapping for adjustment sliders
+        -Custom tooltip
     LOW PRIORITY:
         -Particle rendering

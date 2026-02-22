@@ -10,7 +10,7 @@ export const ENABLE_LC_WEIGHT_CACHE = true
 export const INFLATE_LAYERED_CLOTHING: number = 0.05 //only used by linear algorithms
 export const LAYERED_CLOTHING_ALGORITHM: "linear" | "linearnormal" | "linearnormal2" | "rbf" = "rbf"
 
-export const RBF_PATCH_COUNT = 256 //amount of "patches" that are used for layered clothing, multiple verts share the same patch
+export const RBF_PATCH_COUNT = 300 //amount of "patches" that are used for layered clothing, multiple verts share the same patch
 export const RBF_PATCH_DETAIL_SAMPLES = 48 //amount of nearby vertices each patch samples from
 export const RBF_PATCH_SHAPE_SAMPLES = 32 //amount of far-away vertices (importants) each patch samples from, this is done so that the overall mesh shape is preserved
 
