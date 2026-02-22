@@ -13,7 +13,7 @@ export default class FaceControlsWrapper extends InstanceWrapper {
         //specific
         for (const propertyName of FaceControlsWrapper.requiredProperties) {
             if (!this.instance.HasProperty(propertyName)) {
-                if (!this.instance.HasProperty(propertyName)) this.instance.addProperty(new Property(propertyName, DataType.NonSerializable), 0)
+                this.instance.addProperty(new Property(propertyName, DataType.NonSerializable), 0)
             }
         }
     }

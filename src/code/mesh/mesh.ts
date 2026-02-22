@@ -1154,9 +1154,6 @@ export class FileMesh {
     }
 
     combine(other: FileMesh) {
-        console.log("combining meshes")
-        console.log(this.clone(), other.clone())
-
         //TODO: take LODS into consideration
         this.stripLODS()
         other = other.clone()
@@ -1260,17 +1257,19 @@ export class FileMesh {
             const newSkinning = skinning.clone()
             this.skinning.skinnings.push(newSkinning)
         }
-
-        console.log(this.clone())
     }
 
     removeDuplicateVertices(distance = 0.0001): number {
         const posToIndex = new Map<number, number>()
         const remap = new Array(this.coreMesh.verts.length).fill(-1)
+        const vertToSubset = new Map<FileMeshVertex,number>()
 
         //detect duplicates
         for (let i = 0; i < this.coreMesh.verts.length; i++) {
             const v = this.coreMesh.verts[i]
+            if (this.skinning.subsets.length > 0) {
+                vertToSubset.set(v, this.skinning.getSubsetIndex(i))
+            }
             const hash = hashVec3(v.position[0], v.position[1], v.position[2], distance) + hashVec2(v.uv[0], v.uv[1])
 
             const existing = posToIndex.get(hash)
@@ -1323,9 +1322,73 @@ export class FileMesh {
             f.c = remap[f.c]
         }
 
+        //fix subsets
+        if (this.skinning.subsets.length > 0) {
+            for (const subset of this.skinning.subsets) {
+                subset.vertsBegin = Infinity
+                subset.vertsLength = 0
+            }
+
+            for (let i = 0; i < newVerts.length; i++) {
+                const v = newVerts[i]
+                const subsetIndex = vertToSubset.get(v)!
+                const subset = this.skinning.subsets[subsetIndex]
+
+                if (subset.vertsBegin > i) {
+                    subset.vertsBegin = i
+                }
+                subset.vertsLength += 1
+            }
+        }
+
         this.coreMesh.verts = newVerts
         this.skinning.skinnings = newSkinnings
         return newVerts.length
+    }
+
+    basicSkin(boneNames: string[]) {
+        //basic template
+        this.skinning = new SKINNING()
+        this.skinning.skinnings = new Array(this.coreMesh.verts.length)
+        this.skinning.bones = new Array(boneNames.length)
+        this.skinning.nameTable = boneNames.slice()
+
+        this.skinning.numSkinnings = this.coreMesh.verts.length
+        this.skinning.numSubsets = 1
+        this.skinning.numBones = boneNames.length
+
+        //subset
+        const subset = new FileMeshSubset()
+        subset.boneIndices = new Array(26).fill(65535)
+        subset.boneIndices[0] = boneNames.length - 1
+        subset.vertsBegin = 0
+        subset.vertsLength = this.coreMesh.verts.length
+        subset.facesBegin = 0
+        subset.facesLength = this.coreMesh.faces.length
+        subset.numBoneIndices = 1
+
+        this.skinning.subsets = [subset]
+
+        //skinnings
+        for (let i = 0; i < this.coreMesh.verts.length; i++) {
+            const skinning = new FileMeshSkinning()
+            skinning.boneWeights = [255,0,0,0]
+            skinning.subsetIndices = [0,0,0,0]
+            this.skinning.skinnings[i] = skinning
+        }
+
+        //bone
+        for (let i = 0; i < boneNames.length; i++) {
+            const bone = new FileMeshBone()
+            bone.parentIndex = i - 1
+            if (bone.parentIndex < 0) {
+                bone.parentIndex = 65535
+            }
+            bone.position = [0,0,0]
+            bone.rotationMatrix = [1,0,0, 0,1,0, 0,0,1]
+            bone.lodParentIndex = bone.parentIndex
+            this.skinning.bones[i] = bone
+        }
     }
 
     getValidationIssue(): "subsetLengthMismatch" | undefined {

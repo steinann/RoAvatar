@@ -2,7 +2,7 @@ import { RBFDeformerPatch } from "../mesh/cage-mesh-deform"
 import { FileMesh } from "../mesh/mesh"
 import { inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../mesh/mesh-deform"
 import { CFrame, Vector3, type Instance } from "../rblx/rbx"
-import { traverseRigCFrame } from "../rblx/scale"
+import { traverseRigCFrame, traverseRigInstance } from "../rblx/scale"
 import { promiseForMesh } from "./meshDesc"
 
 const modelLayers = new Map<Instance,ModelLayersDesc>()
@@ -152,6 +152,7 @@ export class ModelLayersDesc {
     targetCFrames?: CFrame[]
     targetSizes?: Vector3[]
     targetDeformers?: (WrapDeformerDesc | undefined)[]
+    targetParents?: string[][]
 
     layers?: WrapLayerDesc[]
 
@@ -180,6 +181,10 @@ export class ModelLayersDesc {
         }
 
         if ((!this.targetDeformers && other.targetDeformers) || (this.targetDeformers && !other.targetDeformers)) {
+            return false
+        }
+
+        if ((!this.targetParents && other.targetParents) || (this.targetParents && !other.targetParents)) {
             return false
         }
 
@@ -219,6 +224,24 @@ export class ModelLayersDesc {
             }
         }
 
+        if (this.targetParents && other.targetParents) {
+            if (this.targetParents.length !== other.targetParents.length) {
+                return false
+            }
+
+            for (let i = 0; i < this.targetParents.length; i++) {
+                if (this.targetParents[i].length !== other.targetParents[i].length) {
+                    return false
+                }
+
+                for (let j = 0; j < this.targetParents[i].length; j++) {
+                    if (this.targetParents[i][j] !== other.targetParents[i][j]) {
+                        return false
+                    }
+                }
+            }
+        }
+
         return true
     }
 
@@ -228,6 +251,7 @@ export class ModelLayersDesc {
         this.targetCFrames = []
         this.targetSizes = []
         this.targetDeformers = []
+        this.targetParents = []
 
         //wrap targets
         for (const wrapTarget of model.GetDescendants()) {
@@ -251,10 +275,15 @@ export class ModelLayersDesc {
 
                 const mesh = meshPart.Prop("MeshId") as string
 
+                const parents = traverseRigInstance(meshPart).map((a) => {return a.Prop("Name") as string})
+                parents.unshift("HumanoidRootNode")
+                parents.unshift("Root")
+
                 this.targetMeshes.push(mesh)
                 this.targetCages.push(bodyPartCage)
                 this.targetCFrames.push(bodyPartTargetCFrame)
                 this.targetSizes.push(bodyPartSize)
+                this.targetParents.push(parents)
 
                 if (wrapDeformer && wrapTarget) {
                     const cage = wrapTarget.Prop("CageMeshId") as string
@@ -300,14 +329,14 @@ export class ModelLayersDesc {
 
         const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
         
-        if (!this.layers || !this.targetCages || this.targetCages.length <= 0 || !this.targetSizes || !this.targetCFrames || !this.targetDeformers || !this.targetMeshes) {
+        if (!this.layers || !this.targetCages || this.targetCages.length <= 0 || !this.targetSizes || !this.targetCFrames || !this.targetDeformers || !this.targetMeshes || !this.targetParents) {
             throw new Error("ModelLayersDesc has not had fromModel() called")
         }
         for (let i = 0; i < this.targetCages.length; i++) {
             const targetCage = this.targetCages[i]
             const mesh = this.targetMeshes[i]
             meshPromises.push(promiseForMesh(targetCage, false))
-            meshPromises.push(promiseForMesh(mesh, true))
+            meshPromises.push(promiseForMesh(mesh, false))
         }
         for (const deformer of this.targetDeformers) {
             if (deformer) {
@@ -329,14 +358,16 @@ export class ModelLayersDesc {
         }
 
         //make targets inherit mesh skeleton
-        console.log("targets inheriting")
         for (let i = 0; i < this.targetMeshes.length; i++) {
             const targetMesh = meshMap.get(this.targetMeshes[i])!
+            if (targetMesh.skinning.skinnings.length < 1) {
+                targetMesh.basicSkin(this.targetParents[i])
+            }
+
             const targetCage = meshMap.get(this.targetCages[i])!
+            targetCage.removeDuplicateVertices()
             inheritSkeleton(targetCage, targetMesh)
-            console.log(targetCage.clone())
         }
-        console.log("targets inherited")
 
         //create dist_mesh (body cage)
         const distDeformer = this.targetDeformers[0]
@@ -353,7 +384,7 @@ export class ModelLayersDesc {
 
             dist_mesh.combine(targetCage)
         }
-        //dist_mesh.removeDuplicateVertices()
+        dist_mesh.removeDuplicateVertices()
 
         //create cages for layers
         const targetMeshes: FileMesh[] = []

@@ -1,4 +1,4 @@
-export type SaleLocationType = "ShopOnly" | "ShopAndAllExperiences" | string
+export type SaleLocationType = "ShopOnly" | "ShopAndAllExperiences" | "ExperiencesDevApiOnly" | string
 
 export interface NavigationMenuItems {
     categories: {
@@ -286,7 +286,7 @@ export interface ItemDetail_Result {
     lowestPrice?: number,
     name: string,
     offsaleDeadline: null,
-    saleLocationType: string,
+    saleLocationType: SaleLocationType,
     taxonomy: {
         taxonomyId: string,
         taxonomyName: string,

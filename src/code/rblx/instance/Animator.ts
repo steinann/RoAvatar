@@ -19,6 +19,8 @@ class AnimatorWrapperData {
 
     currentMoodAnimation?: string = "mood"
     currentMoodAnimationTrack?: AnimationTrack
+    
+    moodTracks: AnimationTrack[] = []
 }
 
 
@@ -147,6 +149,11 @@ export default class AnimatorWrapper extends InstanceWrapper {
 
                 this.data.currentMoodAnimationTrack = undefined
 
+                //set new track as mood animation
+                if (!this.data.moodTracks.includes(toPlayTrack)) {
+                    this.data.moodTracks.push(toPlayTrack)
+                }
+
                 //play new track
                 this.data.currentMoodAnimationTrack = toPlayTrack
                 toPlayTrack.Play(transitionTime)
@@ -204,12 +211,26 @@ export default class AnimatorWrapper extends InstanceWrapper {
         this.restPose()
         this._fixUnloaded()
 
+        //play regular tracks
         for (const track of this.data.animationTracks.values()) {
+            if (this.data.moodTracks.includes(track)) continue
+
             const looped = track.tick(addTime)
             if (this.data.currentAnimationTrack === track && looped && this.data.currentAnimation) {
                 this._switchAnimation(this.data.currentAnimation)
             }
         }
+
+        //play mood tracks
+        for (const track of this.data.animationTracks.values()) {
+            if (!this.data.moodTracks.includes(track)) continue
+
+            const looped = track.tick(addTime)
+            if (this.data.currentAnimationTrack === track && looped && this.data.currentAnimation) {
+                this._switchAnimation(this.data.currentAnimation)
+            }
+        }
+
 
         const rig = this.instance.parent?.parent
         if (rig) {
@@ -256,40 +277,59 @@ export default class AnimatorWrapper extends InstanceWrapper {
 
                     if (subAnimIdStr.length > 0) {
                         const subAnimId = BigInt(idFromStr(subAnimIdStr))
+                        const foundAnimTrack = this.data.animationTracks.get(subAnimId)
 
-                        //load sub animation
-                        promises.push(new Promise(resolve => {
-                            API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined).then(result => {
-                                if (result instanceof RBX) {
-                                    //get and parse animation track
-                                    console.log("loading anim", subAnimId)
+                        if (foundAnimTrack) {
+                            if (forceLoop) {
+                                foundAnimTrack.looped = true
+                            }
 
-                                    const animTrackInstance = result.generateTree().GetChildren()[0]
-                                    if (animTrackInstance && humanoid.parent) {
-                                        const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
-                                        if (forceLoop) {
-                                            animTrack.looped = true
-                                        }
-                                        
-                                        if (!this.data.animationSet[animName]) {
-                                            this.data.animationSet[animName] = []
-                                        }
-                                        
-                                        this.data.animationSet[animName].push({
-                                            id: `rbxassetid://${subAnimId}`,
-                                            weight: subWeight,
-                                        })
-                                        this.data.animationTracks.set(subAnimId, animTrack)
+                            if (!this.data.animationSet[animName]) {
+                                this.data.animationSet[animName] = []
+                            }
 
-                                        this.instance.setProperty("_HasLoadedAnimation",true)
-                                    }
-
-                                    resolve(undefined)
-                                } else {
-                                    resolve(result)
-                                }
+                            this.data.animationSet[animName].push({
+                                id: `rbxassetid://${subAnimId}`,
+                                weight: subWeight,
                             })
-                        }))
+                        } else {
+                            //load sub animation
+                            promises.push(new Promise(resolve => {
+                                API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined).then(result => {
+                                    if (result instanceof RBX) {
+                                        //get and parse animation track
+                                        console.log("loading anim", subAnimId)
+
+                                        const animTrackInstance = result.generateTree().GetChildren()[0]
+                                        if (animTrackInstance && humanoid.parent) {
+                                            const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                            if (forceLoop) {
+                                                animTrack.looped = true
+                                            }
+                                            
+                                            if (!this.data.animationSet[animName]) {
+                                                this.data.animationSet[animName] = []
+                                            }
+                                            
+                                            this.data.animationSet[animName].push({
+                                                id: `rbxassetid://${subAnimId}`,
+                                                weight: subWeight,
+                                            })
+                                            if (this.data.animationTracks.get(subAnimId)) {
+                                                throw new Error("Animation was already loaded")
+                                            }
+                                            this.data.animationTracks.set(subAnimId, animTrack)
+
+                                            this.instance.setProperty("_HasLoadedAnimation",true)
+                                        }
+
+                                        resolve(undefined)
+                                    } else {
+                                        resolve(result)
+                                    }
+                                })
+                            }))
+                        }
                     }
                 }
             }
@@ -298,33 +338,45 @@ export default class AnimatorWrapper extends InstanceWrapper {
             const animId = BigInt(idFromStr(animIdStr))
 
             if (animIdStr.length > 0) {
-                //load emote animation
-                promises.push(new Promise(resolve => {
-                    API.Asset.GetRBX(`rbxassetid://${animId}`, undefined).then(result => {
-                        if (result instanceof RBX) {
-                            //get and parse animation track
-                            const animTrackInstance = result.generateTree().GetChildren()[0]
-                            if (animTrackInstance && humanoid.parent) {
-                                const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
-                                if (forceLoop) {
-                                    animTrack.looped = true
-                                }
-                                
-                                this.data.emotes.set(id, {
-                                        id: `rbxassetid://${animId}`,
-                                        weight: 1,
-                                    })
-                                this.data.animationTracks.set(animId, animTrack)
+                const foundAnimTrack = this.data.animationTracks.get(animId)
+                if (foundAnimTrack) {
+                    if (forceLoop) {
+                        foundAnimTrack.looped = true
+                    }
 
-                                this.instance.setProperty("_HasLoadedAnimation",true)
-                            }
-
-                            resolve(undefined)
-                        } else {
-                            resolve(result)
-                        }
+                    this.data.emotes.set(id, {
+                        id: `rbxassetid://${animId}`,
+                        weight: 1,
                     })
-                }))
+                } else {
+                    //load emote animation
+                    promises.push(new Promise(resolve => {
+                        API.Asset.GetRBX(`rbxassetid://${animId}`, undefined).then(result => {
+                            if (result instanceof RBX) {
+                                //get and parse animation track
+                                const animTrackInstance = result.generateTree().GetChildren()[0]
+                                if (animTrackInstance && humanoid.parent) {
+                                    const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                                    if (forceLoop) {
+                                        animTrack.looped = true
+                                    }
+                                    
+                                    this.data.emotes.set(id, {
+                                            id: `rbxassetid://${animId}`,
+                                            weight: 1,
+                                        })
+                                    this.data.animationTracks.set(animId, animTrack)
+
+                                    this.instance.setProperty("_HasLoadedAnimation",true)
+                                }
+
+                                resolve(undefined)
+                            } else {
+                                resolve(result)
+                            }
+                        })
+                    }))
+                }
             }
         }
     }

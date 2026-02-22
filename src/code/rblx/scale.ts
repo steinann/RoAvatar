@@ -1094,3 +1094,24 @@ export function traverseRigCFrame(instance: Instance) {
 
 	return finalCF
 }
+
+export function traverseRigInstance(instance: Instance) {
+	const children: Instance[] = []
+
+	let lastMotor6D = instance.FindFirstChildOfClass("Motor6D")
+	if (!lastMotor6D) {
+		lastMotor6D = instance.FindFirstChildOfClass("Weld")
+	}
+	while (lastMotor6D) {
+		children.push(lastMotor6D.parent!)
+		const ogLastMotor6D = lastMotor6D
+		lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Motor6D")
+		if (!lastMotor6D) {
+			lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Weld")
+		}
+	}
+
+	children.reverse()
+
+	return children
+}

@@ -3,7 +3,7 @@ import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes, Wrap
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API } from '../api'
 import { FileMesh } from '../mesh/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, inheritSkeleton, transferSkeleton } from '../mesh/mesh-deform'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton } from '../mesh/mesh-deform'
 import { AUTO_SKIN_EVERYTHING, LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 import { RBFDeformerPatch } from '../mesh/cage-mesh-deform'
@@ -208,11 +208,15 @@ export class MeshDesc {
     deformerDesc?: WrapDeformerDesc
     layerDesc?: WrapLayerDesc
     modelLayersDesc?: ModelLayersDesc
+    
+    //faces
+    headMesh?: string
 
     //result data
     compilationTimestamp: number = -1
     instance?: Instance
     fileMesh?: FileMesh
+    wasAutoSkinned: boolean = false
 
     dispose() {
         this.instance = undefined
@@ -222,7 +226,8 @@ export class MeshDesc {
         const singularTrue = //this.size.isSame(other.size) &&
             this.scaleIsRelative === other.scaleIsRelative &&
             this.mesh === other.mesh &&
-            this.canHaveSkinning === other.canHaveSkinning
+            this.canHaveSkinning === other.canHaveSkinning &&
+            this.headMesh === other.headMesh
         
         if (!singularTrue) {
             return singularTrue
@@ -285,6 +290,17 @@ export class MeshDesc {
         const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
         if (mesh instanceof Response) {
             return mesh
+        }
+
+        //inherit facs data from head
+        if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {
+            const headMesh = await API.Asset.GetMesh(this.headMesh, undefined, true)
+            if (headMesh instanceof Response) {
+                return headMesh
+            }
+            if (headMesh.facs) {
+                mesh.facs = headMesh.facs.clone()
+            }
         }
 
         let the_ref_mesh = undefined
@@ -350,12 +366,14 @@ export class MeshDesc {
             if (!ref_mesh) {
                 throw new Error("not possible")
             }
+            ref_mesh.removeDuplicateVertices(0.01)
             console.log(ref_mesh.coreMesh.verts.length - ref_mesh.removeDuplicateVertices(0.01))
 
             const cage_mesh = meshMap.get(this.layerDesc.cage)
             if (!cage_mesh) {
                 throw new Error("Should not happen")
             }
+            cage_mesh.removeDuplicateVertices(0.01)
 
             //compare ref_mesh and cage_mesh, clothing should not be deformed if they are identical
             let referenceAndCageIdentical = true
@@ -406,8 +424,10 @@ export class MeshDesc {
                             const shouldAutoSkin = this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledOverride ||
                                                     this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.skinnings.length < 1
                             if (AUTO_SKIN_EVERYTHING || shouldAutoSkin) {
-                                transferSkeleton(ref_mesh, dist_mesh)
-                                inheritSkeleton(mesh, ref_mesh)
+                                this.wasAutoSkinned = true
+                                const transferTo = ref_mesh.clone() //TODO: fix the issue caused when transferring directly to ref_mesh (rbf deformer fails to deform properly, last equipped body part is ignored or something)
+                                transferSkeleton(transferTo, dist_mesh)
+                                inheritSkeleton(mesh, transferTo)
                             }
 
                             //deform the mesh
@@ -573,11 +593,7 @@ export class MeshDesc {
             }
         }
 
-        //wrap layer
-        const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
-        const wrapDeformer = child.FindFirstChildOfClass("WrapDeformer")
-        const wrapTarget = child.FindFirstChildOfClass("WrapTarget")
-
+        //find model
         let model = undefined
         if (child.parent?.className === "Model") {
             model = child.parent
@@ -585,6 +601,19 @@ export class MeshDesc {
         if (child.parent?.parent?.className === "Model") {
             model = child.parent.parent
         }
+
+        //head mesh
+        if (model) {
+            const head = model.FindFirstChild("Head")
+            if (head && head.className === "MeshPart") {
+                this.headMesh = head.Prop("MeshId") as string
+            }
+        }
+
+        //wrap layer
+        const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
+        const wrapDeformer = child.FindFirstChildOfClass("WrapDeformer")
+        const wrapTarget = child.FindFirstChildOfClass("WrapTarget")
 
         if (wrapLayer && model) {
             this.scaleIsRelative = false

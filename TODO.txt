@@ -4,21 +4,17 @@ Meaning of tags in code:
     BUG: (A bug/issue with roblox, these should NOT be fixed as to maintain accuracy)
 
 ISSUES (Relating to renderer inaccuracy):
-    -SKELETON: Eyebrows and eyelashes may not contain FACS data (is this always the case?) and therefore have their face bones ignored during animation
-        -Them having their own FACS data and bones doesn't make sense as it break the animation if you change the underlying head
-        -They likely inherit the bones and FACS data of the underlying head, which is why AutoSkin is needed
     -SKELETON: Tongues are usually rotated incorrectly
         -Interestingly the skeleton looks to be posed and animated correctly
     -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that might give weird results and doesnt seem right), also the deformation should sample BOTH the inner and outer cage! (rip performance)
     -LC: Layered clothing does not use HSR (Hidden Surface Removal) and does not deform the body/inner clothing to avoid clipping
-    -LC: Some layered clothing accessories are missing skinning and should take WrapLayer.AutoSkin into consideration, see 97648938309560 as an example and https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
+    -LC: AutoSkin ignores vertex groups, https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
     -LC: Layered clothing uses RBF-deformation for cage layering instead of linear deformation
     -LC: Layering breaks when 2 meshes with identical caging are worn
     -LC: WrapDeformer does not affect layers
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
-    -ANIMATION: Sometimes some mood animations stop working???
     -MATERIALDESC: When a composed texture has transparency the color of the transparent parts may look incorrect
         -This may be caused by this issue with ThreeJS: https://github.com/mrdoob/three.js/issues/32802
 
@@ -34,6 +30,7 @@ FEATURES:
         -Loading indicator for avatar preview
         -Better alert and warnings system
         -Button that shows assets in bundle
+        -Reset to currently wearing
     MEDIUM PRIORITY:
         -Publish outfits to Roblox (like in the mobile app)
         -Save outfit as .rbxm

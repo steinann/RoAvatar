@@ -196,6 +196,7 @@ export class RBFDeformerPatch {
                 this.distVerts.push(distVert)
             }
         }
+        console.log(refMesh.coreMesh.verts.length - this.refVerts.length)
         console.timeEnd(`RBFDeformerPatch.constructor.verts.${this.id}`);
 
         console.time(`RBFDeformerPatch.constructor.importants.${this.id}`);

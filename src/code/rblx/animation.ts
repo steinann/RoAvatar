@@ -808,7 +808,8 @@ class AnimationTrack {
                 } else if (child.className === "Folder" && child.Prop("Name") === "FaceControls") {
                     validChildren.push(child)
                 } else {
-                    console.warn(`Unknown animation child with className: ${child.className}`, child)
+                    //Disabled because it KILLED performance
+                    //console.warn(`Unknown animation child with className: ${child.className}`, child)
                 }
             }
 

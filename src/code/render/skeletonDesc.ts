@@ -233,7 +233,10 @@ export class SkeletonDesc {
                     const headSize = head.Prop("Size") as Vector3
                     const ogHeadSize = getOriginalSize(head)
 
-                    const scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+                    let scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+                    if (this.meshDesc.wasAutoSkinned) {
+                        scale = [1,1,1]
+                    }
 
                     //apply scale
                     const scaledCF = ogCF.clone()
@@ -312,7 +315,10 @@ export class SkeletonDesc {
                     if (head && facsMesh && facs && facs.quantizedTransforms) {
                         const headSize = head.Prop("Size") as Vector3
                         const ogHeadSize = getOriginalSize(head)
-                        const headScale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+                        let headScale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+                        if (this.meshDesc.wasAutoSkinned) {
+                            headScale = [1,1,1]
+                        }
 
                         //create or get face controls
                         let faceControls = head.FindFirstChildOfClass("FaceControls")
@@ -336,7 +342,10 @@ export class SkeletonDesc {
                                     const headSize = head.Prop("Size") as Vector3
                                     const ogHeadSize = getOriginalSize(head)
 
-                                    const scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+                                    let scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
+                                    if (this.meshDesc.wasAutoSkinned) {
+                                        scale = [1,1,1]
+                                    }
 
                                     //apply scale
                                     jointCF.Position = multiply(jointCF.Position, scale)

@@ -86,10 +86,6 @@ export function getUVtoVertMap(mesh: FileMesh) {
 }
 
 export function transferSkeleton(to: FileMesh, from: FileMesh) {
-    console.log("inheriting skeleton")
-    console.log(to.clone())
-    console.log(from.clone())
-
     if (from.skinning.skinnings.length < 1) {
         console.warn(`From mesh has no skeleton that can be inherited`)
         return
@@ -169,15 +165,9 @@ export function transferSkeleton(to: FileMesh, from: FileMesh) {
     if (from.facs) {
         to.facs = from.facs.clone()
     }
-
-    console.log(to)
 }
 
 export function inheritSkeleton(to: FileMesh, from: FileMesh) {
-    console.log("inheriting skeleton")
-    console.log(to.clone())
-    console.log(from.clone())
-
     if (from.skinning.skinnings.length < 1) {
         console.warn(`From mesh has no skeleton that can be inherited`)
         return
@@ -194,7 +184,12 @@ export function inheritSkeleton(to: FileMesh, from: FileMesh) {
     const newSkinDatas: [number, FileMeshSkinning, number][] = new Array(to.coreMesh.verts.length)
 
     for (let i = 0; i < to.coreMesh.verts.length; i++) {
-        const closest = nearestSearch(vertKD, minus(to.coreMesh.verts[i].position, multiply(to.coreMesh.verts[i].normal, [0,0,0])))
+        let normal = to.coreMesh.verts[i].normal
+        if (isNaN(normal[0]) || isNaN(normal[1]) || isNaN(normal[2])) {
+            normal = [0,0,0]
+        }
+        const toSearch = minus(to.coreMesh.verts[i].position, multiply(normal, [0,0,0]))
+        const closest = nearestSearch(vertKD, toSearch)
         const closestI = closest.index
 
         const closestSkinning = from.skinning.skinnings[closestI]
@@ -256,8 +251,6 @@ export function inheritSkeleton(to: FileMesh, from: FileMesh) {
     if (from.facs) {
         to.facs = from.facs.clone()
     }
-
-    console.log(to)
 }
 
 export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, targetSize: Vector3, targetCFrame: CFrame): number[] {
