@@ -4,7 +4,7 @@ import { CFrame, Instance, Vector3 } from '../rblx/rbx';
 import { deg, rad } from '../misc/misc';
 import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../rblx/scale';
 import { ANIMATE_SKELETON, SHOW_SKELETON_HELPER, UPDATE_SKELETON, USE_LEGACY_SKELETON } from '../misc/flags';
-import { divide, multiply } from '../rblx/mesh-deform';
+import { divide, multiply } from '../mesh/mesh-deform';
 import FaceControlsWrapper from '../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../rblx/constant';
 import type { RenderableDesc } from './renderableDesc';

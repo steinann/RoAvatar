@@ -3,7 +3,7 @@
 import SimpleView from "../lib/simple-view"
 import { clonePrimitiveArray } from "../misc/misc"
 import { add, divide, hashVec2, hashVec3, magnitude, minus } from "./mesh-deform"
-import { Vector3 } from "./rbx"
+import { Vector3 } from "../rblx/rbx"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const DracoDecoderModule: any;
@@ -111,65 +111,6 @@ class COREMESH {
 
         return touchingVerts
     }
-
-    removeDuplicateVertices(distance = 0.0001): number {
-        const posToIndex = new Map<number, number>()
-        const remap = new Array(this.verts.length).fill(-1)
-
-        //detect duplicates
-        for (let i = 0; i < this.verts.length; i++) {
-            const v = this.verts[i]
-            const hash = hashVec3(v.position[0], v.position[1], v.position[2], distance) + hashVec2(v.uv[0], v.uv[1])
-
-            const existing = posToIndex.get(hash)
-
-            if (existing !== undefined) {
-                //duplicate -> map to existing
-                remap[i] = existing
-
-                //merge normals
-                const a = this.verts[existing]
-                const b = v
-                const merged = new Vector3().fromVec3(a.normal).add(new Vector3().fromVec3(b.normal)).normalize()
-                a.normal = merged.toVec3()
-
-            } else {
-                posToIndex.set(hash, i)
-                remap[i] = i
-            }
-        }
-
-        //remap faces
-        for (const f of this.faces) {
-            f.a = remap[f.a]
-            f.b = remap[f.b]
-            f.c = remap[f.c]
-        }
-
-        //build new compact vertex array
-        const newVerts = []
-        const newIndex = new Map<number, number>()
-
-        for (let i = 0; i < this.verts.length; i++) {
-            const canonical = remap[i]
-            if (!newIndex.has(canonical)) {
-                newIndex.set(canonical, newVerts.length)
-                newVerts.push(this.verts[canonical])
-            }
-            remap[i] = newIndex.get(canonical)!
-        }
-
-        //Fix faces again to use compact indices
-        for (const f of this.faces) {
-            f.a = remap[f.a]
-            f.b = remap[f.b]
-            f.c = remap[f.c]
-        }
-
-        this.verts = newVerts
-        return newVerts.length
-    }
-
 }
 
 class LODS {
@@ -229,7 +170,7 @@ class FileMeshBone {
     }
 }
 
-class FileMeshSubset {
+export class FileMeshSubset {
     facesBegin: number = 0 //uint
     facesLength: number = 0 //uint
 
@@ -252,7 +193,7 @@ class FileMeshSubset {
     }
 }
 
-class FileMeshSkinning {
+export class FileMeshSkinning {
     subsetIndices: Vec4 = [0,0,0,0] //byte[4]
     boneWeights: Vec4 = [0,0,0,0] //byte[4]
 
@@ -303,6 +244,25 @@ class SKINNING {
         }
 
         return copy
+    }
+
+    getBone(boneName: string) {
+        const boneIndex = this.nameTable.indexOf(boneName)
+        if (boneIndex > -1) {
+            return this.bones[boneIndex]
+        }
+    }
+
+    getSubsetIndex(vertIndex: number) {
+        for (let i = 0; i < this.subsets.length; i++) {
+            const subset = this.subsets[i]
+            if (subset.vertsBegin <= vertIndex && vertIndex < subset.vertsBegin + subset.vertsLength) {
+                return i
+            }
+        }
+
+        console.log(this)
+        throw new Error(`There is no subset for vert index ${vertIndex}`)
     }
 }
 
@@ -796,6 +756,8 @@ export class FileMesh {
         for (let i = 0; i < this.skinning.numSubsets; i++) {
             this.skinning.subsets.push(readSubset(view))
         }
+
+        console.log(this.skinning)
     }
 
     readChunkHSRAVIS(view: SimpleView, version: number) {
@@ -1128,12 +1090,88 @@ export class FileMesh {
             console.log(this.skinning)
         }
 
+        const issue = this.getValidationIssue()
+        if (issue) {
+            console.warn(`Issue with parsed mesh: ${issue}`)
+        }
+
         console.log(`Bytes left: ${view.view.byteLength - view.viewOffset}`)
     }
 
-    combine(other: FileMesh) {
-        const vertsLength = this.coreMesh.verts.length
+    stripLODS() {
+        let facesEnd = this.coreMesh.faces.length
+        let facesStart = 0
+        if (this.lods) {
+            if (this.lods.lodOffsets.length >= 2) {
+                facesStart = this.lods.lodOffsets[0]
+                facesEnd = this.lods.lodOffsets[1]
+                if (facesEnd === 0) {
+                    facesEnd = this.coreMesh.faces.length
+                }
+            }
+        }
 
+        this.coreMesh.faces = this.coreMesh.faces.slice(facesStart, facesEnd)
+
+        this.lods.lodOffsets = [0, this.coreMesh.faces.length - 1]
+    }
+
+    padSkinnings() {
+        const vertsLength = this.coreMesh.verts.length
+        const skinningsLength = this.skinning.skinnings.length
+        const missingCount = vertsLength - skinningsLength
+
+        for (let i = 0; i < missingCount; i++) {
+            this.skinning.skinnings.push(new FileMeshSkinning())
+        }
+
+        if (this.skinning.subsets.length === 0) {
+            const subset = new FileMeshSubset()
+            subset.boneIndices = new Array(26).fill(65535)
+            subset.boneIndices[0] = 0
+            subset.vertsBegin = 0
+            subset.vertsLength = this.coreMesh.verts.length
+            subset.facesBegin = 0
+            subset.facesLength = this.coreMesh.faces.length
+            subset.numBoneIndices = 1
+            this.skinning.subsets.push(subset)
+        }
+
+        if (this.skinning.nameTable.length === 0) {
+            this.skinning.nameTable.push("Root")
+            this.skinning.nameTableSize = 4
+        }
+
+        if (this.skinning.bones.length === 0) {
+            const bone = new FileMeshBone()
+            bone.boneNameIndex = 0
+            bone.lodParentIndex = 65535
+            bone.parentIndex = 65535
+            bone.position = [0,0,0]
+            bone.rotationMatrix = [1,0,0,0,1,0,0,0,1]
+            this.skinning.bones.push(bone)
+        }
+    }
+
+    combine(other: FileMesh) {
+        console.log("combining meshes")
+        console.log(this.clone(), other.clone())
+
+        //TODO: take LODS into consideration
+        this.stripLODS()
+        other = other.clone()
+        other.stripLODS()
+
+        if (this.skinning.skinnings.length > 0 || other.skinning.skinnings.length > 0) {
+            this.padSkinnings()
+            other.padSkinnings()
+        }
+
+        const facesLength = this.coreMesh.faces.length
+        const vertsLength = this.coreMesh.verts.length
+        //const subsetsLength = this.skinning.subsets.length
+
+        //coremesh
         for (const vert of other.coreMesh.verts) {
             this.coreMesh.verts.push(vert.clone())
         }
@@ -1145,6 +1183,165 @@ export class FileMesh {
             newFace.c += vertsLength
             this.coreMesh.faces.push(newFace)
         }
+
+        this.lods.lodOffsets = [0,this.coreMesh.faces.length - 1]
+
+        //facs
+        if (other.facs) {
+            this.facs = other.facs.clone()
+        }
+
+        //skeleton
+        const boneIndexMap = new Map<number,number>()
+
+        for (const bone of other.skinning.bones) {
+            const boneName = other.skinning.nameTable[other.skinning.bones.indexOf(bone)]
+            const foundBone = this.skinning.getBone(boneName)
+
+            //root
+            if (bone.parentIndex >= 65535) {
+                boneIndexMap.set(other.skinning.bones.indexOf(bone), 0)
+                continue
+            }
+
+            //not root
+            if (foundBone) { //if bone already inside, just map old one to that
+                boneIndexMap.set(other.skinning.bones.indexOf(bone), this.skinning.bones.indexOf(foundBone))
+            } else { //else copy bone to the original mesh
+                const parentBone = other.skinning.bones[bone.parentIndex]
+                const parentName = other.skinning.nameTable[other.skinning.bones.indexOf(parentBone)]
+                const foundParentBone = this.skinning.getBone(parentName)
+
+                //copy self bone to other
+                const boneCopy = bone.clone()
+                boneCopy.parentIndex = 65535
+                boneCopy.lodParentIndex = 65535
+
+                if (foundParentBone) {
+                    const foundParentIndex = this.skinning.bones.indexOf(foundParentBone)
+                    boneCopy.parentIndex = foundParentIndex
+                    boneCopy.lodParentIndex = foundParentIndex
+                }
+
+                this.skinning.nameTable.push(boneName)
+                this.skinning.bones.push(boneCopy)
+                
+                boneIndexMap.set(other.skinning.bones.indexOf(bone), this.skinning.bones.length - 1)
+            }
+        }
+
+        //console.log(boneIndexMap)
+        //console.log(this)
+
+        for (const subset of other.skinning.subsets) {
+            const newSubset = subset.clone()
+            newSubset.facesBegin += facesLength
+            newSubset.vertsBegin += vertsLength
+            
+            for (let i = 0; i < newSubset.boneIndices.length; i++) {
+                const index = newSubset.boneIndices[i]
+                const newIndex = boneIndexMap.get(index)
+
+                if (index >= 65535) {
+                    continue
+                }
+
+                if (newIndex === undefined) {
+                    throw new Error(`Bone ${index} is missing mapping`)
+                }
+
+                newSubset.boneIndices[i] = newIndex
+            }
+
+            this.skinning.subsets.push(newSubset)
+        }
+
+        for (const skinning of other.skinning.skinnings) {
+            const newSkinning = skinning.clone()
+            this.skinning.skinnings.push(newSkinning)
+        }
+
+        console.log(this.clone())
+    }
+
+    removeDuplicateVertices(distance = 0.0001): number {
+        const posToIndex = new Map<number, number>()
+        const remap = new Array(this.coreMesh.verts.length).fill(-1)
+
+        //detect duplicates
+        for (let i = 0; i < this.coreMesh.verts.length; i++) {
+            const v = this.coreMesh.verts[i]
+            const hash = hashVec3(v.position[0], v.position[1], v.position[2], distance) + hashVec2(v.uv[0], v.uv[1])
+
+            const existing = posToIndex.get(hash)
+
+            if (existing !== undefined) {
+                //duplicate -> map to existing
+                remap[i] = existing
+
+                //merge normals
+                const a = this.coreMesh.verts[existing]
+                const b = v
+                const merged = new Vector3().fromVec3(a.normal).add(new Vector3().fromVec3(b.normal)).normalize()
+                a.normal = merged.toVec3()
+
+            } else {
+                posToIndex.set(hash, i)
+                remap[i] = i
+            }
+        }
+
+        //remap faces
+        for (const f of this.coreMesh.faces) {
+            f.a = remap[f.a]
+            f.b = remap[f.b]
+            f.c = remap[f.c]
+        }
+
+        //build new compact vertex array
+        const newVerts = []
+        const newSkinnings = []
+        const newIndex = new Map<number, number>()
+
+        for (let i = 0; i < this.coreMesh.verts.length; i++) {
+            const canonical = remap[i]
+            if (!newIndex.has(canonical)) {
+                newIndex.set(canonical, newVerts.length)
+                newVerts.push(this.coreMesh.verts[canonical])
+                const skinning = this.skinning.skinnings[canonical]
+                if (skinning) {
+                    newSkinnings.push(skinning)
+                }
+            }
+            remap[i] = newIndex.get(canonical)!
+        }
+
+        //Fix faces again to use compact indices
+        for (const f of this.coreMesh.faces) {
+            f.a = remap[f.a]
+            f.b = remap[f.b]
+            f.c = remap[f.c]
+        }
+
+        this.coreMesh.verts = newVerts
+        this.skinning.skinnings = newSkinnings
+        return newVerts.length
+    }
+
+    getValidationIssue(): "subsetLengthMismatch" | undefined {
+        //subsets
+        if (this.skinning.skinnings.length > 0) {
+            let totalSubsetVerts = 0
+            for (const subset of this.skinning.subsets) {
+                totalSubsetVerts += subset.vertsLength
+            }
+
+            if (totalSubsetVerts !== this.skinning.skinnings.length) {
+                return "subsetLengthMismatch"
+            }
+        }
+
+        return undefined
     }
 }
 

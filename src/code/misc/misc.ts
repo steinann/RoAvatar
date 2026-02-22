@@ -1,4 +1,4 @@
-import type { Vec3 } from "../rblx/mesh";
+import type { Vec3 } from "../mesh/mesh";
 import { Color3, Vector3 } from "../rblx/rbx";
 
 function download(filename: string, text: string) {

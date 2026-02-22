@@ -40,5 +40,7 @@ FEATURES:
         -Gear inside preview
 		-Autosave setting
 		-Layered clothing quality setting
+        -Write custom number in scale sliders
+        -Snapping for adjustment sliders
     LOW PRIORITY:
         -Particle rendering

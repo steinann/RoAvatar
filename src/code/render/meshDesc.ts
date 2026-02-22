@@ -1,12 +1,12 @@
 import * as THREE from 'three'
-import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes } from "../rblx/constant"
+import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes, WrapLayerAutoSkin } from "../rblx/constant"
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
 import { API } from '../api'
-import { FileMesh } from '../rblx/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude } from '../rblx/mesh-deform'
-import { LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
+import { FileMesh } from '../mesh/mesh'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, inheritSkeleton, transferSkeleton } from '../mesh/mesh-deform'
+import { AUTO_SKIN_EVERYTHING, LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
-import { RBFDeformerPatch } from '../rblx/cage-mesh-deform'
+import { RBFDeformerPatch } from '../mesh/cage-mesh-deform'
 import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
@@ -147,6 +147,12 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
                         skinIndices[i * 4 + 3] = BoneNameToIndex["Head"]
                     }
                 } else {
+                    if (subset.boneIndices[skinning.subsetIndices[0]] >= 65535 || subset.boneIndices[skinning.subsetIndices[1]] >= 65535 || subset.boneIndices[skinning.subsetIndices[2]] >= 65535 || subset.boneIndices[skinning.subsetIndices[3]] >= 65535) {
+                        console.log(mesh)
+                        console.log(subset)
+                        console.log(skinning)
+                        throw new Error("mesh is invalid")
+                    }
                     skinIndices[i * 4 + 0] = subset.boneIndices[skinning.subsetIndices[0]]
                     skinIndices[i * 4 + 1] = subset.boneIndices[skinning.subsetIndices[1]]
                     skinIndices[i * 4 + 2] = subset.boneIndices[skinning.subsetIndices[2]]
@@ -305,7 +311,7 @@ export class MeshDesc {
             if (!cage_mesh) {
                 throw new Error("not possible")
             }
-            console.log(cage_mesh.coreMesh.verts.length - cage_mesh.coreMesh.removeDuplicateVertices(0.01))
+            console.log(cage_mesh.coreMesh.verts.length - cage_mesh.removeDuplicateVertices(0.01))
 
             const targetCage_mesh = meshMap.get(this.deformerDesc.targetCage)
             if (!targetCage_mesh) {
@@ -344,7 +350,7 @@ export class MeshDesc {
             if (!ref_mesh) {
                 throw new Error("not possible")
             }
-            console.log(ref_mesh.coreMesh.verts.length - ref_mesh.coreMesh.removeDuplicateVertices(0.01))
+            console.log(ref_mesh.coreMesh.verts.length - ref_mesh.removeDuplicateVertices(0.01))
 
             const cage_mesh = meshMap.get(this.layerDesc.cage)
             if (!cage_mesh) {
@@ -396,9 +402,20 @@ export class MeshDesc {
                 switch (LAYERED_CLOTHING_ALGORITHM) {
                     case "rbf":
                         { 
+                            //autoskin
+                            const shouldAutoSkin = this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledOverride ||
+                                                    this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.skinnings.length < 1
+                            if (AUTO_SKIN_EVERYTHING || shouldAutoSkin) {
+                                transferSkeleton(ref_mesh, dist_mesh)
+                                inheritSkeleton(mesh, ref_mesh)
+                            }
+
+                            //deform the mesh
                             const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
+                            rbfDeformer.affectBones = false
                             await rbfDeformer.solveAsync()
                             rbfDeformer.deformMesh()
+
                             break
                         }
                     case "linearnormal":

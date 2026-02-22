@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
 import { rad, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
-import type { Mat4x4, Vec3 } from './mesh';
+import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
 import * as LZ4 from './lz4'
 import * as fzstd from 'fzstd';

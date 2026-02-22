@@ -8,8 +8,8 @@ import * as THREE from 'three';
 import { API, parseAssetString } from '../api';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { RBX, type CFrame, type Color3uint8, type Instance, type Vector3 } from '../rblx/rbx';
-import { FileMesh, FileMeshVertex, type Vec3 } from '../rblx/mesh';
-import { getUVtoVertMap, hashVec2 } from '../rblx/mesh-deform';
+import { FileMesh, FileMeshVertex, type Vec3 } from '../mesh/mesh';
+import { getUVtoVertMap, hashVec2 } from '../mesh/mesh-deform';
 
 const lookAwayVector = [-0.406, 0.406, -0.819]
 const lookAwayDistance = 6
@@ -610,7 +610,7 @@ function addMesh(instance: Instance, cframe: CFrame, meshIDStr: string, newSize 
                             const cage_mesh = new FileMesh()
                             cage_mesh.fromBuffer(buffer)
                             
-                            ref_mesh.coreMesh.removeDuplicateVertices()
+                            ref_mesh.removeDuplicateVertices()
 
                             //logic stuff
                             const refMap = getUVtoVertMap(ref_mesh)
@@ -711,7 +711,7 @@ function addMesh(instance: Instance, cframe: CFrame, meshIDStr: string, newSize 
                                             console.log(`Fetched cage mesh for ${bodyPartWrap.GetFullName()} from ${bodyPartCageFetchStr}`)
                                             const bodyPartCageMesh = new FileMesh()
                                             bodyPartCageMesh.fromBuffer(buffer)
-                                            bodyPartCageMesh.coreMesh.removeDuplicateVertices()
+                                            bodyPartCageMesh.removeDuplicateVertices()
 
                                             const bodyPartMeshFetchStr = parseAssetString(bodyPart.Prop("MeshId") as string) ||""
                                             API.Asset.GetAssetBuffer(bodyPartMeshFetchStr).then(buffer => {

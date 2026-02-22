@@ -175,6 +175,7 @@ export class RBFDeformerPatch {
     K: number   // neighbors per patch
     patchCount: number    // how many patches you want
     epsilon: number = 1e-6; // avoid matrix from being singular
+    affectBones: boolean = true
 
     id: number = rbfDeformerIdCount++
 
@@ -414,9 +415,11 @@ export class RBFDeformerPatch {
             vert.position = this.deform(i)
         }
 
-        for (let i = 0; i < this.mesh.skinning.bones.length; i++) {
-            const bone = this.mesh.skinning.bones[i]
-            bone.position = this.deform(this.mesh.coreMesh.verts.length + i)
+        if (this.affectBones) {
+            for (let i = 0; i < this.mesh.skinning.bones.length; i++) {
+                const bone = this.mesh.skinning.bones[i]
+                bone.position = this.deform(this.mesh.coreMesh.verts.length + i)
+            }
         }
         console.timeEnd("RBFDeformerPatch.deformMesh");
     }

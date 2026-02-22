@@ -24,6 +24,7 @@ export const POST_PROCESSING_IS_DOUBLE_SIZE = true //does this count as anti ali
 export const SHOW_SKELETON_HELPER = false
 export const UPDATE_SKELETON = true
 export const ANIMATE_SKELETON = true
+export const AUTO_SKIN_EVERYTHING = false
 
 //debug
 export const LOAD_TEST_PLACE = false //"../assets/WrapDeformerTest.rbxm" //"../assets/DecalTest2.rbxm" //"../assets/TransparentDominus.rbxm" //"../assets/EmissiveTest.rbxm" //"../assets/Mesh Deformation Test.rbxl" //set this to a string to load a place file

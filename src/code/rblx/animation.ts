@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CFrame, Instance } from '../rblx/rbx';
 import { deg, lerp, mapNum, rad, specialClamp } from '../misc/misc';
-import type { Vec3 } from '../rblx/mesh';
+import type { Vec3 } from '../mesh/mesh';
 import SimpleView from '../lib/simple-view';
 import FaceControlsWrapper from './instance/FaceControls';
 import { FaceControlNames } from './constant';

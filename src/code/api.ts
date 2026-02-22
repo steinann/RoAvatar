@@ -5,7 +5,7 @@ import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
 import { BODYCOLOR3, ENABLE_API_CACHE } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
-import { FileMesh } from "./rblx/mesh"
+import { FileMesh } from "./mesh/mesh"
 import { RBX } from "./rblx/rbx"
 
 declare const browser: typeof chrome;

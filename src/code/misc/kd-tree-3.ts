@@ -1,8 +1,8 @@
 
 // --- KD tree types/helpers ---
 
-import type { Vec3 } from "../rblx/mesh"
-import { distance } from "../rblx/mesh-deform"
+import type { Vec3 } from "../mesh/mesh"
+import { distance } from "../mesh/mesh-deform"
 
 export class KDNode {
     point: Vec3

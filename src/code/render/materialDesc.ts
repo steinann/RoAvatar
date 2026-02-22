@@ -10,7 +10,7 @@ import { Shader_TextureComposer_FullscreenQuad_Color } from './shaders/textureCo
 import { getRenderer } from './renderer'
 import { Shader_TextureComposer_Flat_Color } from './shaders/textureComposer-flat-color'
 import { fileMeshToTHREEGeometry, type MeshDesc } from './meshDesc'
-import { FileMesh } from '../rblx/mesh'
+import { FileMesh } from '../mesh/mesh'
 import { Shader_TextureComposer_Decal } from './shaders/textureComposer-decal'
 import { Shader_TextureComposer_Gamma } from './shaders/textureComposer-gamma'
 

@@ -5,7 +5,7 @@ import { calculateMotor6Doffset } from "../rblx/scale"
 import { removeInstance } from './renderer';
 import { AbbreviationToFaceControlProperty, FaceBoneNames } from '../rblx/constant';
 import FaceControlsWrapper from '../rblx/instance/FaceControls';
-import type { FileMesh } from '../rblx/mesh';
+import type { FileMesh } from '../mesh/mesh';
 import { SHOW_SKELETON_HELPER } from '../misc/flags';
 
 export const BoneNameToIndex: {[K in string]: number} = {
