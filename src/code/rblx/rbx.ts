@@ -291,7 +291,7 @@ export class Connection {
     }
 }
 
-class Event {
+export class Event {
     _callbacks: ((...args: unknown[]) => unknown)[] = []
 
     Connect(callback: (...args: unknown[]) => unknown) {

@@ -110,29 +110,27 @@ I was too lazy to import css in my components and now im too lazy to start doing
 
 /*Loader source: https://cssloaders.github.io/ */
 .loader {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #fff;
-  box-shadow: 32px 0 #fff, -32px 0 #fff;
+  width: 48px;
+  height: 48px;
+  display: inline-block;
   position: relative;
-  animation: flash 0.5s ease-out infinite alternate;
+  background: #FFF;
+  box-sizing: border-box;
+  animation: flipX 1s linear infinite;
 }
 
-@keyframes flash {
+@keyframes flipX {
   0% {
-    background-color: #FFF2;
-    box-shadow: 32px 0 #FFF2, -32px 0 #FFF;
+    transform: perspective(200px) rotateX(0deg) rotateY(0deg);
   }
   50% {
-    background-color: #FFF;
-    box-shadow: 32px 0 #FFF2, -32px 0 #FFF2;
+    transform: perspective(200px) rotateX(-180deg) rotateY(0deg);
   }
   100% {
-    background-color: #FFF2;
-    box-shadow: 32px 0 #FFF, -32px 0 #FFF2;
+    transform: perspective(200px) rotateX(-180deg) rotateY(-180deg);
   }
 }
+
       
 
 /*Actual css*/

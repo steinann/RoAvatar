@@ -5,7 +5,7 @@ import { OutfitContext } from "./context/outfit-context"
 import { addInstance, getRendererCamera, getRendererControls, mount } from "../code/render/renderer"
 import { AvatarType, LayeredClothingAssetOrder } from "../code/avatar/constant"
 import { API, Authentication } from "../code/api"
-import { Instance, RBX, Vector3 } from "../code/rblx/rbx"
+import { Connection, Instance, RBX, Vector3 } from "../code/rblx/rbx"
 import { Outfit } from "../code/avatar/outfit"
 import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
 import AnimatorWrapper from "../code/rblx/instance/Animator"
@@ -135,6 +135,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [cameraLocked, setCameraLocked] = useState(true)
     const [error, _setError] = useState<string | undefined>(undefined)
     const [warning, _setWarning] = useState<string | undefined>(undefined)
+    const [loadingConnection, setLoadingConnection] = useState<Connection | undefined>(undefined)
+    const [isLoading, setIsLoading] = useState<boolean>(false)
 
     function setError(error: string | undefined) {
         if (error) {
@@ -149,6 +151,15 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
         _setWarning(warning)
     }
+
+    //create loading connection
+    useEffect(() => {
+        if (!loadingConnection) {
+            setLoadingConnection(API.Events.OnLoadingAssets.Connect((newIsLoading) => {
+                setIsLoading(newIsLoading as boolean)
+            }))
+        }
+    }, [loadingConnection])
 
     //set warning based on outfit
     useEffect(() => {
@@ -325,6 +336,17 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }}>
             <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
         </button>
+        {/*Loading icon*/}
+        <span className='loader' style={{
+            opacity: isLoading ? 1 : 0,
+            position: "absolute",
+            bottom: "12px",
+            right: "12px",
+            width: "24px",
+            height: "24px",
+            transition: "0.1s",
+            }}></span>
+
         {/*Error/warning text*/}
         <div className={`preview-info ${previewInfoClass}`}>
             <div className="preview-info-icon">

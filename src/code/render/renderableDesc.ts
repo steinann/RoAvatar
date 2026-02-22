@@ -7,6 +7,7 @@ import { MeshType } from '../rblx/constant';
 import { SkeletonDesc } from './skeletonDesc';
 import { USE_LEGACY_SKELETON } from '../misc/flags';
 import { traverseRigCFrame } from '../rblx/scale';
+import { startCurrentlyLoadingAssets, stopCurrentlyLoadingAssets } from '../api';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -197,6 +198,8 @@ export class RenderableDesc {
     }
 
     async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
+        startCurrentlyLoadingAssets()
+
         const originalResult = this.result
         const originalSkeletonDesc = this.skeletonDesc
         this.result = undefined
@@ -210,6 +213,7 @@ export class RenderableDesc {
 
         const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)
         if (!(threeMesh instanceof THREE.Mesh)) {
+            stopCurrentlyLoadingAssets()
             return threeMesh
         }
 
@@ -241,6 +245,7 @@ export class RenderableDesc {
 
         this.dispose(renderer, scene, originalResult, originalSkeletonDesc)
 
+        stopCurrentlyLoadingAssets()
         return threeMesh
     }
 

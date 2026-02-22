@@ -6,7 +6,7 @@ import type { ItemSort } from "./avatar/sorts"
 import { BODYCOLOR3, ENABLE_API_CACHE } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
 import { FileMesh } from "./mesh/mesh"
-import { RBX } from "./rblx/rbx"
+import { Event, RBX } from "./rblx/rbx"
 
 declare const browser: typeof chrome;
 
@@ -164,6 +164,27 @@ export function parseAssetString(str: string) {
     }
 }
 
+let isCurrentlyLoading = false
+let currentlyLoadingAssets = 0
+
+function _updateCurrentlyLoadingAssets() {
+    const newCurrentlyLoading = currentlyLoadingAssets > 0
+    if (isCurrentlyLoading !== newCurrentlyLoading) {
+        API.Events.OnLoadingAssets.Fire(newCurrentlyLoading)
+    }
+    isCurrentlyLoading = newCurrentlyLoading
+}
+
+export function startCurrentlyLoadingAssets() {
+    currentlyLoadingAssets += 1
+    _updateCurrentlyLoadingAssets()
+}
+
+export function stopCurrentlyLoadingAssets() {
+    currentlyLoadingAssets -= 1
+    _updateCurrentlyLoadingAssets()
+}
+
 const CACHE = {
     "AssetBuffer": new Map<string,ArrayBuffer>(),
     "RBX": new Map<string,RBX>(),
@@ -188,6 +209,9 @@ type ThumbnailInfo = {
 let ThumbnailsToBatch: ThumbnailInfo[] = []
 
 const API = {
+    "Events": {
+        "OnLoadingAssets": new Event()
+    },
     "Generic": {
         LoadImage: async function(url: string): Promise<HTMLImageElement | undefined> {
             return new Promise((resolve) => {
@@ -507,7 +531,9 @@ const API = {
             if (cachedBuffer) {
                 return cachedBuffer
             } else {
+                startCurrentlyLoadingAssets()
                 const response = await RBLXGet(fetchStr, headers)
+                stopCurrentlyLoadingAssets()
                 if (response.status === 200) {
                     const data = await response.arrayBuffer()
                     if (ENABLE_API_CACHE) {
