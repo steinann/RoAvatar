@@ -685,18 +685,18 @@ function createJoint(jointName: string, att0: Instance, att1: Instance) {
 
 	if (!(newMotor && newMotor.className === "Motor6D")) {
 		newMotor = new Instance("Motor6D")
+		newMotor.addProperty(new Property("Name", DataType.String), jointName)
+    	newMotor.addProperty(new Property("Archivable", DataType.Bool), true)
+		newMotor.addProperty(new Property("Active", DataType.Bool), true)
+    	newMotor.addProperty(new Property("Enabled", DataType.Bool), true)
+
+		newMotor.setParent(part1)
     }
 
-    newMotor.addProperty(new Property("Name", DataType.String), jointName)
-    newMotor.addProperty(new Property("Archivable", DataType.Bool), true)
     newMotor.addProperty(new Property("C0", DataType.CFrame), att0.Prop("CFrame"))
 	newMotor.addProperty(new Property("C1", DataType.CFrame), att1.Prop("CFrame"))
     newMotor.addProperty(new Property("Part0", DataType.Referent), part0)
 	newMotor.addProperty(new Property("Part1", DataType.Referent), part1)
-    newMotor.addProperty(new Property("Active", DataType.Bool), true)
-    newMotor.addProperty(new Property("Enabled", DataType.Bool), true)
-
-	newMotor.setParent(part1)
 }
 
 //Updates the cumulative step heights with any new scaling
