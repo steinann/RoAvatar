@@ -1273,7 +1273,7 @@ export class Outfit {
         }
 
         //create buffer
-        console.log(`Outfit is ${bufferSize} bytes`)
+        //console.log(`Outfit is ${bufferSize} bytes`)
         const buffer = new ArrayBuffer(bufferSize)
         const view = new SimpleView(buffer)
 

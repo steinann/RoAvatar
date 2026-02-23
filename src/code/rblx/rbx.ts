@@ -647,9 +647,13 @@ export class Instance {
     }
 
     setProperty(name: string, value: unknown) {
-        name = this.fixPropertyName(name)
+        let property = this._properties.get(name)
 
-        const property = this._properties.get(name)
+        if (!property) {
+            name = this.fixPropertyName(name)
+            property = this._properties.get(name)
+        }
+
         if (property) {
             //special stuff
             if (property.typeID === DataType.Referent && property.value) {
@@ -666,14 +670,6 @@ export class Instance {
                     throw new Error("CFrame orientation can't contain NaN value")
                 }
             }
-
-            //if (property.name === "Name") {
-            //    const valueSTR = value as string
-            //    this.name = valueSTR
-            //}
-            /*if (this.className === "AnimationRigData" && StringBufferProperties.includes(property.name || "")) {
-                saveByteArray([value as ArrayBuffer], property.name || "null")
-            }*/
 
             property._value = value
 
