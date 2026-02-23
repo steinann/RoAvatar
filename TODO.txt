@@ -26,7 +26,7 @@ FEATURES:
         -Remember unsaved outfit
         -Thumbnail customization
         -Load other peoples avatar/outfits
-		-Lines and such when adjusting accessory
+        -Lines and such when adjusting accessory
         -Better alert and warnings system
         -Button that shows assets in bundle
         -Reset to currently wearing
@@ -34,10 +34,11 @@ FEATURES:
         -Publish outfits to Roblox (like in the mobile app)
         -Save outfit as .rbxm
         -Gear inside preview
-		-Autosave setting
-		-Layered clothing quality setting
+        -Autosave setting
+        -Layered clothing quality setting
         -Write custom number in scale sliders
         -Snapping for adjustment sliders
         -Custom tooltip
+        -Highlight searched text in item name
     LOW PRIORITY:
         -Particle rendering
