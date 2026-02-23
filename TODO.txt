@@ -18,6 +18,7 @@ ISSUES (Relating to renderer inaccuracy):
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
     -MATERIALDESC: When a composed texture has transparency the color of the transparent parts may look incorrect
         -This may be caused by this issue with ThreeJS: https://github.com/mrdoob/three.js/issues/32802
+    -MATERIALDESC: bad looking white lines on this asset 17803581539
 
 ISSUES (General):
     -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
