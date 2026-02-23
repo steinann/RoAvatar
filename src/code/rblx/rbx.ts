@@ -340,7 +340,7 @@ let lastInstanceId = 0
 export class Instance {
     _id: number
 
-    name?: string //USED TO MAKE VIEWING EASIER
+    _name?: string //USED TO MAKE VIEWING EASIER
     className: string
     _properties = new Map<string,Property>()
     _referencedBy: Instance[] = []
@@ -553,6 +553,14 @@ export class Instance {
         return "0x" + this._id.toString(16).toUpperCase()
     }
 
+    set name(value: string) {
+        this.addProperty(new Property("Name", DataType.String), value)
+    }
+
+    get name(): string {
+        return this.Prop("Name") as string
+    }
+
     createWrapper() {
         //instance wrappers (notice how its way shorter than the legacy part)
         const wrapper = GetWrapperForInstance(this)
@@ -659,10 +667,10 @@ export class Instance {
                 }
             }
 
-            if (property.name === "Name") {
-                const valueSTR = value as string
-                this.name = valueSTR
-            }
+            //if (property.name === "Name") {
+            //    const valueSTR = value as string
+            //    this.name = valueSTR
+            //}
             /*if (this.className === "AnimationRigData" && StringBufferProperties.includes(property.name || "")) {
                 saveByteArray([value as ArrayBuffer], property.name || "null")
             }*/
@@ -687,43 +695,48 @@ export class Instance {
     }
 
     Property(name: string): unknown {
-        name = this.fixPropertyName(name)
+        let property = this._properties.get(name)
 
-        if (!this.HasProperty(name)) {
-            switch (name) {
-                case "Position":
-                    {
-                        const cf = this.Prop("CFrame") as CFrame
-                        const pos = cf.Position
-                        return new Vector3(pos[0], pos[1], pos[2])
+        if (property) return property.value
+
+        name = this.fixPropertyName(name)
+        property = this._properties.get(name)
+
+        if (property) return property.value
+
+
+        switch (name) {
+            case "Position":
+                {
+                    const cf = this.Prop("CFrame") as CFrame
+                    const pos = cf.Position
+                    return new Vector3(pos[0], pos[1], pos[2])
+                    break
+                }
+            default:
+                {
+                    if (this.className === "Decal" && name === "Texture") {
+                        if (this.HasProperty("TextureContent")) {
+                            return (this.Prop("TextureContent") as Content).uri
+                        } else if (this.HasProperty("ColorMapContent")) {
+                            return (this.Prop("ColorMapContent") as Content).uri
+                        }
+                    } else if (name.includes("Id") || name.includes("ID")) {
+                        const contentVersion = name.replace("Id", "Content").replace("ID","Content")
+                        if (this.HasProperty(contentVersion)) {
+                            const content = this.Prop(contentVersion) as Content
+                            return content.uri
+                        }
                         break
                     }
-                default:
-                    {
-                        if (this.className === "Decal" && name === "Texture") {
-                            if (this.HasProperty("TextureContent")) {
-                                return (this.Prop("TextureContent") as Content).uri
-                            } else if (this.HasProperty("ColorMapContent")) {
-                                return (this.Prop("ColorMapContent") as Content).uri
-                            }
-                        } else if (name.includes("Id") || name.includes("ID")) {
-                            const contentVersion = name.replace("Id", "Content").replace("ID","Content")
-                            if (this.HasProperty(contentVersion)) {
-                                const content = this.Prop(contentVersion) as Content
-                                return content.uri
-                            }
-                            break
-                        }
-                    }
-            }
+                }
         }
 
-        if (!this._properties.get(name)) {
+
+        if (!property) {
             console.log(this)
             throw new Error(`Property: ${name} does not exist`)
         }
-
-        return this._properties.get(name)?.value
     }
 
     Prop(name: string): unknown {

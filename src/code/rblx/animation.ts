@@ -574,12 +574,17 @@ class AnimationTrack {
             return undefined
         }
 
-        const descendants = this.rig.GetDescendants()
+        const foundMotor6D = part1.FindFirstChildOfClass("Motor6D")
+        if (foundMotor6D && foundMotor6D.Prop("Part0") === part0 && foundMotor6D.Prop("Part1") === part1) {
+            return foundMotor6D
+        } else {
+            const descendants = this.rig.GetDescendants()
 
-        for (const child of descendants) {
-            if (child.className === "Motor6D") {
-                if (child.Prop("Part0") === part0 && child.Prop("Part1") === part1) {
-                    return child
+            for (const child of descendants) {
+                if (child.className === "Motor6D") {
+                    if (child.Prop("Part0") === part0 && child.Prop("Part1") === part1) {
+                        return child
+                    }
                 }
             }
         }
