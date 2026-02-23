@@ -3,6 +3,10 @@ import { useEffect } from "react"
 export default function UndoRedo({undo,redo,canUndo,canRedo}: {undo: () => void, redo: () => void, canUndo: boolean, canRedo: boolean}): React.JSX.Element {
     useEffect(() => {
         const keyDownListener = (e: KeyboardEvent) => {
+            if ((e.target as HTMLElement)?.tagName == "INPUT") {
+                return
+            }
+
             if (e.ctrlKey && !e.shiftKey) {
                 if (e.key === "z") {
                     undo()
