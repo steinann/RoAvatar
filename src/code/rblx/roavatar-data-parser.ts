@@ -5,7 +5,7 @@ export type RoAvatarErrorType = "Error" | "Warning" | "Bug"
 export type RoAvatarBrowser = "Dev" | "Chrome" | "Firefox" | "Edge"
 const AllBrowsers: RoAvatarBrowser[] = ["Dev", "Chrome", "Firefox", "Edge"]
 
-function versionToNumber(version: string) {
+export function versionToNumber(version: string) {
     const nums = version.split(".")
     nums.reverse()
 
@@ -24,6 +24,7 @@ export class RoAvatarDataError {
     maxVersion?: string
     browser: RoAvatarBrowser[] = AllBrowsers
     type: RoAvatarErrorType = "Error"
+    color?: string
 
     constructor(name: string) {
         this.name = name
@@ -54,11 +55,21 @@ export class RoAvatarVersions {
     getForBrowser(browser: RoAvatarBrowser) {
         return this[browser]
     }
+
+    fromInstance(instance: Instance) {
+        for (const child of instance.GetChildren()) {
+            const browser = child.Prop("Name") as RoAvatarBrowser
+            const version = child.Prop("Value") as string
+
+            this[browser] = version
+        }
+    }
 }
 
 export class RoAvatarData {
     errors: RoAvatarDataError[] = []
     versions?: RoAvatarVersions
+    criticalOutdated?: RoAvatarVersions
 
     fromInstance(instance: Instance) {
         //parse errors
@@ -67,10 +78,15 @@ export class RoAvatarData {
             for (const errorInst of errorsFolder.GetChildren()) {
                 const error = new RoAvatarDataError(errorInst.Prop("Name") as string)
 
-                //text
+                //appearance
                 const textInst = errorInst.FindFirstChild("Text")
                 if (textInst) {
                     error.text = textInst.Prop("Value") as string
+                }
+
+                const colorInst = errorInst.FindFirstChild("Color")
+                if (colorInst) {
+                    error.color = colorInst.Prop("Value") as string
                 }
 
                 //criteria
@@ -111,13 +127,14 @@ export class RoAvatarData {
         const versionsFolder = instance.FindFirstChild("CurrentVersions")
         if (versionsFolder) {
             this.versions = new RoAvatarVersions()
+            this.versions.fromInstance(versionsFolder)
+        }
 
-            for (const child of versionsFolder.GetChildren()) {
-                const browser = child.Prop("Name") as RoAvatarBrowser
-                const version = child.Prop("Value") as string
-
-                this.versions[browser] = version
-            }
+        //parse criticalOutdated
+        const outdatedVersionsFolder = instance.FindFirstChild("OutdatedVersions")
+        if (outdatedVersionsFolder) {
+            this.criticalOutdated = new RoAvatarVersions()
+            this.criticalOutdated.fromInstance(outdatedVersionsFolder)
         }
     }
 }

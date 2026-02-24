@@ -1831,3 +1831,23 @@ textarea {
     justify-content: center;
     align-items: center;
 }
+
+.left-top-button-error {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(212, 35, 59);
+    animation: errorFlash 1s linear infinite;
+}
+
+@keyframes errorFlash {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
