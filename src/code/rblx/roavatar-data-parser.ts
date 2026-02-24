@@ -136,5 +136,8 @@ export class RoAvatarData {
             this.criticalOutdated = new RoAvatarVersions()
             this.criticalOutdated.fromInstance(outdatedVersionsFolder)
         }
+
+        console.log("RoAvatar Version Data:")
+        console.log(this)
     }
 }
