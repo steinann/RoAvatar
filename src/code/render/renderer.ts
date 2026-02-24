@@ -108,7 +108,7 @@ directionalLight.shadow.mapSize.width = 256;
 directionalLight.shadow.mapSize.height = 256;
 
 const bottomOffset = 1.6
-const shadowPhysicalSize = 4.2
+const shadowPhysicalSize = 5
 directionalLight.shadow.camera.left = -shadowPhysicalSize
 directionalLight.shadow.camera.right = shadowPhysicalSize
 directionalLight.shadow.camera.top = shadowPhysicalSize + bottomOffset
