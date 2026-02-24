@@ -25,10 +25,14 @@ import SettingsButton from './react/settingsButton'
 import ShareButton from './react/shareButton'
 import TryInGameButton from './react/tryInGame'
 import Tip from './react/generic/tip'
+import { AlertContext } from './react/context/alert-context'
+import InfoButton from './react/infoButton'
 
 declare const browser: typeof chrome;
 
 const outfitHistory: Outfit[] = []
+
+let lastAlertTimeout: number | undefined = undefined
 
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
@@ -67,15 +71,22 @@ function App() {
   const addAssetDialogRef = useRef<HTMLDialogElement>(null)
   const addAssetInputRef = useRef<HTMLInputElement>(null)
 
-  function setAlertText(text: string) {
-    if (text.startsWith("W:")) {
-      setAlertIsWarning(true)
-      text = text.replace("W:","")
-    } else {
-      setAlertIsWarning(false)
-    }
-
+  function alert(text: string, duration: number, isWarning: boolean) {
+    console.warn("Alert: ", text)
     _setAlertText(text)
+    setAlertEnabled(true)
+    setAlertIsWarning(isWarning)
+
+    clearTimeout(lastAlertTimeout)
+    lastAlertTimeout = setTimeout(() => {
+      setAlertEnabled(false)
+      lastAlertTimeout = undefined
+    }, duration)
+  }
+
+  function stopAlert() {
+    clearTimeout(lastAlertTimeout)
+    setAlertEnabled(false)
   }
 
   function undo() {
@@ -244,8 +255,7 @@ function App() {
     if (auth && !navigationMenuItems) {
       API.Catalog.GetNavigationMenuItems().then((result) => {
         if (result instanceof Response) {
-          setAlertEnabled(true)
-          setAlertText("Failed to load Marketplace")
+          alert("Failed to load Marketplace", Infinity, false)
         } else {
           setNavigationMenuItems(result)
 
@@ -393,11 +403,11 @@ function App() {
   })
 
   return (
-    <>
+    <AlertContext value={alert}>
       <AuthContext value={auth}>
         <OutfitContext value={outfit}>
           <div className='main'>
-            <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}`} onMouseEnter={() => {setAlertEnabled(false)}}>
+            <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}`} onMouseEnter={stopAlert}>
               {alertText}
             </div>
 
@@ -437,11 +447,7 @@ function App() {
 
                           setOutfit(newOutfit)
                         } else {
-                          setAlertEnabled(true)
-                          setAlertText(`Failed to add asset with id ${id}`)
-                          setTimeout(() => {
-                            setAlertEnabled(false)
-                          }, 3000)
+                          alert(`Failed to add asset with id ${id}`, 3000, false)
                         }
                       })
                     } else {
@@ -453,11 +459,7 @@ function App() {
 
                           setOutfit(newOutfit)
                         } else {
-                          setAlertEnabled(true)
-                          setAlertText(`Failed to add bundle with id ${id}`)
-                          setTimeout(() => {
-                            setAlertEnabled(false)
-                          }, 3000)
+                          alert(`Failed to add bundle with id ${id}`, 3000, false)
                         }
                       })
                     }
@@ -481,7 +483,7 @@ function App() {
 
               {/*save and undo*/}
               <div className="save-and-history">
-                <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitHistory.length} setAlertEnabled={setAlertEnabled} setAlertText={setAlertText}/>
+                <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitHistory.length}/>
                 <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
               </div>
 
@@ -509,6 +511,7 @@ function App() {
                 }}/>
                 <ShareButton/>
                 <TryInGameButton/>
+                <InfoButton/>
               </div>
             </div>
 
@@ -528,7 +531,7 @@ function App() {
               {/*appropriate category element for inventory*/
               subCategoryType ? <>
                 {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
-                (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}>
+                (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}>
 
                 </ItemCategory>)
                 :
@@ -537,13 +540,13 @@ function App() {
               </> : null}
               {/*Marketplace category element*/
               categorySource === "Marketplace" && taxonomy.length > 0 ? <>
-                <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled}/>
+                <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}/>
               </> : null}
             </div>
           </div>
         </OutfitContext>
       </AuthContext>
-    </>
+    </AlertContext>
   )
 }
 

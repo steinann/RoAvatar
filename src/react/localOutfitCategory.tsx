@@ -10,6 +10,7 @@ import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import { imageUrlToDataUrl } from "../code/misc/misc";
 import NothingLoaded from "./nothingLoaded";
+import { AlertContext } from "./context/alert-context";
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
@@ -78,9 +79,10 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
     return {items, searchedItems, isLoading, loadMore, hasLoadedAll, refresh }
 }
 
-export default function LocalOutfitCategory({children, searchData, setOutfit, setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function LocalOutfitCategory({children, searchData, setOutfit}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
+    const alert = useContext(AlertContext)
     
     const [outfitDialogOpen, setOutfitDialogOpen] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
@@ -193,24 +195,20 @@ export default function LocalOutfitCategory({children, searchData, setOutfit, se
                                 setIsSaving(false)
                             })
                         } else {
-                            if (setAlertEnabled && setAlertText) {
-                                setAlertText(items.length >= 250 ? "Too many outfits" : "Failed to save outfit")
-                                setAlertEnabled(true)
-                                setTimeout(() => {
-                                    setAlertEnabled(false)
-                                }, 3000)
+                            if (alert) {
+                                alert(items.length >= 250 ? "Too many outfits" : "Failed to save outfit", 3000, false)
                             }
                         }
                     }}>Create</RadialButton>
                 </div>
             </dialog>
-            <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} buttonClassName="item-template-button" onClick={() => {
+            <ItemCard key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} buttonClassName="item-template-button" onClick={() => {
                 setOutfitDialogOpen(true)
             }}/>
         </>
         {
             itemInfos.map((item) => (
-                <ItemCard isLocalOutfit={true} canEditOutfit={true} forceImage={items[item.id]?.image || "../assets/broken-avatar-200px.png"} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} itemInfo={item} refresh={refresh} onClick={(item) => {
+                <ItemCard isLocalOutfit={true} canEditOutfit={true} forceImage={items[item.id]?.image || "../assets/broken-avatar-200px.png"} key={i++} auth={auth} itemInfo={item} refresh={refresh} onClick={(item) => {
                     onClickFunc(auth, item)
                 }} deleteCallback={() => {
                     //delete outfit

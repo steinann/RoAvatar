@@ -1694,6 +1694,7 @@ textarea {
     transition: none;
     border-radius: 1000px;
     padding: 0.6em 1em;
+    margin-right: 5px;
 }
 
 .tryingame:hover {

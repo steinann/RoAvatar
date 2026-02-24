@@ -5,8 +5,9 @@ import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import type { Outfit } from "../code/avatar/outfit";
+import { AlertContext } from "./context/alert-context";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, setAlertText, setAlertEnabled, showViewButton = false, isLocalOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isLocalOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
         auth?: Authentication,
         itemInfo?: ItemInfo,
@@ -21,8 +22,6 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         onArrowClick?: (itemInfo: ItemInfo, isUp: boolean) => void,
         canEditOutfit?: boolean, 
         refresh?: () => void,
-        setAlertText?: (a: string) => void,
-        setAlertEnabled?: (a: boolean) => void,
         showViewButton?: boolean,
         isLocalOutfit?: boolean,
         interactive?: boolean,
@@ -31,6 +30,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         renameCallback?: (a: string) => void,
     }): React.JSX.Element {
     const outfit = useContext(OutfitContext)
+    const alert = useContext(AlertContext)
     
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
@@ -159,12 +159,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                             API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
                             if (result.status === 200 && refresh) {
                                 refresh()
-                            } else if (setAlertText && setAlertEnabled) {
-                                setAlertText("Failed to update character")
-                                setAlertEnabled(true)
-                                setTimeout(() => {
-                                    setAlertEnabled(false)
-                                }, 3000)
+                            } else if (alert) {
+                                alert("Failed to update character", 3000, false)
                             }
                         })
                     } else if (updateCallback) {
@@ -191,12 +187,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                             API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
                             if (result.status === 200 && refresh) {
                                 refresh()
-                            } else if (setAlertText && setAlertEnabled) {
-                                setAlertText("Failed to delete character")
-                                setAlertEnabled(true)
-                                setTimeout(() => {
-                                    setAlertEnabled(false)
-                                }, 3000)
+                            } else if (alert) {
+                                alert("Failed to delete character", 3000, false)
                             }
                         })
                     } else if (deleteCallback) {
@@ -234,12 +226,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                                 }
 
                                 refresh()
-                            } else if (setAlertText && setAlertEnabled) {
-                                setAlertText("Failed to rename character")
-                                setAlertEnabled(true)
-                                setTimeout(() => {
-                                    setAlertEnabled(false)
-                                }, 3000)
+                            } else if (alert) {
+                                alert("Failed to rename character", 3000, false)
                             }
                         })
                     } else if (renameCallback) {

@@ -134,7 +134,7 @@ type AvatarInventoryItem = {
     offsale: boolean,
 }
 
-export default function MarketplaceCategory({children, searchData, setOutfit, animName, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function MarketplaceCategory({children, searchData, setOutfit, animName, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -202,7 +202,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
         itemComponents = <>
         {
             itemInfos.map((item) => (
-                <ItemCard showViewButton={true} setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} itemInfo={item} refresh={refresh} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
+                <ItemCard showViewButton={true} key={i++} auth={auth} itemInfo={item} refresh={refresh} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {

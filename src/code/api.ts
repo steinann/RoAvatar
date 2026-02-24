@@ -3,10 +3,11 @@ import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
-import { BODYCOLOR3, ENABLE_API_CACHE } from "./misc/flags"
+import { BODYCOLOR3, ENABLE_API_CACHE, ROAVATAR_DATA_URL } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
 import { FileMesh } from "./mesh/mesh"
 import { Event, RBX } from "./rblx/rbx"
+import { RoAvatarData, type RoAvatarBrowser } from "./rblx/roavatar-data-parser"
 
 declare const browser: typeof chrome;
 
@@ -196,6 +197,7 @@ const CACHE = {
     "AvatarInventoryItem": new Map<string,AvatarInventory_Result>(),
     "ItemDetails": new Map<string,ItemDetail_Result>(),
 }
+let CachedRoAvatarData: undefined | RoAvatarData = undefined
 
 type ThumbnailInfo = {
     auth: Authentication,
@@ -239,6 +241,48 @@ const API = {
                     image.src = fetchStr
                 }
             })
+        },
+        GetManifestVersion: function(): string {
+            return (chrome || browser).runtime.getManifest().version
+        },
+        IsDevMode: function(): boolean {
+            return !("update_url" in (chrome || browser).runtime.getManifest())
+        },
+        GetBrowser: function(): RoAvatarBrowser {
+            if (API.Generic.IsDevMode()) {
+                return "Dev"
+            }
+
+            if (!window.chrome) {
+                return "Firefox"
+            }
+
+            if (navigator.userAgent.indexOf("Edg") > -1) {
+                return "Edge"
+            }
+
+            return "Chrome"
+        },
+        GetRoAvatarData: async function(): Promise<RoAvatarData | Response | undefined> {
+            if (CachedRoAvatarData) {
+                return CachedRoAvatarData
+            }
+
+            const rbx = await API.Asset.GetRBX(ROAVATAR_DATA_URL)
+            if (rbx instanceof Response) {
+                return rbx
+            }
+
+            const root = rbx.generateTree()
+            const data = root.FindFirstChild("RoAvatarData")
+            if (data) {
+                const roavatarData = new RoAvatarData()
+                roavatarData.fromInstance(data)
+                CachedRoAvatarData = roavatarData
+                return roavatarData
+            }
+
+            return undefined
         },
         JoinPlace: function(placeId: number) {
             window.location.href = `roblox://placeId=${placeId}`

@@ -3,12 +3,14 @@ import { OutfitContext } from "./context/outfit-context"
 import { API } from "../code/api"
 import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
+import { AlertContext } from "./context/alert-context"
 
 let lastHistoryIndex: number | undefined = undefined
 
-export default function SaveButton({forceOn, historyIndex,historyLength,setAlertEnabled,setAlertText}: {forceOn: boolean, historyIndex: number, historyLength: number, setAlertEnabled: (a: boolean) => void, setAlertText: (a: string) => void}): React.JSX.Element {
+export default function SaveButton({forceOn, historyIndex, historyLength}: {forceOn: boolean, historyIndex: number, historyLength: number}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
+    const alert = useContext(AlertContext)
 
     const [lastSaveIndex, setLastSaveIndex] = useState(0)
     const [justSaved, setJustSaved] = useState(false)
@@ -44,20 +46,12 @@ export default function SaveButton({forceOn, historyIndex,historyLength,setAlert
                 console.log(result)
                 if (result[0]) {
                     setLastSaveIndex(historyIndex)
-                    if (result[1]) {
-                        setAlertText("W:Some items were removed, due to not being owned")
-                        setAlertEnabled(true)
-                        setTimeout(() => {
-                            setAlertEnabled(false)
-                        }, 3000)
+                    if (result[1] && alert) {
+                        alert("Some items were removed, due to not being owned", 3000, true)
                     }
                     setJustSaved(true)
-                } else {
-                    setAlertText("Failed to save outfit")
-                    setAlertEnabled(true)
-                    setTimeout(() => {
-                        setAlertEnabled(false)
-                    }, 3000)
+                } else if (alert) {
+                    alert("Failed to save outfit", 3000, false)
                 }
             })
         }

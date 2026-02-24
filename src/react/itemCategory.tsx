@@ -10,6 +10,7 @@ import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
 import type { Inventory_Result, ItemDetails_Result, Search_Payload } from "../code/api-constant"
 import NothingLoaded from "./nothingLoaded"
+import { AlertContext } from "./context/alert-context"
 
 type ItemList = {itemType: "Asset" | "Bundle", id: number}[]
 async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, searchData: Search_Payload): Promise<undefined | Response | ItemDetails_Result> {
@@ -224,9 +225,10 @@ type AvatarInventoryItem = {
     limitedType?: "Limited" | "LimitedUnique",
 }
 
-export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = [], setAlertText, setAlertEnabled}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], setAlertText?: (a: string) => void, setAlertEnabled?: (a: boolean) => void}): React.JSX.Element {
+export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
+    const alert = useContext(AlertContext)
 
     const outfitNameInputRef: React.RefObject<HTMLInputElement | null> = useRef(null)
     const createOutfitDialogRef: React.RefObject<HTMLDialogElement | null> = useRef(null)
@@ -334,25 +336,21 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                         if (result.status === 200) {
                             refresh()
                         } else {
-                            if (setAlertEnabled && setAlertText) {
-                                setAlertText("Failed to save outfit, if you're missing items try saving to Local instead")
-                                setAlertEnabled(true)
-                                setTimeout(() => {
-                                    setAlertEnabled(false)
-                                }, 4000)
+                            if (alert) {
+                                alert("Failed to save outfit, if you're missing items try saving to Local instead", 4000, false)
                             }
                         }
                 })
                     }}>Create</RadialButton>
                 </div>
             </dialog>
-            <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} buttonClassName="item-template-button" onClick={() => {
+            <ItemCard key={i++} auth={auth} forceImage="../assets/newnewoutfit.png" imageAffectedByTheme={true} itemInfo={new ItemInfo("None", "", -1, "Create")} buttonClassName="item-template-button" onClick={() => {
                 setOutfitDialogOpen(true)
             }}/>
         </> : null}
         {
             itemInfos.map((item) => (
-                <ItemCard setAlertText={setAlertText} setAlertEnabled={setAlertEnabled} key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
+                <ItemCard key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
