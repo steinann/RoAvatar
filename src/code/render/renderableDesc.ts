@@ -98,33 +98,16 @@ export class RenderableDesc {
             }
         }
 
-        //accessory specific
-        const accessory = child.parent
-        if (accessory && accessory.className === "Accessory" && accessory.parent) {
-            const rig = accessory.parent
-            const humanoid = rig.FindFirstChildOfClass("Humanoid")
-            if (humanoid) {
-                const humanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
-                if (humanoidDescription) {
-                    const accessoryDescriptions = humanoidDescription.GetChildren()
-                    for (const accessoryDesc of accessoryDescriptions) {
-                        if (accessoryDesc.className === "AccessoryDescription" && accessoryDesc.Prop("Instance") === accessory) {
-                            /*this.adjustPosition = accessoryDesc.Prop("Position") as Vector3
-                            this.adjustRotation = accessoryDesc.Prop("Rotation") as Vector3
-                            this.adjustScale = accessoryDesc.Prop("Scale") as Vector3*/
-                        }
-                    }
-                }
-            }
-        }
-
         //mesh size
         switch (child.className) {
             case "Part": {
                 const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
                 if (specialMesh) {
                     this.size = specialMesh.Property("Scale") as Vector3
-    
+                    if (specialMesh.HasProperty("Offset")) {
+                        this.cframe = this.cframe.multiply(new CFrame(...(specialMesh.Prop("Offset") as Vector3).toVec3()))
+                    }
+
                     switch (specialMesh.Property("MeshType")) {
                         case MeshType.Head: {
                             this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
