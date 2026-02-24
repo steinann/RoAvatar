@@ -656,10 +656,8 @@ export class Instance {
 
         if (property) {
             //special stuff
-            if (property.typeID === DataType.Referent && property.value) {
-                const valueOld = property.value as Instance
-                valueOld.removeReferencedBy(this)
-            } else if (property.typeID === DataType.CFrame && property.value && value) {
+            const valueOld = property.value as Instance
+            if (property.typeID === DataType.CFrame && property.value && value) {
                 const valueCF = value as CFrame
                 if (isNaN(valueCF.Position[0]) || isNaN(valueCF.Position[1]) || isNaN(valueCF.Position[2])) {
                     console.log(value)
@@ -674,6 +672,9 @@ export class Instance {
             property._value = value
 
             //special stuff
+            if (property.typeID === DataType.Referent && valueOld) {
+                valueOld.removeReferencedBy(this)
+            }
             if (property.typeID === DataType.Referent && property.value) {
                 const valueInstance = property.value as Instance
                 valueInstance.addReferencedBy(this)
@@ -913,6 +914,12 @@ export class Instance {
                     weld.setParent(handle)
 
                     weld.setProperty("Enabled", true)
+
+                    console.log("Part0", weld.Prop("Part0"))
+                    console.log("Part1", weld.Prop("Part1"))
+                    console.log("C0", weld.Prop("C0"))
+                    console.log("C1", weld.Prop("C1"))
+                    console.log(handle.parent)
                 }
             }
         }
