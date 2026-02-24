@@ -253,7 +253,7 @@ const API = {
                 return "Dev"
             }
 
-            if (!window.chrome) {
+            if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1) {
                 return "Firefox"
             }
 
