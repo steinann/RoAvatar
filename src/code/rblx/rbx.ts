@@ -914,12 +914,6 @@ export class Instance {
                     weld.setParent(handle)
 
                     weld.setProperty("Enabled", true)
-
-                    console.log("Part0", weld.Prop("Part0"))
-                    console.log("Part1", weld.Prop("Part1"))
-                    console.log("C0", weld.Prop("C0"))
-                    console.log("C1", weld.Prop("C1"))
-                    console.log(handle.parent)
                 }
             }
         }
