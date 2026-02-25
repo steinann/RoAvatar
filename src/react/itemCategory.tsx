@@ -47,6 +47,8 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [items, setItems] = useState<AvatarInventoryItem[]>([])
 
+    const itemsInIds = items.map((a) => {return a.itemCategory.itemType.toString() + "_" + a.itemId.toString()})
+
     const refresh = () => {
         setItems([])
         setNextPageToken("")
@@ -151,7 +153,11 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
 
                                 const passedSearch = !searchData.keyword || item.itemName.toLowerCase().includes(searchData.keyword.toLowerCase())
 
-                                if (passedSearch && passedFilter) {
+                                //check that item hasnt already been added
+                                const selfItemId = item.itemCategory.itemType.toString() + "_" + item.itemId.toString()
+                                const alreadyAdded = itemsInIds.includes(selfItemId)
+
+                                if (passedSearch && passedFilter && !alreadyAdded) {
                                     newItems.push(item)
                                 }
                             }
