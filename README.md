@@ -7,7 +7,11 @@
 ## Using the Extension
 <a href="https://chromewebstore.google.com/detail/roavatar/ifjleokejkklabhcfhppncfdbkmakhdp" title="Chrome Web Store">
     <img src="https://developer.chrome.com/static/docs/webstore/branding/image/iNEddTyWiMfLSwFD6qGq.png">
-</a><br>
+</a>
+<a href="https://microsoftedge.microsoft.com/addons/detail/roavatar/mienanddicehclnklbnhjefcoimifipd" title="Microsoft Edge Add-ons">
+    <img style="height: 90px" src="https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/add-ons-badge-images/microsoft-edge-add-ons-badge.png">
+</a>
+<br>
 The extension is WIP.
 You can build the newest version yourself OR get the latest stable version from <a href="https://github.com/Mzigi/RoAvatar/releases">releases</a>
 <br>
