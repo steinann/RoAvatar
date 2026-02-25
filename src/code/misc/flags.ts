@@ -5,6 +5,7 @@ export const HAIR_IS_BODYPART = true
 export const BODYCOLOR3 = true
 export const ENABLE_API_CACHE = true
 export const ROAVATAR_DATA_URL = "rbxassetid://102463700065175" //url of model to load that lists issues with specific versions
+export const ROAVATAR_TRYON_PLACE = 135979364355750
 
 //layered clothing
 export const ENABLE_LC_WEIGHT_CACHE = true
