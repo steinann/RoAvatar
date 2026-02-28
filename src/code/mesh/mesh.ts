@@ -12,6 +12,8 @@ export type Vec4 = [number,number,number,number]
 export type Vec3 = [number,number,number]
 export type Vec2 = [number,number]
 
+export type Triangle = [Vec3, Vec3, Vec3]
+
 export type Mat3x3 = [number,number,number,number,number,number,number,number,number]
 export type Mat4x4 = [number,number,number,number,number,number,number,number,number,number,number,number,number,number,number,number]
 
@@ -90,6 +92,11 @@ class COREMESH {
         }
 
         return copy
+    }
+
+    getTriangle(index: number): Triangle {
+        const face = this.faces[index]
+        return [this.verts[face.a].position, this.verts[face.b].position, this.verts[face.c].position]
     }
 
     getTouchingVerts(index: number) {

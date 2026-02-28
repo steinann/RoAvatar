@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { FileMesh, FileMeshSkinning, FileMeshSubset, FileMeshVertex, Vec3 } from "./mesh"
+import type { FileMesh, FileMeshSkinning, FileMeshSubset, FileMeshVertex, Triangle, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "../rblx/rbx"
 import { ENABLE_LC_WEIGHT_CACHE, INFLATE_LAYERED_CLOTHING } from '../misc/flags';
 import { Wait } from '../misc/misc';
@@ -53,6 +53,17 @@ export function normalize(v: Vec3) {
     return divide(v, [mag, mag, mag])
 }
 
+export function cross(a: Vec3, b: Vec3): Vec3 {
+  const ax = a[0], ay = a[1], az = a[2]
+  const bx = b[0], by = b[1], bz = b[2]
+
+  const cx = ay * bz - az * by
+  const cy = az * bx - ax * bz
+  const cz = ax * by - ay * bx
+
+  return [cx, cy, cz]
+}
+
 export function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
     return [
         Math.min(Math.max(lower[0], v0[0]), higher[0]),
@@ -83,6 +94,74 @@ export function getUVtoVertMap(mesh: FileMesh) {
     }
 
     return map
+}
+
+//Source: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm#C++_implementation
+export function ray_intersects_triangle(ray_origin: Vec3, ray_vector: Vec3, triangle: Triangle): Vec3 | null {
+    const epsilon: number = Number.EPSILON;
+
+    const edge1: Vec3 = minus(triangle[1], triangle[0]);
+    const edge2: Vec3 = minus(triangle[2], triangle[0]);
+
+    // Backface culling for CCW-wound triangles.
+    const normal: Vec3 = normalize(cross(edge1, edge2));
+	if (dot(normal, ray_vector) > 0) return null;
+
+    const ray_cross_e2: Vec3 = cross(ray_vector, edge2);
+    const det: number = dot(edge1, ray_cross_e2);
+
+    if (Math.abs(det) < epsilon) return null; // Ray is parallel to triangle
+
+    const inv_det: number = 1.0 / det;
+    const s: Vec3 = minus(ray_origin, triangle[0]);
+    const u: number = inv_det * dot(s, ray_cross_e2);
+
+    if (u < 0.0 || u > 1.0) return null; // Ray passes outside edge2's bounds
+
+    const s_cross_e1: Vec3 = cross(s, edge1);
+    const v: number = inv_det * dot(ray_vector, s_cross_e1);
+
+    if (v < 0.0 || u + v > 1.0) return null; // Ray passes outside edge1's bounds
+
+    // The ray line intersects with the triangle.
+    // We compute t to find where on the ray the intersection is.
+    const t: number = inv_det * dot(edge2, s_cross_e1);
+
+    if (t > epsilon) // Ray intersection
+    {
+        return add(ray_origin, multiply(ray_vector, [t,t,t]));
+    }
+    else // This means that there is a line intersection but not a ray intersection.
+        return null;
+}
+
+// Source: https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+export function barycentric(p: Vec3, triangle: Triangle): Vec3 {
+    const a = triangle[0], b = triangle[1], c = triangle[2]
+    const v0: Vec3 = minus(b, a), v1 = minus(c, a), v2 = minus(p, a);
+    const d00: number = dot(v0, v0);
+    const d01: number = dot(v0, v1);
+    const d11: number = dot(v1, v1);
+    const d20: number = dot(v2, v0);
+    const d21: number = dot(v2, v1);
+    const denom: number = d00 * d11 - d01 * d01;
+    const v = (d11 * d20 - d01 * d21) / denom;
+    const w = (d00 * d21 - d01 * d20) / denom;
+    const u = 1.0 - v - w;
+
+    return [u, v, w];
+}
+
+export function triangleNormal(triangle: Triangle): Vec3 {
+    const a = triangle[0], b = triangle[1], c = triangle[2]
+    const v: Vec3 = minus(b, a);
+    const w: Vec3 = minus(c, a);
+    const N: Vec3 = cross(v, w);
+    const Nnormalized: Vec3 = normalize(N)
+
+    return Nnormalized;
 }
 
 export function transferSkeleton(to: FileMesh, from: FileMesh) {
