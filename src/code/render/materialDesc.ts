@@ -74,10 +74,12 @@ async function renderBodyPartClothingR6(texture: THREE.Texture, clothingType: "s
 class ColorLayer {
     color: Color3
     bodyPart?: number
+    textureType?: TextureType
 
-    constructor(color: Color3, bodyPart?: number) {
+    constructor(color: Color3, bodyPart?: number, textureType: TextureType = "color") {
         this.color = color
         this.bodyPart = bodyPart
+        this.textureType = textureType
     }
 
     isSame(other: MaterialLayer) {
@@ -157,6 +159,20 @@ export class MaterialDesc {
         return propertiesSame && layersSame
     }
 
+    getTexturesOfType(textureType: TextureType) {
+        const urls: string[] = []
+        for (const layer of this.layers) {
+            if (layer instanceof TextureLayer) {
+                const layerURL = layer[textureType]
+                if (layerURL) {
+                    urls.push(layerURL)
+                }
+            }
+        }
+
+        return urls
+    }
+
     async loadTextures(textureType: TextureType): Promise<Map<string,HTMLImageElement>> {
         const textures = new Map<string,HTMLImageElement>()
         const promises: Promise<HTMLImageElement | undefined>[] = []
@@ -194,7 +210,7 @@ export class MaterialDesc {
             let camWidth = 2
             let camHeight = 2
 
-            if (this.avatarType) {
+            if (this.avatarType && this.bodyPart !== BodyPart.Head) {
                 if (this.avatarType === AvatarType.R15) {
                     if (this.bodyPart === BodyPart.Torso) {
                         width = 388
@@ -375,7 +391,7 @@ export class MaterialDesc {
                                 console.warn(`Unsupported uvType: ${layer.uvType}, treating as Normal`)
                         }
                     }
-                } else if (layer instanceof ColorLayer && textureType === "color") {
+                } else if (layer instanceof ColorLayer && textureType === layer.textureType) {
                     const color = layer.color
                     const colorValue = new THREE.Color(color.R, color.G, color.B)
 
@@ -668,6 +684,16 @@ export class MaterialDesc {
                 break
             }
         }
+
+        if (this.getTexturesOfType("normal").length > 0) {
+            this.layers.unshift(new ColorLayer(new Color3(0.5,0.5,1), undefined, "normal"))
+        }
+        if (this.getTexturesOfType("metalness").length > 0) {
+            this.layers.unshift(new ColorLayer(new Color3(0,0,0), undefined, "metalness"))
+        }
+        if (this.getTexturesOfType("roughness").length > 0) {
+            this.layers.unshift(new ColorLayer(new Color3(1,1,1), undefined, "roughness"))
+        }
     }
 
     fromPart(child: Instance) {
@@ -705,15 +731,27 @@ export class MaterialDesc {
                 for (const decal of decals) {
                     if (decal.className === "Decal") {
                         const decalTexture = decal.Property("Texture") as string
-                        const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as Content : undefined
-                        const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as Content : undefined
-                        const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as Content : undefined
+                        const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
+                        const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
+                        const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
 
                         const decalLayer = new TextureLayer()
                         decalLayer.color = decalTexture
-                        decalLayer.metalness = metallnessMap?.uri
-                        decalLayer.normal = normalMap?.uri
-                        decalLayer.roughness = roughnessMap?.uri
+                        if (metallnessMap instanceof Content) {
+                            decalLayer.metalness = metallnessMap?.uri
+                        } else {
+                            decalLayer.metalness = metallnessMap
+                        }
+                        if (normalMap instanceof Content) {
+                            decalLayer.normal = normalMap?.uri
+                        } else {
+                            decalLayer.normal = normalMap
+                        }
+                        if (roughnessMap instanceof Content) {
+                            decalLayer.roughness = roughnessMap?.uri
+                        } else {
+                            decalLayer.roughness = roughnessMap
+                        }
                         decalLayer.uvType = "Normal"
 
                         let ZIndex = 1
@@ -874,15 +912,27 @@ export class MaterialDesc {
             for (const decal of decals) {
                 if (decal.className === "Decal") {
                     const decalTexture = decal.Property("Texture") as string
-                    const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as Content : undefined
-                    const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as Content : undefined
-                    const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as Content : undefined
+                    const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
+                    const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
+                    const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
 
                     const decalLayer = new TextureLayer()
                     decalLayer.color = decalTexture
-                    decalLayer.metalness = metallnessMap?.uri
-                    decalLayer.normal = normalMap?.uri
-                    decalLayer.roughness = roughnessMap?.uri
+                    if (metallnessMap instanceof Content) {
+                        decalLayer.metalness = metallnessMap?.uri
+                    } else {
+                        decalLayer.metalness = metallnessMap
+                    }
+                    if (normalMap instanceof Content) {
+                        decalLayer.normal = normalMap?.uri
+                    } else {
+                        decalLayer.normal = normalMap
+                    }
+                    if (roughnessMap instanceof Content) {
+                        decalLayer.roughness = roughnessMap?.uri
+                    } else {
+                        decalLayer.roughness = roughnessMap
+                    }
 
                     if (child.Prop("Name") as string === "Head" && isAffectedByHumanoid(child)) {
                         decalLayer.uvType = "Normal"

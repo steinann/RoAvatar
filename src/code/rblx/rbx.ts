@@ -753,6 +753,10 @@ export class Instance {
             instance = undefined
         }
 
+        if (instance?.destroyed) {
+            throw new Error("Cannot set parent of instance to a destroyed instance")
+        }
+
         if (this.parent) {
             const index = this.parent.children.indexOf(this)
             if (index !== -1) {

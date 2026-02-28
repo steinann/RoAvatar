@@ -1038,14 +1038,22 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 			}
 		}
 		
-		const face = oldBodyPart.FindFirstChildOfClass("Decal")
-		if (face) {
+		const decals = []
+		const children = oldBodyPart.GetChildren()
+		for (const child of children) {
+			if (child.className === "Decal") {
+				decals.push(child)
+			}
+		}
+		if (decals.length > 0) {
 			const childFace = child.FindFirstChildOfClass("Decal")
 			if (childFace) {
 				childFace.Destroy()
 			}
 			//if (!child.FindFirstChildOfClass("FaceControls")) {
-				face.setParent(child)
+			for (const decal of decals) {
+				decal.setParent(child)
+			}
 			//} else {
 			//	face.Destroy()
 			//}

@@ -5,6 +5,18 @@ export const xmlMagic = "<roblox "
 
 export const RenderedClassTypes = ["Part", "MeshPart"]
 
+export const MakeupType = {
+    "Face": 0,
+    "Lip": 1,
+    "Eye": 2,
+}
+
+export const AssetTypeToMakeupType = {
+    "FaceMakeup": MakeupType.Face,
+    "LipMakeup": MakeupType.Lip,
+    "EyeMakeup": MakeupType.Eye,
+}
+
 export const WrapLayerAutoSkin = {
     "Disabled": 0,
     "EnabledPreserve": 1,

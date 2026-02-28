@@ -272,7 +272,10 @@ export const LayeredClothingAssetOrder: {[K in number]: number} = {
   65: 10, // Layered Shirt (i.e. Shirt Accessory)
   68: 11, // Sweater Accessory
   67: 12, // Jacket Accessory
-  41: 13 // Hair (i.e. Hair Accessory)
+  41: 13, // Hair (i.e. Hair Accessory)
+  88: 14, // FaceMakeup
+  89: 15, // LipMakeup
+  90: 16, // EyeMakeup
 };
 
 /**

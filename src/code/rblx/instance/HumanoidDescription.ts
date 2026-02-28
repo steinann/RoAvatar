@@ -9,16 +9,17 @@ import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { delta_CIEDE2000 } from "../color-similarity";
-import { AccessoryType, AllAnimations, AllBodyParts, AnimationPropToName, animNamesR15, animNamesR6, AssetTypeToAccessoryType, BodyPart, BodyPartEnumToNames, DataType, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
+import { AccessoryType, AllAnimations, AllBodyParts, AnimationPropToName, animNamesR15, animNamesR6, AssetTypeToAccessoryType, AssetTypeToMakeupType, BodyPart, BodyPartEnumToNames, DataType, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
 import { CFrame, Color3, hasSameVal, hasSameValFloat, Instance, isSameColor, isSameVector3, Property, RBX, Vector3 } from "../rbx";
 import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
 import AccessoryDescriptionWrapper from "./AccessoryDescription";
 import AnimatorWrapper from "./Animator";
 import BodyPartDescriptionWrapper from "./BodyPartDescription";
 import { InstanceWrapper } from "./InstanceWrapper";
+import MakeupDescriptionWrapper from "./MakeupDescription";
 
 type ClothingDiffType = "Shirt" | "Pants" | "GraphicTShirt"
-type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory"
+type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory" | "makeup"
 
 function isSameAccessoryDesc(desc0: Instance, desc1: Instance) {
     return hasSameVal(desc0, desc1, "AssetId") &&
@@ -29,6 +30,12 @@ function isSameAccessoryDesc(desc0: Instance, desc1: Instance) {
         isSameVector3(desc0.Prop("Position") as Vector3, desc1.Prop("Position") as Vector3) &&
         isSameVector3(desc0.Prop("Rotation") as Vector3, desc1.Prop("Rotation") as Vector3) &&
         isSameVector3(desc0.Prop("Scale") as Vector3, desc1.Prop("Scale") as Vector3)
+}
+
+function isSameMakeupDesc(desc0: Instance, desc1: Instance) {
+    return hasSameVal(desc0, desc1, "AssetId") &&
+        hasSameVal(desc0, desc1, "MakeupType") &&
+        hasSameVal(desc0, desc1, "Order")
 }
 
 export default class HumanoidDescriptionWrapper extends InstanceWrapper {
@@ -126,7 +133,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns [diffs, addedAccessories, removedAccessories]
     */
-    compare(originalW: HumanoidDescriptionWrapper): [HumanoidDescriptionDiff[], bigint[], bigint[]] {
+    compare(originalW: HumanoidDescriptionWrapper): [HumanoidDescriptionDiff[], bigint[], bigint[], bigint[], bigint[]] {
         const self = this.instance
         const other = originalW.instance
 
@@ -222,6 +229,35 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         if (!accessoriesSame) {
             diffs.push("accessory")
         }
+        
+        //MAKEUP
+        let makeupSame = true
+        const selfMakeupDescriptions = this.getMakeupDescriptions()
+        const otherMakeupDescriptions = originalW.getMakeupDescriptions()
+
+        if (selfMakeupDescriptions.length !== otherMakeupDescriptions.length) {
+            makeupSame = false
+        } else {
+            for (const desc of selfMakeupDescriptions) {
+                let foundSame = false
+
+                for (const otherDesc of otherMakeupDescriptions) {
+                    if (isSameMakeupDesc(desc, otherDesc)) {
+                        foundSame = true
+                        break
+                    }
+                }
+
+                if (!foundSame) {
+                    makeupSame = false
+                    break
+                }
+            }
+        }
+
+        if (!makeupSame) {
+            diffs.push("makeup")
+        }
 
         //ADDED AND REMOVED ACCESSORIES
         const originalIdList = originalW.getAccessoryIds()
@@ -242,7 +278,59 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             }
         }
 
-        return [diffs, addedIds, removedIds]
+        //ADDED AND REMOVED MAKEUP
+        const originalMakeupIdList = originalW.getMakeupIds()
+        const newMakeupIdList = this.getMakeupIds()
+
+        const addedMakeupIds: bigint[] = []
+        const removedMakeupIds: bigint[] = []
+
+        for (const id of newMakeupIdList) {
+            if (!originalMakeupIdList.includes(id)) {
+                addedMakeupIds.push(id)
+            }
+        }
+
+        for (const id of originalMakeupIdList) {
+            if (!newMakeupIdList.includes(id)) {
+                removedMakeupIds.push(id)
+            }
+        }
+
+        return [diffs, addedIds, removedIds, addedMakeupIds, removedMakeupIds]
+    }
+
+    getMakeupDescriptions(): Instance[] {
+        const makeupDescriptions: Instance[] = []
+
+        for (const child of this.instance.GetChildren()) {
+            if (child.className === "MakeupDescription") {
+                makeupDescriptions.push(child)
+            }
+        }
+
+        return makeupDescriptions
+    }
+
+    getMakeupIds(): bigint[] {
+        const descs = this.getMakeupDescriptions()
+        const ids: bigint[] = []
+
+        for (const desc of descs) {
+            ids.push(desc.Prop("AssetId") as bigint)
+        }
+
+        return ids
+    }
+
+    getMakeupDescriptionWithId(id: bigint): Instance | undefined {
+        for (const desc of this.getMakeupDescriptions()) {
+            if (desc.Prop("AssetId") as bigint === id) {
+                return desc
+            }
+        }
+
+        return undefined
     }
 
     getAccessoryDescriptions(): Instance[] {
@@ -425,7 +513,51 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         const assetPromises: Promise<undefined | Response>[] = []
 
         for (const asset of outfit.assets) {
-            switch (asset.assetType.name) {
+            const assetType = asset.assetType.name
+
+            //this doesnt work so just do it manually ig
+            /*if (assetType === "Model") {
+                const rbx = await API.Asset.GetRBX(`rbxassetid://${asset.id}`)
+                if (!(rbx instanceof Response)) {
+                    //auto determine asset type
+                    const root = rbx.generateTree()
+                    const decal = root.FindFirstChildOfClass("Decal")
+                    if (decal && decal.Prop("Name") === "face") {
+                        assetType = "face"
+                    } else {
+                        assetType = "FaceMakeup"
+                    }
+
+                    const shirt = root.FindFirstChildOfClass("Shirt")
+                    if (shirt) {
+                        assetType = "Shirt"
+                    }
+                    
+                    const shirtGraphic = root.FindFirstChildOfClass("ShirtGraphic")
+                    if (shirtGraphic) {
+                        assetType = "TShirt"
+                    }
+
+                    const pants = root.FindFirstChildOfClass("Pants")
+                    if (pants) {
+                        assetType = "Pants"
+                    }
+
+                    const accessory = root.FindFirstChildOfClass("Accessory")
+                    if (accessory) {
+                        assetType = "Hat"
+                        const handle = accessory.FindFirstChild("Handle")
+                        if (handle) {
+                            const wrapLayer = handle.FindFirstChildOfClass("WrapLayer")
+                            if (wrapLayer) {
+                                assetType = "PantsAccessory"
+                            }
+                        }
+                    }
+                }
+            }*/
+
+            switch (assetType) {
                     case "TShirt":
                         this.instance.setProperty("GraphicTShirt", BigInt(asset.id))
                         break
@@ -458,7 +590,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     case "EyebrowAccessory":
                     case "EyelashAccessory":
                         {
-                            const accessoryType = AssetTypeToAccessoryType[asset.assetType.name]
+                            const accessoryType = AssetTypeToAccessoryType[assetType]
 
                             const accessoryDescriptionWrapper = new AccessoryDescriptionWrapper(new Instance("AccessoryDescription"))
                             const instance = accessoryDescriptionWrapper.instance
@@ -522,7 +654,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     case "Head":
                     case "DynamicHead":
                         {
-                            let bodyPartName = asset.assetType.name
+                            let bodyPartName = assetType
                             if (bodyPartName === "DynamicHead") {
                                 bodyPartName = "Head"
                             }
@@ -540,7 +672,23 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                     case "WalkAnimation":
                     case "MoodAnimation":
                         {
-                            this.instance.setProperty(asset.assetType.name, BigInt(asset.id))
+                            this.instance.setProperty(assetType, BigInt(asset.id))
+                        }
+                        break
+                    case "FaceMakeup":
+                    case "LipMakeup":
+                    case "EyeMakeup":
+                    case "Model": //added this here for testing
+                        {
+                            const makeupType = assetType === "Model" ? AssetTypeToMakeupType.FaceMakeup : AssetTypeToMakeupType[assetType]
+
+                            const makeupDescriptionWrapper = new MakeupDescriptionWrapper(new Instance("MakeupDescription"))
+                            const instance = makeupDescriptionWrapper.instance
+                            instance.setProperty("AssetId", BigInt(asset.id))
+                            instance.setProperty("MakeupType", makeupType)
+                            instance.setProperty("Order", asset.meta?.order || 1)
+
+                            instance.setParent(this.instance)
                         }
                         break
                     default:
@@ -906,9 +1054,11 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 if (face) {
                     const head = rig.FindFirstChild("Head")
                     if (head) {
-                        const oldFace = head.FindFirstChildOfClass("Decal")
-                        if (oldFace) {
-                            oldFace.Destroy()
+                        const children = head.GetChildren()
+                        for (const child of children) {
+                            if (child.className === "Decal" && child.GetChildren().length === 0) {
+                                child.Destroy()
+                            }
                         }
                         //if (!head.FindFirstChildOfClass("FaceControls")) { //TODO: find out how roblox avoids adding faces to dynamic heads
                             face.setParent(head)
@@ -923,9 +1073,11 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         } else {
             const head = rig.FindFirstChild("Head")
             if (head) {
-                const oldFace = head.FindFirstChildOfClass("Decal")
-                if (oldFace) {
-                    oldFace.setProperty("Texture","rbxasset://textures/face.png")
+                const children = head.GetChildren()
+                for (const child of children) {
+                    if (child.className === "Decal" && child.GetChildren().length === 0) {
+                        child.setProperty("Texture","rbxasset://textures/face.png")
+                    }
                 }
             }
         }
@@ -939,6 +1091,18 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 if (accessoryDesc.Prop("AssetId") === newAccessoryDesc.Prop("AssetId")) {
                     if (accessoryDesc.Prop("Instance")) {
                         newAccessoryDesc.setProperty("Instance", accessoryDesc.Prop("Instance"))
+                    }
+                }
+            }
+        }
+    }
+
+    _inheritMakeupReferences(originalW: HumanoidDescriptionWrapper) {
+        for (const makeupDesc of originalW.getMakeupDescriptions()) {
+            for (const newMakeupDesc of this.getMakeupDescriptions()) {
+                if (makeupDesc.Prop("AssetId") === newMakeupDesc.Prop("AssetId")) {
+                    if (makeupDesc.Prop("Instance")) {
+                        newMakeupDesc.setProperty("Instance", makeupDesc.Prop("Instance"))
                     }
                 }
             }
@@ -1048,6 +1212,103 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 return value
             }
         }
+
+        return undefined
+    }
+
+    async _applyMakeup(humanoid: Instance, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
+        if (!addedIds || !removedIds) {
+            addedIds = this.getMakeupIds()
+            removedIds = []
+        }
+
+        const rig = humanoid.parent
+        if (!rig) {
+            return undefined
+        }
+
+        if (!rig.FindFirstChild("Head")) {
+            return undefined
+        }
+
+        const avatarType = humanoid.Prop("RigType") === HumanoidRigType.R15 ? AvatarType.R15 : AvatarType.R6
+
+        if (avatarType === AvatarType.R6) return undefined
+
+        // remove old makeup
+        if (!originalW) {
+            for (const makeup of rig.GetChildren()) {
+                if (makeup.className === "Decal" && makeup.GetChildren().length > 0) {
+                    makeup.Destroy()
+                }
+            }
+        } else {
+            const descs = originalW.getMakeupDescriptions()
+            for (const desc of descs) {
+                const makeup = desc.Prop("Instance") as Instance | undefined
+                if (makeup) {
+                    if (removedIds.includes(desc.Prop("AssetId") as bigint)) {
+                        makeup.Destroy()
+                    }
+                }
+            }
+        }
+
+        const promises: Promise<undefined | Response>[] = []
+
+        // add new makeup
+        for (const id of addedIds) {
+            promises.push(new Promise((resolve) => {
+                API.Asset.GetRBX(`rbxassetid://${id}`).then(rbx => {
+                    if (this.cancelApply) resolve(undefined)
+                    if (rbx instanceof RBX) {
+                        const dataModel = rbx.generateTree()
+                        const makeup = dataModel.GetChildren()[0]
+
+                        if (makeup) {
+                            const head = rig.FindFirstChild("Head")
+                            if (head) {
+                                makeup.setParent(head)
+                            }
+
+                            const makeupDesc = this.getMakeupDescriptionWithId(id)
+                            if (makeupDesc) {
+                                makeupDesc.setProperty("Instance", makeup)
+                            }
+                        }
+                        
+                        resolve(undefined)
+                    } else {
+                        resolve(rbx)
+                    }
+                })
+            }))
+        }
+
+        const values = await Promise.all(promises)
+        if (this.cancelApply) return undefined
+
+        for (const value of values) {
+            if (value) {
+                return value
+            }
+        }
+
+        //update order for layered clothing
+        const head = rig.FindFirstChild("Head")
+        if (head) {
+            for (const decal of head.GetChildren()) {
+                if (decal.className === "Decal" && decal.GetChildren().length > 0) {
+                    for (const makeupDesc of this.getMakeupDescriptions()) {
+                        if (makeupDesc.Prop("Instance") === decal) {
+                            decal.setProperty("ZIndex", makeupDesc.Prop("Order"))
+                        }
+                    }
+                }
+            }
+        }
+
+        //console.log(head)
 
         return undefined
     }
@@ -1165,6 +1426,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         promises.push(this._applyBodyParts(humanoid))
         promises.push(this._applyFace(humanoid))
         promises.push(this._applyAnimations(humanoid))
+        promises.push(this._applyMakeup(humanoid))
         
         const values = await Promise.all(promises)
         if (this.cancelApply) return undefined
@@ -1200,7 +1462,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             promises.push(this._applyAll(humanoid))
         } else {
             const originalDescriptionW = new HumanoidDescriptionWrapper(originalDescription)
-            const [diffs, addedAccessories, removedAccessories] = this.compare(originalDescriptionW)
+            const [diffs, addedAccessories, removedAccessories, addedMakeup, removedMakeup] = this.compare(originalDescriptionW)
             
             const miniPromises: Promise<undefined | Response>[] = []
 
@@ -1262,6 +1524,13 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                 }
 
                 miniPromises.push(this._applyAnimations(humanoid, toChange))
+            }
+
+            //makeup
+            this._inheritMakeupReferences(originalDescriptionW)
+
+            if (diffs.includes("makeup")) {
+                miniPromises.push(this._applyMakeup(humanoid, originalDescriptionW, addedMakeup, removedMakeup))
             }
 
             const miniValues = await Promise.all(miniPromises)

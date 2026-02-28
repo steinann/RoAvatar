@@ -193,6 +193,10 @@ export const LayeredAssetTypes = [
     "EyelashAccessory",
 
     "HairAccessory",
+
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup",
 ]
 
 export const SpecialLayeredAssetTypes = [

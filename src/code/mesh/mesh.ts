@@ -756,8 +756,6 @@ export class FileMesh {
         for (let i = 0; i < this.skinning.numSubsets; i++) {
             this.skinning.subsets.push(readSubset(view))
         }
-
-        console.log(this.skinning)
     }
 
     readChunkHSRAVIS(view: SimpleView, version: number) {
@@ -1084,10 +1082,6 @@ export class FileMesh {
                 break
             default:
                 console.warn(`Failed to read mesh, unknown version: ${version}`)
-        }
-
-        if (this.skinning) {
-            console.log(this.skinning)
         }
 
         const issue = this.getValidationIssue()
