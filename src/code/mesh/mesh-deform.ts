@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { FileMesh, FileMeshSkinning, FileMeshSubset, FileMeshVertex, Triangle, Vec3 } from "./mesh"
+import type { FileMesh, FileMeshSkinning, FileMeshSubset, FileMeshVertex, Triangle, Vec2, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "../rblx/rbx"
 import { ENABLE_LC_WEIGHT_CACHE, INFLATE_LAYERED_CLOTHING } from '../misc/flags';
 import { Wait } from '../misc/misc';
@@ -162,6 +162,107 @@ export function triangleNormal(triangle: Triangle): Vec3 {
     const Nnormalized: Vec3 = normalize(N)
 
     return Nnormalized;
+}
+
+// Source: https://stackoverflow.com/questions/2924795/fastest-way-to-compute-point-to-triangle-distance-in-3d
+export function closestPointTriangle(p: Vec3, triangle: Triangle): Vec3 {
+    const a = triangle[0], b = triangle[1], c = triangle[2]
+
+    const ab: Vec3 = minus(b, a);
+    const ac: Vec3 = minus(c, a);
+    const ap: Vec3 = minus(p, a);
+
+    const d1: number = dot(ab, ap);
+    const d2: number = dot(ac, ap);
+    if (d1 <= 0.0 && d2 <= 0.0) return a; //#1
+
+    const bp: Vec3 = minus(p, b);
+    const d3: number = dot(ab, bp);
+    const d4: number = dot(ac, bp);
+    if (d3 >= 0.0 && d4 <= d3) return b; //#2
+
+    const cp: Vec3 = minus(p, c);
+    const d5: number = dot(ab, cp);
+    const d6: number = dot(ac, cp);
+    if (d6 >= 0.0 && d5 <= d6) return c; //#3
+
+    const vc: number = d1 * d4 - d3 * d2;
+    if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0)
+    {
+        const v: number = d1 / (d1 - d3);
+        return add(a, multiply([v,v,v], ab)); //#4
+    }
+
+    const vb: number = d5 * d2 - d1 * d6;
+    if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0)
+    {
+        const v: number = d2 / (d2 - d6);
+        return add(a, multiply([v,v,v], ac)); //#5
+    }
+
+    const va: number = d3 * d6 - d5 * d4;
+    if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0)
+    {
+        const v: number = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+        return add(b, multiply([v,v,v], minus(c, b))); //#6
+    }
+
+    const denom: number = 1.0 / (va + vb + vc);
+    const v: number = vb * denom;
+    const w: number = vc * denom;
+    return add(add(a, multiply([v,v,v], ab)), multiply([w,w,w], ac)); //#0
+}
+
+export function inheritUV(to: FileMesh, from: FileMesh) {
+    const faceCenters = from.coreMesh.faces.map((f) => {
+        const va = from.coreMesh.verts[f.a]
+        const vb = from.coreMesh.verts[f.b]
+        const vc = from.coreMesh.verts[f.c]
+
+        const center = divide(add(add(va.position, vb.position), vc.position), [3,3,3])
+
+        return center
+    })
+    const faceIndices = from.coreMesh.faces.map((_, i) => {return i})
+
+    const faceKD = buildKDTree(faceCenters, faceIndices)
+
+    for (let i = 0; i < to.coreMesh.verts.length; i++) {
+        const vert = to.coreMesh.verts[i]
+
+        const closest = nearestSearch(faceKD, vert.position)
+        const closestI = closest.index
+
+        const face = from.coreMesh.faces[closestI]
+        const va = from.coreMesh.verts[face.a]
+        const vb = from.coreMesh.verts[face.b]
+        const vc = from.coreMesh.verts[face.c]
+
+        const triangle = from.coreMesh.getTriangle(closestI)
+
+        const closestPointPos = closestPointTriangle(vert.position, triangle)
+        const barycentricPos = barycentric(closestPointPos, triangle)
+
+        const newUV: Vec2 = [
+            barycentricPos[0] * va.uv[0] + barycentricPos[1] * vb.uv[0] + barycentricPos[2] * vc.uv[0],
+            barycentricPos[0] * va.uv[1] + barycentricPos[1] * vb.uv[1] + barycentricPos[2] * vc.uv[1],
+        ]
+
+        if (closest.dist > 0.5) { //invalidates uv
+            newUV[0] = -Infinity
+            newUV[1] = -Infinity
+        }
+
+        vert.uv = newUV
+    }
+
+    //delete verts with invalid uvs
+    //for (let i = to.coreMesh.verts.length - 1; i >= 0; i--) {
+    //    const vert = to.coreMesh.verts[i]
+    //    if (vert.uv[0] < 0 || vert.uv[0] > 1 || vert.uv[1] < 0 || vert.uv[1] > 1) {
+    //        to.deleteVert(i)
+    //    }
+    //}
 }
 
 export function transferSkeleton(to: FileMesh, from: FileMesh) {

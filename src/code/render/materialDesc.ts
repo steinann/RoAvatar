@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId, RenderedClassTypes } from "../rblx/constant"
-import { Color3, Color3uint8, Content, isAffectedByHumanoid, type Instance } from "../rblx/rbx"
+import { CFrame, Color3, Color3uint8, Content, isAffectedByHumanoid, Vector2, type Instance } from "../rblx/rbx"
 import { AvatarType } from '../avatar/constant'
 import { API } from '../api'
 import { TextureComposer } from './textureComposer'
@@ -13,6 +13,7 @@ import { fileMeshToTHREEGeometry, type MeshDesc } from './meshDesc'
 import { FileMesh } from '../mesh/mesh'
 import { Shader_TextureComposer_Decal } from './shaders/textureComposer-decal'
 import { Shader_TextureComposer_Gamma } from './shaders/textureComposer-gamma'
+import { rad } from '../misc/misc'
 
 async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
     let instruction: THREE.Mesh
@@ -71,6 +72,34 @@ async function renderBodyPartClothingR6(texture: THREE.Texture, clothingType: "s
     return instruction
 }
 
+function mapImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement | HTMLCanvasElement, sX: number, sY: number, sW: number, sH: number, oX: number, oY: number, oW: number, oH: number, rotation: number = 0) {
+    ctx.save()
+    ctx.translate(oX,oY)
+    ctx.rotate(rad(rotation))
+    ctx.translate(-oX,-oY)
+
+    //ctx.drawImage(img, sX, sY, sW, sH, oX - 2, oY - 2, oW + 4, oH + 4)
+    ctx.drawImage(img, sX, sY, sW, sH, oX, oY, oW, oH)
+
+    ctx.restore()
+}
+
+function fastMask(mask: HTMLImageElement, image: HTMLImageElement) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error("Canvas context missing")
+    }
+
+    canvas.width = mask.width
+    canvas.height = mask.height
+    ctx.drawImage(mask, 0, 0, mask.width, mask.height)
+    ctx.globalCompositeOperation = "source-in"
+    ctx.drawImage(image, 0, 0, mask.width, mask.height)
+
+    return canvas
+}
+
 class ColorLayer {
     color: Color3
     bodyPart?: number
@@ -125,6 +154,8 @@ type MaterialLayer = ColorLayer | TextureLayer
 export class MaterialDesc {
     layers: MaterialLayer[] = []
 
+    isDecal: boolean = false
+
     transparent: boolean = false
     transparency: number = 0
     doubleSided: boolean = false
@@ -136,13 +167,22 @@ export class MaterialDesc {
     bodyPart?: number //should only be accounted for if uvType != Normal in TextureLayer
     avatarType?: AvatarType
 
+    //WrapTextureTransfer
+    wrapTextureTarget?: string
+    wrapTextureTargetOrigin?: CFrame
+    wrapTextureMinBound?: Vector2
+    wrapTextureMaxBound?: Vector2
+
+    //result
     createdTextures?: THREE.Texture[] = []
 
     isSame(other: MaterialDesc) {
-        const propertiesSame = this.transparent === other.transparent &&
+        const propertiesSame =  this.isDecal === other.isDecal &&
+                                this.transparent === other.transparent &&
                                 Math.round(this.transparency * 100) === Math.round(other.transparency * 100) &&
                                 this.doubleSided === other.doubleSided &&
-                                this.visible === other.visible
+                                this.visible === other.visible &&
+                                this.wrapTextureTarget === other.wrapTextureTarget
         
         let layersSame = true
         if (this.layers.length !== other.layers.length) {
@@ -202,7 +242,32 @@ export class MaterialDesc {
     }
 
     async compileTexture(textureType: TextureType, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
-        if (this.layers.length > 1 || (this.layers[0] instanceof ColorLayer)) {
+        let hasSpecialUVType = false
+        let hasColorLayer = false
+        let hasLayerOfType = false
+
+        for (const layer of this.layers) {
+            if (layer instanceof TextureLayer) {
+                if (layer.uvType !== "Normal") {
+                    hasSpecialUVType = true
+                }
+                if (layer[textureType] && layer[textureType].length > 0) {
+                    hasLayerOfType = true
+                }
+            }
+
+            if (layer instanceof ColorLayer) {
+                hasColorLayer = true
+                if (layer.textureType === textureType) {
+                    hasLayerOfType = true
+                }
+            }
+        }
+
+        if (!hasLayerOfType) return
+
+        //full texture compositing
+        if (hasSpecialUVType) {
             const layerTextures = await this.loadTextures(textureType)
 
             let width = 2
@@ -513,6 +578,72 @@ export class MaterialDesc {
             //document.body.appendChild(canvas)
             texture.needsUpdate = true
             return [texture, hasTransparency]
+        } else if (this.layers.length > 1 || hasColorLayer) { //simple texture compositing
+            const layerTextures = await this.loadTextures(textureType)
+            const colorTextures = await this.loadTextures("color")
+
+            const canvas = document.createElement("canvas")
+            const ctx = canvas.getContext("2d")
+
+            let imgWidth = 2
+            let imgHeight = 2
+            for (const [, img] of layerTextures) {
+                imgWidth = Math.max(imgWidth, img.width)
+                imgHeight = Math.max(imgHeight, img.height)
+            }
+            canvas.width = imgWidth
+            canvas.height = imgHeight
+
+            if (!ctx) {
+                throw new Error("Failed to get CanvasContext")
+            }
+
+            const texture = new THREE.CanvasTexture(canvas)
+            texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+            texture.wrapS = THREE.RepeatWrapping
+            texture.wrapT = THREE.RepeatWrapping
+
+            for (const layer of this.layers) {
+                if (layer instanceof TextureLayer && layer[textureType]) {
+                    let layerTexture: HTMLImageElement | HTMLCanvasElement | undefined = layerTextures.get(layer[textureType])
+                    if (layerTexture && textureType !== "color" && layer["color"]) {
+                        const colorTexture = colorTextures.get(layer["color"])
+                        if (colorTexture) {
+                            layerTexture = fastMask(colorTexture, layerTexture)
+                            //const maskedImageData = applyCanvasMask(layerTexture, colorTexture, colorTexture.width, colorTexture.height)
+                            //layerTexture = imageDataToCanvas(maskedImageData)
+                        }
+                    }
+
+                    if (layerTexture) {
+                        mapImg(ctx, layerTexture, 0, 0, layerTexture.width, layerTexture.height, 0, 0, canvas.width, canvas.height)
+                    }
+                } else if (layer instanceof ColorLayer && layer.textureType === textureType) {
+                    const color = layer.color.toColor3uint8()
+                    ctx.fillStyle = `rgb(${color.R},${color.G},${color.B})`
+                    ctx.fillRect(0,0,canvas.width,canvas.height)
+                }
+            }
+
+            //set transparent to false if color layer has no transparent pixels
+            const imageData = ctx.getImageData(0,0, canvas.width, canvas.height)
+            const data = imageData.data
+            
+            let hasTransparency = false
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i] < 255) {
+                    hasTransparency = true
+                    break
+                }
+            }
+
+            if (!this.transparent) {
+                hasTransparency = false
+            }
+
+            //document.body.appendChild(canvas)
+            texture.needsUpdate = true
+            return [texture, hasTransparency]
         } else { //if theres only one texture, no composing is needed
             let textureUrl: string | undefined = undefined
 
@@ -605,6 +736,9 @@ export class MaterialDesc {
                 visible: this.visible,
                 vertexColors: true,
                 shadowSide: THREE.BackSide,
+                polygonOffset: this.isDecal ? true : false,
+                polygonOffsetFactor: this.isDecal ? -1.0 : undefined,
+                polygonOffsetUnits: this.isDecal ? 0.05 : undefined,
             })
         } else { //NOT PBR
             material = new THREE.MeshPhongMaterial({
@@ -617,6 +751,9 @@ export class MaterialDesc {
                 visible: this.visible,
                 vertexColors: true,
                 shadowSide: THREE.BackSide,
+                polygonOffset: this.isDecal ? true : false,
+                polygonOffsetFactor: this.isDecal ? -1.0 : undefined,
+                polygonOffsetUnits: this.isDecal ? 0.05 : undefined,
             })
         }
 
@@ -681,6 +818,11 @@ export class MaterialDesc {
             case "MeshPart": {
                 this.fromMeshPart(child)
                 
+                break
+            }
+            case "Decal": {
+                this.fromDecal(child)
+
                 break
             }
         }
@@ -910,7 +1052,7 @@ export class MaterialDesc {
 
             const decals = child.GetChildren()
             for (const decal of decals) {
-                if (decal.className === "Decal") {
+                if (decal.className === "Decal" && !decal.FindFirstChildOfClass("WrapTextureTransfer")) {
                     const decalTexture = decal.Property("Texture") as string
                     const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
                     const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
@@ -956,6 +1098,79 @@ export class MaterialDesc {
             for (const decalFound of decalsFound) {
                 this.layers.push(decalFound[1])
             }
+        }
+    }
+
+    fromDecal(child: Instance) {
+        this.isDecal = true
+        this.transparent = true
+        //this.transparency = 0.5
+
+        //this.layers.push(new ColorLayer(new Color3(1,1,1)))
+
+        const wrapTextureTransfer = child.FindFirstChildOfClass("WrapTextureTransfer")
+        if (wrapTextureTransfer) {
+            this.fromWrapTextureTransfer(wrapTextureTransfer)
+        }
+
+        //we dont actually care about child is we just care about all the decals in child.parent
+        if (child.parent) {
+            const decalsFound: [number, TextureLayer][] = []
+
+            const decals = child.parent.GetChildren()
+            for (const decal of decals) {
+                if (decal.className === "Decal" && decal.FindFirstChildOfClass("WrapTextureTransfer")) {
+                    const decalTexture = decal.Property("Texture") as string
+                    const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
+                    const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
+                    const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
+
+                    const decalLayer = new TextureLayer()
+                    decalLayer.color = decalTexture
+                    if (metallnessMap instanceof Content) {
+                        decalLayer.metalness = metallnessMap?.uri
+                    } else {
+                        decalLayer.metalness = metallnessMap
+                    }
+                    if (normalMap instanceof Content) {
+                        decalLayer.normal = normalMap?.uri
+                    } else {
+                        decalLayer.normal = normalMap
+                    }
+                    if (roughnessMap instanceof Content) {
+                        decalLayer.roughness = roughnessMap?.uri
+                    } else {
+                        decalLayer.roughness = roughnessMap
+                    }
+
+                    decalLayer.uvType = "Normal"
+                    let ZIndex = 1
+                    if (decal.HasProperty("ZIndex")) {
+                        ZIndex = decal.Prop("ZIndex") as number
+                    }
+
+                    decalsFound.push([ZIndex, decalLayer])
+                }
+            }
+
+            decalsFound.sort((a, b) => {
+                return a[0] - b[0]
+            })
+
+            for (const decalFound of decalsFound) {
+                this.layers.push(decalFound[1])
+            }
+        }
+    }
+
+    fromWrapTextureTransfer(child: Instance) {
+        this.wrapTextureMinBound = child.Prop("UVMinBound") as Vector2
+        this.wrapTextureMaxBound = child.Prop("UVMaxBound") as Vector2
+
+        const wrapTarget = child.parent?.parent?.FindFirstChildOfClass("WrapTarget")
+        if (wrapTarget) {
+            this.wrapTextureTarget = wrapTarget.Prop("CageMeshId") as string
+            this.wrapTextureTargetOrigin = wrapTarget.Prop("CageOrigin") as CFrame
         }
     }
 }

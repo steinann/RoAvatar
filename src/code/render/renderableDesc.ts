@@ -77,13 +77,22 @@ export class RenderableDesc {
     fromInstance(child: Instance) {
         this.instance = child
 
-        //cframe
-        if (child.HasProperty("CFrame")) {
-            this.cframe = child.Prop("CFrame") as CFrame
+        let part: Instance | undefined = child
+        if (part.className !== "Part" && part.className !== "MeshPart") {
+            if (part.parent && (part.parent.className === "Part" || part.parent.className === "MeshPart")) {
+                part = part.parent
+            } else {
+                part = undefined
+            }
+        }
 
-            if (child.FindFirstChildOfClass("WrapLayer")) {
-                if (child.parent && child.parent.parent) {
-                    const hrp = child.parent.parent.FindFirstChild("HumanoidRootPart")
+        //cframe
+        if (part && part.HasProperty("CFrame")) {
+            this.cframe = part.Prop("CFrame") as CFrame
+
+            if (part.FindFirstChildOfClass("WrapLayer")) {
+                if (part.parent && part.parent.parent) {
+                    const hrp = part.parent.parent.FindFirstChild("HumanoidRootPart")
                     if (hrp) {
                         this.cframe = hrp.Prop("CFrame") as CFrame
                     }
@@ -92,54 +101,56 @@ export class RenderableDesc {
         }
 
         //skinning
-        if (isAffectedByHumanoid(child)) {
-            if (child.Prop("Name") !== "Head") {
+        if (part && isAffectedByHumanoid(part)) {
+            if (part.Prop("Name") !== "Head") {
                 this.isBodyPart = true
             }
         }
 
         //mesh size
-        switch (child.className) {
-            case "Part": {
-                const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
-                if (specialMesh) {
-                    this.size = specialMesh.Property("Scale") as Vector3
-                    if (specialMesh.HasProperty("Offset")) {
-                        this.cframe = this.cframe.multiply(new CFrame(...(specialMesh.Prop("Offset") as Vector3).toVec3()))
+        if (part) {
+            switch (part.className) {
+                case "Part": {
+                    const specialMesh = part.FindFirstChildOfClass("SpecialMesh")
+                    if (specialMesh) {
+                        this.size = specialMesh.Property("Scale") as Vector3
+                        if (specialMesh.HasProperty("Offset")) {
+                            this.cframe = this.cframe.multiply(new CFrame(...(specialMesh.Prop("Offset") as Vector3).toVec3()))
+                        }
+
+                        switch (specialMesh.Property("MeshType")) {
+                            case MeshType.Head: {
+                                this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
+                                break
+                            }
+                            default: {
+                                break
+                            }
+                        }
+                    }
+        
+                    break
+                }
+                case "MeshPart": {
+                    this.size = part.Property("Size") as Vector3
+
+                    //wrap layer
+                    const wrapLayer = part.FindFirstChildOfClass("WrapLayer")
+
+                    let model = undefined
+                    if (part.parent?.className === "Model") {
+                        model = part.parent
+                    }
+                    if (part.parent?.parent?.className === "Model") {
+                        model = part.parent.parent
                     }
 
-                    switch (specialMesh.Property("MeshType")) {
-                        case MeshType.Head: {
-                            this.size = this.size.multiply(new Vector3(0.8, 0.8, 0.8))
-                            break
-                        }
-                        default: {
-                            break
-                        }
+                    if (wrapLayer && model) {
+                        this.size = new Vector3(1,1,1)
                     }
-                }
-    
-                break
-            }
-            case "MeshPart": {
-                this.size = child.Property("Size") as Vector3
 
-                //wrap layer
-                const wrapLayer = child.FindFirstChildOfClass("WrapLayer")
-
-                let model = undefined
-                if (child.parent?.className === "Model") {
-                    model = child.parent
+                    break
                 }
-                if (child.parent?.parent?.className === "Model") {
-                    model = child.parent.parent
-                }
-
-                if (wrapLayer && model) {
-                    this.size = new Vector3(1,1,1)
-                }
-
-                break
             }
         }
 
@@ -250,9 +261,15 @@ export class RenderableDesc {
             let resultCF = this.cframe
 
             if (this.isSkinned && this.instance) {
-                const hrp = this.instance.parent?.FindFirstChild("HumanoidRootPart")
+                let partToUse = this.instance
+                if (partToUse.className === "Decal" && partToUse.parent) {
+                    partToUse = partToUse.parent
+                }
+
+                const hrp = partToUse.parent?.FindFirstChild("HumanoidRootPart")
+
                 if (hrp) {
-                    resultCF = (hrp.Prop("CFrame") as CFrame).multiply(traverseRigCFrame(this.instance))
+                    resultCF = (hrp.Prop("CFrame") as CFrame).multiply(traverseRigCFrame(partToUse))
                 }
             }
 
@@ -268,7 +285,11 @@ export class RenderableDesc {
                     this.result.bindMatrix.copy(this.result.matrixWorld.clone())
                     this.result.bindMatrixInverse.copy(this.result.matrixWorld.clone().invert())
                 }
-                this.skeletonDesc.update(this.instance)
+                if (this.instance.className !== "Decal") {
+                    this.skeletonDesc.update(this.instance)
+                } else if (this.instance.parent) {
+                    this.skeletonDesc.update(this.instance.parent)
+                }
             }
         }
     }

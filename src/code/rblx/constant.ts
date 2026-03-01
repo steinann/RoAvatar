@@ -3,7 +3,7 @@ export const xmlMagic = "<roblox "
 
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
-export const RenderedClassTypes = ["Part", "MeshPart"]
+export const RenderedClassTypes = ["Part", "MeshPart", "Decal"]
 
 export const MakeupType = {
     "Face": 0,
@@ -382,7 +382,7 @@ export const DataType = {
     "Axes": 0x0a, //NOT IMPLEMENTED
     "BrickColor": 0x0b,
     "Color3": 0x0c,
-    "Vector2": 0x0d, //NOT IMPLEMENTED
+    "Vector2": 0x0d,
     "Vector3": 0x0e,
     "CFrame": 0x10,
     "Enum": 0x12,

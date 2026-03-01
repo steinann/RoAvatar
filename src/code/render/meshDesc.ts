@@ -1,13 +1,14 @@
 import * as THREE from 'three'
 import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes, WrapLayerAutoSkin } from "../rblx/constant"
-import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx"
+import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../rblx/rbx"
 import { API } from '../api'
 import { FileMesh } from '../mesh/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton } from '../mesh/mesh-deform'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV } from '../mesh/mesh-deform'
 import { AUTO_SKIN_EVERYTHING, LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
 import { BoneNameToIndex } from './legacy-skeleton'
 import { RBFDeformerPatch } from '../mesh/cage-mesh-deform'
 import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
+import { mapNum } from '../misc/misc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -212,6 +213,12 @@ export class MeshDesc {
     //faces
     headMesh?: string
 
+    //WrapTextureTransfer
+    wrapTextureTarget?: string
+    wrapTextureTargetOrigin?: CFrame
+    wrapTextureMinBound?: Vector2
+    wrapTextureMaxBound?: Vector2
+
     //result data
     compilationTimestamp: number = -1
     instance?: Instance
@@ -227,7 +234,8 @@ export class MeshDesc {
             this.scaleIsRelative === other.scaleIsRelative &&
             this.mesh === other.mesh &&
             this.canHaveSkinning === other.canHaveSkinning &&
-            this.headMesh === other.headMesh
+            this.headMesh === other.headMesh &&
+            this.wrapTextureTarget === other.wrapTextureTarget
         
         if (!singularTrue) {
             return singularTrue
@@ -454,6 +462,54 @@ export class MeshDesc {
             the_ref_mesh = undefined
         }
 
+        //wraptexturetransfer
+        if (this.wrapTextureTarget && this.wrapTextureTargetOrigin && this.wrapTextureMinBound && this.wrapTextureMaxBound) {
+            //load meshes
+            const meshMap = new Map<string,FileMesh>()
+
+            const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
+            meshPromises.push(promiseForMesh(this.wrapTextureTarget))
+
+            const values = await Promise.all(meshPromises)
+            for (const [url, mesh] of values) {
+                if (mesh instanceof FileMesh) {
+                    meshMap.set(url, mesh)
+                } else {
+                    return mesh
+                }
+            }
+
+            const targetCage = meshMap.get(this.wrapTextureTarget)!
+            offsetMesh(targetCage, this.wrapTextureTargetOrigin)
+            //// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            //mesh.size
+
+            for (let i = targetCage.coreMesh.verts.length - 1; i >= 0; i--) {
+                const vert = targetCage.coreMesh.verts[i]
+
+                vert.uv = [mapNum(vert.uv[0], this.wrapTextureMinBound.X, this.wrapTextureMaxBound.X, 0, 1),
+                            mapNum(vert.uv[1] + 0.05, this.wrapTextureMinBound.Y, this.wrapTextureMaxBound.Y, 0, 1)]
+
+                //if (vert.uv[0] < 0 || vert.uv[0] > 1 || vert.uv[1] < 0 || vert.uv[1] > 1) {
+                //    targetCage.deleteVert(i)
+                //    vert.uv = [-Infinity, -Infinity]
+                //}
+            }
+
+            if (targetCage.coreMesh.faces.length > 0) {
+                inheritUV(mesh, targetCage)
+            }
+
+            for (let i = mesh.coreMesh.verts.length - 1; i >= 0; i--) {
+                const vert = mesh.coreMesh.verts[i]
+
+                if (vert.uv[0] < -0.05 || vert.uv[0] > 1.05 || vert.uv[1] < -0.05 || vert.uv[1] > 1.05) {
+                //    targetCage.deleteVert(i)
+                    vert.uv = [-Infinity, -Infinity]
+                }
+            }
+        }
+
         //let canIncludeSkinning = true
         //if (this.instance?.Prop("Name") === "Head") {
         //    canIncludeSkinning = false
@@ -497,14 +553,24 @@ export class MeshDesc {
 
         this.instance = child
 
-        switch (child.className) {
+        const wrapTextureTransfer = child.FindFirstChildOfClass("WrapTextureTransfer")
+        let toUse = child
+        if (child.parent && child.className === "Decal") {
+            toUse = child.parent
+        }
+
+        if (wrapTextureTransfer) {
+            this.fromWrapTextureTransfer(wrapTextureTransfer)
+        }
+        
+        switch (toUse.className) {
             case "Part": {
-                this.fromPart(child)
+                this.fromPart(toUse)
     
                 break
             }
             case "MeshPart": {
-                this.fromMeshPart(child)
+                this.fromMeshPart(toUse)
 
                 break
             }
@@ -641,6 +707,17 @@ export class MeshDesc {
             const targetCageOrigin = wrapDeformer.Prop("CageOrigin") as CFrame
 
             this.deformerDesc = new WrapDeformerDesc(cage, cageOrigin, targetCage, targetCageOrigin)
+        }
+    }
+
+    fromWrapTextureTransfer(child: Instance) {
+        this.wrapTextureMinBound = child.Prop("UVMinBound") as Vector2
+        this.wrapTextureMaxBound = child.Prop("UVMaxBound") as Vector2
+
+        const wrapTarget = child.parent?.parent?.FindFirstChildOfClass("WrapTarget")
+        if (wrapTarget) {
+            this.wrapTextureTarget = wrapTarget.Prop("CageMeshId") as string
+            this.wrapTextureTargetOrigin = wrapTarget.Prop("CageOrigin") as CFrame
         }
     }
 }

@@ -1260,6 +1260,46 @@ export class FileMesh {
         }
     }
 
+    deleteVert(i: number) {
+        this.coreMesh.verts.splice(i,1)
+        if (this.skinning.skinnings[i]) {
+            this.skinning.skinnings.splice(i,1)
+        }
+
+        //remap faces
+        for (let j = this.coreMesh.faces.length - 1; j >= 0; j--) {
+            const f = this.coreMesh.faces[j]
+
+            if (f.a === i || f.b === i || f.c === i) {
+                this.coreMesh.faces.splice(j, 1)
+                continue
+            }
+
+            if (f.a > i) {
+                f.a--
+            }
+            if (f.b > i) {
+                f.b--
+            }
+            if (f.c > i) {
+                f.c--
+            }
+        }
+
+        //fix subsets
+        if (this.skinning.subsets.length > 0) {
+            for (const subset of this.skinning.subsets) {
+                const subsetEnd = subset.vertsBegin + (subset.vertsLength - 1)
+
+                if (i < subset.vertsBegin) {
+                    subset.vertsBegin -= 1
+                } else if (i <= subsetEnd) {
+                    subset.vertsLength -= 1
+                }
+            }
+        }
+    }
+
     removeDuplicateVertices(distance = 0.0001): number {
         const posToIndex = new Map<number, number>()
         const remap = new Array(this.coreMesh.verts.length).fill(-1)

@@ -103,8 +103,6 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Dynamic Heads": new SortInfo([new ItemSort(2, "Outfit")]),
             "Heads": new SortInfo([new ItemSort(17)]),
             "Faces": new SortInfo([new ItemSort(18)]),
-            "Eyebrows": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyebrowAccessory") || 0)], "inventory"),
-            "Eyelashes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyelashAccessory") || 0)], "inventory"),
         },
         "Body": {
             "Skin Color": new SpecialInfo("Skin Color"),
@@ -114,6 +112,13 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Right Arm": new SortInfo([new ItemSort(28)]),
             "Left Leg": new SortInfo([new ItemSort(30)]),
             "Right Leg": new SortInfo([new ItemSort(31)]),
+        },
+        "Makeup": {
+            "Eyebrows": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyebrowAccessory") || 0)], "inventory"),
+            "Eyelashes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyelashAccessory") || 0)], "inventory"),
+            "Lip": new SortInfo([new ItemSort(AssetTypeNameToId.get("LipMakeup") || 0)], "inventory"),
+            "Face": new SortInfo([new ItemSort(AssetTypeNameToId.get("FaceMakeup") || 0)], "inventory"),
+            "Eye": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyeMakeup") || 0)], "inventory"),
         },
         "Animations": {
             "All": new SortInfo(AllAnimationSorts),

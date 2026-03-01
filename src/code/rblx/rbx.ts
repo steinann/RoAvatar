@@ -61,6 +61,20 @@ export class Ray {
     }
 }
 
+export class Vector2 {
+    X: number = 0
+    Y: number = 0
+
+    constructor(X: number = 0, Y: number = 0) {
+        this.X = X
+        this.Y = Y
+    }
+
+    clone() {
+        return new Vector2(this.X, this.Y)
+    }
+}
+
 export class Vector3 {
     X: number = 0
     Y: number = 0
@@ -962,6 +976,7 @@ class PROP {
                 case DataType.UDim:
                 case DataType.UDim2:
                 case DataType.Ray:
+                case DataType.Vector2:
                 case DataType.Vector3:
                 case DataType.Color3:
                 case DataType.Color3uint8:
@@ -1239,6 +1254,19 @@ export class RBX {
                         vector3.G = yValues[i]
                         vector3.B = zValues[i]
                         prop.values.push(vector3)
+                    }
+                    break
+                }
+            case DataType.Vector2:
+                {
+                    const xValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+                    const yValues = chunkView.readInterleaved32(valuesLength, false, "readFloat32") as number[]
+
+                    for (let i = 0; i < valuesLength; i++) {
+                        const vector2 = new Vector2()
+                        vector2.X = xValues[i]
+                        vector2.Y = yValues[i]
+                        prop.values.push(vector2)
                     }
                     break
                 }
@@ -1560,6 +1588,25 @@ export class RBX {
                         cframe.Position = [cframeDesc.X, cframeDesc.Y, cframeDesc.Z]
 
                         instance.setProperty(property.name, cframe)
+
+                        break
+                    }
+                case "Vector2":
+                    {
+                        const property = new Property()
+                        property.name = propertyNode.getAttribute("name") || "null"
+                        property.typeID = DataType.Vector2
+
+                        instance.addProperty(property)
+
+                        const childElements = propertyNode.querySelectorAll(":scope > *")
+
+                        const position = new Vector2()
+                        for (const element of childElements) {
+                            position[element.nodeName as ("X" | "Y")] = Number(element.textContent)
+                        }
+
+                        instance.setProperty(property.name, position)
 
                         break
                     }
@@ -1886,6 +1933,9 @@ export class RBX {
                                         break
                                     case DataType.BrickColor:
                                         bufferLength += 4
+                                        break
+                                    case DataType.Vector2:
+                                        bufferLength += 4 * 2
                                         break
                                     case DataType.Color3:
                                     case DataType.Vector3:

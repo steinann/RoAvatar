@@ -211,7 +211,19 @@ export function removeInstance(instance: Instance) {
 }
 
 export function addInstance(instance: Instance, auth: Authentication) {
-    if (RenderedClassTypes.includes(instance.className)) { //Renderables
+    const isDecal = instance.className === "Decal"
+    const isBakedDecal = isDecal && !instance.FindFirstChildOfClass("WrapTextureTransfer")
+    let isFirstDecal = true
+    if (isDecal && instance.parent) {
+        const children = instance.GetChildren()
+        for (const child of children) {
+            if (child.className === "Decal" && child.FindFirstChildOfClass("WrapTextureTransfer") && child.id < instance.id) {
+                isFirstDecal = false
+            }
+        }
+    }
+
+    if (RenderedClassTypes.includes(instance.className) && !isBakedDecal && (!isDecal || isFirstDecal)) { //Renderables
         const oldDesc = renderables.get(instance)
         const newDesc = new RenderableDesc()
         newDesc.fromInstance(instance)
