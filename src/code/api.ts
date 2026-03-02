@@ -1,4 +1,4 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetTopics_Payload, GetTopics_Result, ItemDetail_Result, ItemDetails_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetTopics_Payload, GetTopics_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { Outfit } from "./avatar/outfit"
@@ -778,6 +778,24 @@ const API = {
             }
 
             return finalResult
+        },
+        GetMarketplaceWidgetsSearch: async function(query: string) {
+            const response = await RBLXGet(`https://apis.roblox.com/marketplace-widgets/v1/widgets/search?query=${query}`)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as MarketplaceWidgets_Result
+        },
+        GetMarketplaceWidgets: async function() {
+            const response = await RBLXGet(`https://apis.roblox.com/marketplace-widgets/v1/widgets`)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as MarketplaceWidgets_Result
         }
     },
     "Inventory": {
@@ -936,6 +954,17 @@ const API = {
                 localOutfitsJson.push(localOutfit.toJson())
             }
             await (chrome || browser).storage.local.set({"localOutfits": localOutfitsJson})
+        }
+    },
+    "Looks": {
+        GetLook: async function(lookId: number): Promise<Response | Look_Result> {
+            const response = await RBLXGet(`https://apis.roblox.com/look-api/v2/looks/${lookId}`)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as Look_Result
         }
     }
 }

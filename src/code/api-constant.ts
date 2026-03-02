@@ -296,3 +296,96 @@ export interface ItemDetail_Result {
 export interface ItemDetails_Result {
     data: ItemDetail_Result[]
 }
+
+export interface MarketplaceWidget {
+    id: string,
+    type: string,
+    content: {
+        type: "Asset" | "Bundle" | "Look",
+        id: number
+    }[],
+    template: {
+        type: "ItemGroup" | string,
+        seeAllButton: true | null,
+        title: string | null,
+        localizedTitle: string | null,
+        itemFooters: {
+            contentType: string
+        }[],
+        categories: unknown[],
+        previewRows: unknown[],
+        previewColumns: unknown[],
+    }
+}
+
+export interface MarketplaceWidgets_Result {
+    widgets: {[K in number]: MarketplaceWidget},
+    configuration: unknown,
+}
+
+export interface Look_Result {
+    look: {
+        avatarProperties: {
+            playerAvatarType: "R6" | "R15",
+            scale: {
+                head: number,
+                height: number,
+                depth: number,
+                width: number,
+                bodyType: number,
+                proportion: number,
+            },
+            bodyColor3s: {
+                headColor3: string,
+                leftArmColor3: string,
+                leftLegColor3: string,
+                rightArmColor3: string,
+                rightLegColor3: string,
+                torsoColor3: string,
+            }
+        },
+        createdTime: string,
+        curator: {
+            hasVerifiedBadge: boolean,
+            id: number,
+            name: string,
+            type: "User" | "Group"
+        },
+        description: string,
+        displayProperties: null,
+        favoriteCount: number,
+        items: {
+            assetType: number | null,
+            assetsInBundle: {
+                assetType: number,
+                id: number,
+                isIncluded: boolean
+            }[],
+            bundleType: number | null,
+            collectibleItemId: string,
+            collectibleProductId: string,
+            creator: {
+                hasVerifiedBadge: boolean,
+                id: number,
+                name: string,
+                type: "User" | "Group"
+            },
+            description: string,
+            id: number,
+            isPurchasable: boolean,
+            itemRestrictions: string[],
+            itemType: "Asset" | "Bundle",
+            name: string,
+            noPriceStatus: "OffSale" | null,
+            priceInRobux: number | null,
+            quantityOwned: number
+        },
+        lookId: string,
+        lookType: "Avatar",
+        moderationStatus: "Approved",
+        name: string,
+        totalPrice: number,
+        totalValue: number,
+        updatedTime: string,
+    }
+}
