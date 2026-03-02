@@ -13,6 +13,7 @@ import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic }
 import * as LZ4 from './lz4'
 import * as fzstd from 'fzstd';
 import { GetWrapperForInstance } from './instance/InstanceWrapper';
+import { SEARCH_FOR_STRING } from '../misc/flags';
 
 //datatype structs
 export class UDim {
@@ -680,6 +681,17 @@ export class Instance {
                 if (isNaN(valueCF.Orientation[0]) || isNaN(valueCF.Orientation[1]) || isNaN(valueCF.Orientation[2])) {
                     console.log(value)
                     throw new Error("CFrame orientation can't contain NaN value")
+                }
+            }
+            if (name === "Name") {
+                this._name = value as string
+            }
+            if (SEARCH_FOR_STRING) {
+                if (property.typeID === DataType.String || property.typeID === DataType.Bytecode || property.typeID === DataType.SharedString) {
+                    if ((value as string).includes(SEARCH_FOR_STRING)) {
+                        console.log(this.GetFullName())
+                        console.log(value)
+                    }
                 }
             }
 
