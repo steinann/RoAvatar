@@ -978,7 +978,7 @@ export class MaterialDesc {
         let affectedByHumanoid = isAffectedByHumanoid(child)
 
         const meshPartTexture = child.Prop("TextureID") as string
-        const surfaceAppearance = child.FindFirstChildOfClass("SurfaceAppearance")
+        const surfaceAppearance = child.FindLastChildOfClass("SurfaceAppearance")
         let surfaceAppearanceAlphaMode = AlphaMode.Overlay
         if (surfaceAppearance) {
             surfaceAppearanceAlphaMode = surfaceAppearance.Prop("AlphaMode") as number

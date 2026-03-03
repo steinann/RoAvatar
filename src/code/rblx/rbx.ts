@@ -876,7 +876,7 @@ export class Instance {
 
     FindFirstChild(name: string) {
         for (const child of this.GetChildren()) {
-            if (child.Property("Name") == name) {
+            if (child.Property("Name") === name) {
                 return child
             }
         }
@@ -884,7 +884,7 @@ export class Instance {
 
     FindFirstDescendant(name: string) {
         for (const child of this.GetDescendants()) {
-            if (child.Property("Name") == name) {
+            if (child.Property("Name") === name) {
                 return child
             }
         }
@@ -896,10 +896,22 @@ export class Instance {
 
     FindFirstChildOfClass(className: string) {
         for (const child of this.children) {
-            if (child.className == className) {
+            if (child.className === className) {
                 return child
             }
         }
+    }
+
+    FindLastChildOfClass(className: string) {
+        let lastChild: Instance | undefined = undefined
+
+        for (const child of this.children) {
+            if (child.className === className) {
+                lastChild = child
+            }
+        }
+
+        return lastChild
     }
 
     AccessoryBuildWeld() {

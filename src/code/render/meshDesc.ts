@@ -649,7 +649,7 @@ export class MeshDesc {
         this.scaleIsRelative = true
 
         //check for surface appearance
-        const surfaceAppearance = child.FindFirstChildOfClass("SurfaceAppearance")
+        const surfaceAppearance = child.FindLastChildOfClass("SurfaceAppearance")
         if (surfaceAppearance) {
             const color = surfaceAppearance.HasProperty("Color") ? surfaceAppearance.Prop("Color") as Color3 : new Color3(1,1,1)
             const colorMap = surfaceAppearance.Prop("ColorMap") as string

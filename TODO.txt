@@ -36,6 +36,7 @@ FEATURES:
         -Better alert and warnings system
         -Button that shows assets in bundle
         -Reset to currently wearing
+        -Add apply button to filter menu
     MEDIUM PRIORITY:
         -Publish outfits to Roblox (like in the mobile app)
         -Save outfit as .rbxm
