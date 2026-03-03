@@ -359,7 +359,8 @@ export interface Look_Result {
             assetsInBundle: {
                 assetType: number,
                 id: number,
-                isIncluded: boolean
+                isIncluded: boolean,
+                supportsHeadshapes?: boolean,
             }[],
             bundleType: number | null,
             collectibleItemId: string,
@@ -378,7 +379,16 @@ export interface Look_Result {
             name: string,
             noPriceStatus: "OffSale" | null,
             priceInRobux: number | null,
-            quantityOwned: number
+            quantityOwned: number,
+            meta: undefined | {
+                headShape: "Invalid" | number,
+                order: null | number
+                position: {x: number, y: number, z: number} | null,
+                puffiness: null | number,
+                rotation: {x: number, y: number, z: number} | null,
+                scale: {scale: 0, x: number, y: number, z: number} | null
+                version: number
+            }
         }[],
         lookId: string,
         lookType: "Avatar",

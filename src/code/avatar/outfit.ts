@@ -1137,6 +1137,16 @@ export class Outfit {
             }
         }
 
+        for (const item of look.items) {
+            if (item.meta) {
+                const asset = this.getAssetId(item.id)
+                if (asset) {
+                    asset.meta = new AssetMeta()
+                    asset.meta.fromJson(item.meta)
+                }
+            }
+        }
+
         return true
     }
 

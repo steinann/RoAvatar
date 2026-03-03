@@ -1,14 +1,23 @@
 type VecXYZ = {X: number, Y: number, Z: number}
+type Vecxyz = {x: number, y: number, z: number}
+
+function toVecXYZ(vec: Vecxyz) {
+    return {
+        X: vec.x,
+        Y: vec.y,
+        Z: vec.z
+    }
+}
 
 type AssetMetaJson = {
     version?: number
 
-    position?: VecXYZ,
-    rotation?: VecXYZ,
-    scale?: VecXYZ,
-    order?: number
-    puffiness?: number
-    headShape?: number
+    position?: VecXYZ | Vecxyz | null,
+    rotation?: VecXYZ | Vecxyz | null,
+    scale?: VecXYZ | Vecxyz | null,
+    order?: number | null
+    puffiness?: number | null
+    headShape?: "Invalid" | number
 }
 
 type AssetTypeJson = { id?: number; name?: string }
@@ -408,14 +417,32 @@ class AssetMeta {
             this.version = assetMetaJson.version
         }
 
-        this.order = assetMetaJson.order
-        this.puffiness = assetMetaJson.puffiness
+        if (assetMetaJson.order) {
+            this.order = assetMetaJson.order
+        }
+        if (assetMetaJson.puffiness) {
+            this.puffiness = assetMetaJson.puffiness
+        }
 
-        this.position = assetMetaJson.position
-        this.rotation = assetMetaJson.rotation
-        this.scale = assetMetaJson.scale
+        if (assetMetaJson.position && 'X' in assetMetaJson.position) {
+            this.position = assetMetaJson.position as VecXYZ
+        } else if (assetMetaJson.position) {
+            this.position = toVecXYZ(assetMetaJson.position as Vecxyz)
+        }
+        if (assetMetaJson.rotation && 'X' in assetMetaJson.rotation) {
+            this.rotation = assetMetaJson.rotation as VecXYZ
+        } else if (assetMetaJson.rotation) {
+            this.rotation = toVecXYZ(assetMetaJson.rotation as Vecxyz)
+        }
+        if (assetMetaJson.scale && 'X' in assetMetaJson.scale) {
+            this.scale = assetMetaJson.scale as VecXYZ
+        } else if (assetMetaJson.scale) {
+            this.scale = toVecXYZ(assetMetaJson.scale as Vecxyz)
+        }
 
-        this.headShape = assetMetaJson.headShape
+        if (assetMetaJson.headShape && assetMetaJson.headShape !== "Invalid") {
+            this.headShape = assetMetaJson.headShape
+        }
     }
 }
 
