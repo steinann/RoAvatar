@@ -290,11 +290,11 @@ export const CatalogBundleTypes = [
     "DynamicHead"
 ]
 
-type ItemType = "Asset" | "Bundle" | "Outfit" | "None"
+type ItemType = "Asset" | "Bundle" | "Outfit" | "Look" | "None"
 export class ItemInfo {
     itemType: ItemType
     type: string
-    id: number
+    id: number | string
     name: string
     bundledAssets: number[] = []
 
@@ -302,7 +302,7 @@ export class ItemInfo {
     limitedType?: "Limited" | "LimitedUnique"
     offsale?: boolean
     
-    constructor(itemType: ItemType, type: string, id: number, name: string) {
+    constructor(itemType: ItemType, type: string, id: number | string, name: string) {
         this.itemType = itemType
         this.type = type
         this.id = id

@@ -379,7 +379,7 @@ export interface Look_Result {
             noPriceStatus: "OffSale" | null,
             priceInRobux: number | null,
             quantityOwned: number
-        },
+        }[],
         lookId: string,
         lookType: "Avatar",
         moderationStatus: "Approved",
@@ -387,5 +387,41 @@ export interface Look_Result {
         totalPrice: number,
         totalValue: number,
         updatedTime: string,
+    }
+}
+
+export interface UserLooks_Result {
+    data: {
+        assets: {id: number}[],
+        bundles: {id: number}[],
+        createdTime: string,
+        displayProperties: {
+            backgroundType: "None" | string,
+            backgroundValue: null,
+            emoteAssetId: null,
+        },
+        lookId: string,
+        lookType: "Avatar",
+        moderationStatus: "Approved",
+        name: string,
+        totalValue: number,
+        updatedTime: string, //2025-12-15T15:35:14.075Z
+    }[],
+    nextCursor: string | null,
+    previousCursor: string | null,
+}
+
+export interface GetSubscription_Result {
+    "subscriptionProductModel": {
+        "premiumFeatureId": number,
+        "subscriptionTypeName": string,
+        "robuxStipendAmount": number,
+        "isLifetime": boolean,
+        "expiration": string,
+        "renewal": string,
+        "renewedSince": string,
+        "created": string,
+        "purchasePlatform": string,
+        "subscriptionName": string
     }
 }

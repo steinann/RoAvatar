@@ -222,19 +222,19 @@ export default function AvatarAdjustment({setOutfit, _setOutfit}: {setOutfit: (a
                     }
                 }} onArrowClick={(itemInfo, isUp) => {
                     //order item
-                    const index = orderableAssets.indexOf(itemInfo.id)
+                    const index = orderableAssets.indexOf(Number(itemInfo.id))
                     
                     if ((index > 0 || !isUp) && (index < orderableAssets.length - 1 || isUp)) {
                         const previousIndex = index + (isUp ? -1 : 1)
                         const previousId = orderableAssets[previousIndex]
 
                         const previousOrder = idToOrder.get(previousId)
-                        const selfOrder = idToOrder.get(itemInfo.id)
+                        const selfOrder = idToOrder.get(Number(itemInfo.id))
 
                         if (previousOrder !== undefined && selfOrder !== undefined) {
                             const newOutfit = outfit.clone()
                             const previousAsset = newOutfit.getAssetId(previousId)
-                            const selfAsset = newOutfit.getAssetId(itemInfo.id)
+                            const selfAsset = newOutfit.getAssetId(Number(itemInfo.id))
                             if (previousAsset && selfAsset) {
                                 previousAsset.setOrder(selfOrder)
                                 selfAsset.setOrder(previousOrder)

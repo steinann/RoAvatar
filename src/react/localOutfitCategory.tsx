@@ -130,7 +130,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
 
     //determine on click function for itemcards
     const onClickFunc = (_auth: Authentication, item: ItemInfo) => {
-        items[item.id].toOutfit().then((newOutfit) => {
+        items[Number(item.id)].toOutfit().then((newOutfit) => {
             setOutfit(newOutfit)
         })
     }
@@ -208,24 +208,24 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
         </>
         {
             itemInfos.map((item) => (
-                <ItemCard isLocalOutfit={true} canEditOutfit={true} forceImage={items[item.id]?.image || "../assets/broken-avatar-200px.png"} key={i++} auth={auth} itemInfo={item} refresh={refresh} onClick={(item) => {
+                <ItemCard isSpecialOutfit={true} canEditOutfit={true} forceImage={items[Number(item.id)]?.image || "../assets/broken-avatar-200px.png"} key={i++} auth={auth} itemInfo={item} refresh={refresh} onClick={(item) => {
                     onClickFunc(auth, item)
                 }} deleteCallback={() => {
                     //delete outfit
                     const newLocalOutfits = items.slice()
-                    newLocalOutfits.splice(item.id, 1)
+                    newLocalOutfits.splice(Number(item.id), 1)
                     API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
                     refresh()
                 }} renameCallback={(newName) => {
                     //rename outfit
                     const newLocalOutfits = items.slice()
-                    newLocalOutfits[item.id].name = newName
+                    newLocalOutfits[Number(item.id)].name = newName
                     API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
                     refresh()
                 }} updateCallback={(newOutfit) => {
                     //update outfit
                     const newLocalOutfits = items.slice()
-                    const localOutfit = newLocalOutfits[item.id]
+                    const localOutfit = newLocalOutfits[Number(item.id)]
                     localOutfit.update(newOutfit)
 
                     setIsSaving(true)

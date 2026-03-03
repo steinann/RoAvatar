@@ -356,7 +356,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
         </> : null}
         {
             itemInfos.map((item) => (
-                <ItemCard key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
+                <ItemCard key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(Number(item.id)) || wornItems.includes(Number(item.id)) : false} onClick={(item) => {
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {

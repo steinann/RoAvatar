@@ -4,6 +4,7 @@ import type { SpecialInfo } from "../code/avatar/sorts"
 import BodyColorCategory from "./bodyColorCategory"
 import EmoteCategory from "./emoteCategory"
 import LocalOutfitCategory from "./localOutfitCategory"
+import LookCategory from "./lookCategory"
 import ScaleCategory from "./scaleCategory"
 
 export default function SpecialCategory({specialInfo, searchData, categoryType, setOutfit, animName, setAnimName, _setOutfit}: {specialInfo: SpecialInfo, searchData: Search_Payload, categoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, _setOutfit: (a: Outfit) => void}): React.JSX.Element {
@@ -17,6 +18,8 @@ export default function SpecialCategory({specialInfo, searchData, categoryType, 
             return <BodyColorCategory setOutfit={setOutfit} _setOutfit={_setOutfit}/>
         case "LocalOutfits":
             return <LocalOutfitCategory searchData={searchData} setOutfit={setOutfit}/>
+        case "Looks":
+            return <LookCategory searchData={searchData} setOutfit={setOutfit}/>
         default:
             return <></>
     }

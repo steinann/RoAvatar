@@ -202,7 +202,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
         itemComponents = <>
         {
             itemInfos.map((item) => (
-                <ItemCard showViewButton={true} key={i++} auth={auth} itemInfo={item} refresh={refresh} isWorn={item.itemType === "Asset" ? outfit.containsAsset(item.id) || wornItems.includes(item.id) : false} onClick={(item) => {
+                <ItemCard showViewButton={true} key={i++} auth={auth} itemInfo={item} refresh={refresh} isWorn={item.itemType === "Asset" ? outfit.containsAsset(Number(item.id)) || wornItems.includes(Number(item.id)) : false} onClick={(item) => {
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {

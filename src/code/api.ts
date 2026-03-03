@@ -1,7 +1,7 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetTopics_Payload, GetTopics_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload, UserLooks_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
-import { Outfit } from "./avatar/outfit"
+import { BodyColors, Outfit } from "./avatar/outfit"
 import type { ItemSort } from "./avatar/sorts"
 import { BODYCOLOR3, ENABLE_API_CACHE, ROAVATAR_DATA_URL } from "./misc/flags"
 import { generateUUIDv4 } from "./misc/misc"
@@ -186,6 +186,8 @@ export function stopCurrentlyLoadingAssets() {
     _updateCurrentlyLoadingAssets()
 }
 
+type UserInfo = {id: number, name: string, displayName: string}
+
 const CACHE = {
     "AssetBuffer": new Map<string,ArrayBuffer>(),
     "RBX": new Map<string,RBX>(),
@@ -196,13 +198,14 @@ const CACHE = {
     "IsLayered": new Map<number,boolean>(),
     "AvatarInventoryItem": new Map<string,AvatarInventory_Result>(),
     "ItemDetails": new Map<string,ItemDetail_Result>(),
+    "UserInfo": undefined,
 }
 let CachedRoAvatarData: undefined | RoAvatarData = undefined
 
 type ThumbnailInfo = {
     auth: Authentication,
     type: string,
-    id: number,
+    id: number | string,
     size: string,
     resolves: ((url: string | undefined) => void)[],
     attempt: number,
@@ -444,7 +447,7 @@ const API = {
                 return result
             }
         },
-        GetOutfitDetails: async function(outfitId: number, userId: number): Promise<Response | Outfit> {
+        GetOutfitDetails: async function(outfitId: number | string, userId: number): Promise<Response | Outfit> {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
 
             if (BODYCOLOR3) {
@@ -510,7 +513,7 @@ const API = {
 
             return response
         },
-        UpdateOutfit: async function(auth: Authentication, outfitId: number, newOutfit: Outfit) {
+        UpdateOutfit: async function(auth: Authentication, outfitId: number | string, newOutfit: Outfit) {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
 
             if (BODYCOLOR3) {
@@ -524,7 +527,7 @@ const API = {
             return response
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        PatchOutfit: async function(auth: Authentication, outfitId: number, patchData: any) {
+        PatchOutfit: async function(auth: Authentication, outfitId: number | string, patchData: any) {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
 
             if (BODYCOLOR3) {
@@ -537,13 +540,13 @@ const API = {
 
             return response
         },
-        DeleteOutfit: async function(auth: Authentication, outfitId: number) {
+        DeleteOutfit: async function(auth: Authentication, outfitId: number | string) {
             return await RBLXPost(`https://avatar.roblox.com/v1/outfits/${outfitId}/delete`, auth, "")
         },
         GetEmotes: async function(): Promise<Response> {
             return await RBLXGet("https://avatar.roblox.com/v1/emotes")
         },
-        EquipEmote: async function(auth: Authentication, assetId: number, slot: number): Promise<Response> {
+        EquipEmote: async function(auth: Authentication, assetId: number | string, slot: number): Promise<Response> {
             return await RBLXPost(`https://avatar.roblox.com/v1/emotes/${assetId}/${slot}`, auth, "")
         },
         UnequipEmote: async function(auth: Authentication, slot: number): Promise<Response> {
@@ -735,7 +738,7 @@ const API = {
 
             return (await response.json()) as Search_Result
         },
-        GetBundleDetails: async function(bundleId: number) {
+        GetBundleDetails: async function(bundleId: number | string) {
             const response = await RBLXGet(`https://catalog.roblox.com/v1/catalog/items/${bundleId}/details?itemType=Bundle`)
 
             if (response.status !== 200) {
@@ -835,10 +838,16 @@ const API = {
     },
     "Users": {
         GetUserInfo: async function() {
+            if (CACHE.UserInfo) {
+                return CACHE.UserInfo as UserInfo
+            }
+
             const response = await RBLXGet("https://users.roblox.com/v1/users/authenticated")
             
             if (response.status == 200) {
-                return await response.json() as {id: number, name: string, displayName: string}
+                const result = await response.json() as UserInfo
+                (CACHE.UserInfo as unknown) = result
+                return result
             } else {
                 console.warn("Failed to get user info: GetUserInfo(auth)")
                 return undefined
@@ -846,7 +855,7 @@ const API = {
         }
     },
     "Thumbnails": {
-        GetThumbnail: function(auth: Authentication, type: string, id: number, size: string = "150x150"): Promise<string | undefined> {
+        GetThumbnail: function(auth: Authentication, type: string, id: number | string, size: string = "150x150"): Promise<string | undefined> {
             const thisThumbnailInfo: ThumbnailInfo = {
                 auth: auth,
                 type: type,
@@ -884,7 +893,7 @@ const API = {
                 })
             })
         },
-        UncacheThumbnail: function(type: string, id: number, size: string = "150x150") {
+        UncacheThumbnail: function(type: string, id: number | string, size: string = "150x150") {
             const thisThumbnailInfo: ThumbnailInfo = {
                 auth: new Authentication(),
                 type: type,
@@ -957,7 +966,7 @@ const API = {
         }
     },
     "Looks": {
-        GetLook: async function(lookId: number): Promise<Response | Look_Result> {
+        GetLook: async function(lookId: string): Promise<Response | Look_Result> {
             const response = await RBLXGet(`https://apis.roblox.com/look-api/v2/looks/${lookId}`)
 
             if (response.status !== 200) {
@@ -965,6 +974,60 @@ const API = {
             }
 
             return (await response.json()) as Look_Result
+        },
+        GetUserLooks: async function(userId: number, cursor?: string): Promise<Response | UserLooks_Result> {
+            let url = `https://apis.roblox.com/look-api/v1/users/${userId}/looks?limit=50`
+
+            if (cursor) {
+                url += `&cursor=${cursor}`
+            }
+
+            const response = await RBLXGet(url)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as UserLooks_Result
+        },
+        CreateLook: async function(auth: Authentication, outfit: Outfit, name: string, description: string): Promise<Response> {
+            let bodyColors = outfit.bodyColors
+            if (bodyColors instanceof BodyColors) {
+                bodyColors = bodyColors.toColor3()
+            }
+
+            const body = {
+                name,
+                description,
+                displayProperties: null,
+                avatarProperties: {
+                    playerAvatarType: outfit.playerAvatarType,
+                    scale: outfit.scale.toJson(),
+                    bodyColor3s: bodyColors.toJson()
+                },
+                assets: outfit.getAssetsJson(),
+            }
+            console.log(body)
+
+            const response = await RBLXPost("https://apis.roblox.com/look-api/v1/looks/create", auth, body)
+
+            return response
+        },
+        DeleteLook: async function(auth: Authentication, lookId: string): Promise<Response> {
+            const response = await RBLXDelete(`https://apis.roblox.com/look-api/v1/looks/${lookId}`, auth, {})
+
+            return response
+        }
+    },
+    "PremiumFeatures": {
+        GetSubscription: async function(userId: number): Promise<Response | GetSubscription_Result> {
+            const response = await RBLXGet(`https://premiumfeatures.roblox.com/v1/users/${userId}/subscriptions`)
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as GetSubscription_Result
         }
     }
 }

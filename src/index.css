@@ -363,6 +363,7 @@ body {
 }
 
 .item-image img {
+    object-fit: contain;
     width: 100%;
     aspect-ratio: 1/1;
 }

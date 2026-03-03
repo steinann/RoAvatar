@@ -244,6 +244,9 @@ function App() {
       window.renderOutfit = (outfit: Outfit) => {
         return API.Thumbnails.RenderOutfit(newAuth, outfit)
       }
+      window.createLook = () => {
+        return API.Looks.CreateLook(newAuth, window.outfit, "Test", "Test")
+      }
     }
 
     //create outfit
@@ -559,7 +562,8 @@ declare global {
         saveOutfit: (a: Outfit) => void;
         getMesh: (a: string) => void;
         getRBX: (a: string) => void;
-        renderOutfit: (outfit: Outfit) => Promise<string | undefined>
+        renderOutfit: (outfit: Outfit) => Promise<string | undefined>;
+        createLook: typeof API.Looks.CreateLook;
     }
 }
 

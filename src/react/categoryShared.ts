@@ -8,10 +8,10 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
         setAnimName(`idle`)
     }
 
-    if (!outfit.containsAsset(item.id) && item.itemType === "Asset") { //if asset (not worn)
+    if (!outfit.containsAsset(Number(item.id)) && item.itemType === "Asset") { //if asset (not worn)
         const newOutfit = outfit.clone(); 
         if (WearableAssetTypes.includes(item.type)) {
-            newOutfit.addAsset(item.id, item.type, item.name);
+            newOutfit.addAsset(Number(item.id), item.type, item.name);
         }
         if (item.type.endsWith("Animation") && item.type !== "EmoteAnimation" && item.type !== "MoodAnimation") {
             const entry = DefaultAnimations[item.type as AnimationProp]
@@ -30,7 +30,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
         setOutfit(newOutfit)
     } else if (item.itemType === "Asset") { //if asset thats already worn
         const newOutfit = outfit.clone(); 
-        newOutfit.removeAsset(item.id);
+        newOutfit.removeAsset(Number(item.id));
         setOutfit(newOutfit)
     } else if (item.itemType === "Outfit" && (item.type === "Outfit" || item.type === "Character")) { //if full outfit
         API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {

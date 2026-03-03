@@ -7,7 +7,7 @@ import { OutfitContext } from "./context/outfit-context";
 import type { Outfit } from "../code/avatar/outfit";
 import { AlertContext } from "./context/alert-context";
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isLocalOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
+export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
         auth?: Authentication,
         itemInfo?: ItemInfo,
@@ -23,7 +23,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         canEditOutfit?: boolean, 
         refresh?: () => void,
         showViewButton?: boolean,
-        isLocalOutfit?: boolean,
+        isSpecialOutfit?: boolean,
         interactive?: boolean,
         deleteCallback?: () => void,
         updateCallback?: (a: Outfit) => void,
@@ -135,11 +135,13 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             url = `https://www.roblox.com/catalog/${itemInfo.id}`
         } else if (itemInfo.itemType === "Bundle")  {
             url = `https://www.roblox.com/bundles/${itemInfo.id}`
+        } else if (itemInfo.itemType === "Look") {
+            url = `https://www.roblox.com/looks/${itemInfo.id}`
         }
 
         return (<>
         {/*Update outfit dialot*/
-        canEditOutfit ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
+        canEditOutfit && (!isSpecialOutfit || updateCallback) ? <dialog style={updateOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={updateDialogRef} onCancel={() => {setUpdateOpen(false)}}>
             <span className="dialog-title roboto-700">Update Character</span>
             <div className="dialog-line"></div>
             <span className="dialog-text roboto-400">This will permanently overwrite your saved character with your current appearance</span>
@@ -154,7 +156,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     const newOutfit = outfit.clone()
                     newOutfit.name = itemInfo.name
 
-                    if (!isLocalOutfit) {
+                    if (!isSpecialOutfit) {
                         API.Avatar.UpdateOutfit(auth, itemInfo.id, newOutfit).then((result) => {
                             API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
                             if (result.status === 200 && refresh) {
@@ -170,7 +172,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             </div>
         </dialog> : null}
         {/*Delete outfit dialog*/
-        canEditOutfit ? <dialog style={deleteOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={deleteDialogRef} onCancel={() => {setDeleteOpen(false)}}>
+        canEditOutfit && (!isSpecialOutfit || deleteCallback) ? <dialog style={deleteOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={deleteDialogRef} onCancel={() => {setDeleteOpen(false)}}>
             <span className="dialog-title roboto-700">Delete Character</span>
             <div className="dialog-line"></div>
             <span className="dialog-text roboto-400">This will permanently delete your saved character</span>
@@ -182,7 +184,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 <RadialButton className="dialog-confirm roboto-600" onClick={() => {
                     setDeleteOpen(false)
 
-                    if (!isLocalOutfit) {
+                    if (!isSpecialOutfit) {
                         API.Avatar.DeleteOutfit(auth, itemInfo.id).then((result) => {
                             API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
                             if (result.status === 200 && refresh) {
@@ -198,7 +200,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             </div>
         </dialog> : null}
         {//Rename outfit dialog
-        canEditOutfit ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
+        canEditOutfit && (!isSpecialOutfit || renameCallback) ? <dialog style={renameOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={renameDialogRef} onCancel={() => {setRenameOpen(false)}}>
             <span className="dialog-title roboto-700">Rename Character</span>
             <div className="dialog-line"></div>
             <span className="dialog-text dialog-text-margin roboto-400">Choose a new name for your character</span>
@@ -218,7 +220,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                         toUseName = nameValue
                     }
 
-                    if (!isLocalOutfit) {
+                    if (!isSpecialOutfit) {
                         API.Avatar.PatchOutfit(auth, itemInfo.id, {name: toUseName}).then((result) => {
                             if (result.status === 200 && refresh) {
                                 if (outfitNameInputRef.current) {
@@ -262,9 +264,9 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 canEditOutfit ? <button className="edit-outfit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
                 {/*Manage outfit buttons*/
                 editOpen ? <div className="edit-outfit-menu">
-                    <button className="roboto-600" onClick={()=>{setUpdateOpen(true)}}>Update</button>
-                    <button className="roboto-600" onClick={()=>{setRenameOpen(true)}}>Rename</button>
-                    <button className="roboto-600" onClick={()=>{setDeleteOpen(true)}}>Delete</button>
+                    {!isSpecialOutfit || updateCallback ? <button className="roboto-600" onClick={()=>{setUpdateOpen(true)}}>Update</button> : null}
+                    {!isSpecialOutfit || renameCallback ? <button className="roboto-600" onClick={()=>{setRenameOpen(true)}}>Rename</button> : null}
+                    {!isSpecialOutfit || deleteCallback ? <button className="roboto-600" onClick={()=>{setDeleteOpen(true)}}>Delete</button> : null}
                     <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
                 </div> : null}
                 {/*Item tags*/}

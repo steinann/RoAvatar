@@ -159,7 +159,7 @@ export default function EmoteCategory({searchData, categoryType, setOutfit, anim
             }
 
             newEquippedEmotes.push({
-                assetId: item.id,
+                assetId: Number(item.id),
                 assetName: item.name,
                 position: currentSlot,
             })

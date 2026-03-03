@@ -1,6 +1,7 @@
 //Dependencies: asset.js
 
 import { API } from "../api";
+import type { Look_Result } from "../api-constant";
 import SimpleView from "../lib/simple-view";
 import { BODYCOLOR3 } from "../misc/flags"
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
@@ -322,6 +323,7 @@ export class Outfit {
     //outfits only
     name: string = "New Outfit"
     _id: number = 1
+    lookId?: number | string
 
     //class only
     origin?: OutfitOrigin
@@ -1101,6 +1103,43 @@ export class Outfit {
         }
     }
 
+    async fromLook(look: Look_Result["look"]): Promise<boolean> {
+        //metadata
+        this.origin = "Look"
+        this.creatorId = look.curator.id
+        this.creationDate = new Date(look.createdTime).getUTCMilliseconds()
+        this.lookId = look.lookId
+
+        //body
+        this.scale.fromJson(look.avatarProperties.scale)
+        this.playerAvatarType = look.avatarProperties.playerAvatarType
+        this.bodyColors.fromJson(look.avatarProperties.bodyColor3s)
+
+        //assets
+        const assetPromises: Promise<boolean>[] = []
+
+        for (const item of look.items) {
+            if (item.itemType === "Asset" && item.assetType !== null) {
+                this.addAsset(item.id, item.assetType, item.name)
+            } else if (item.itemType === "Bundle") {
+                for (const asset of item.assetsInBundle) {
+                    if (asset.isIncluded) {
+                        assetPromises.push(this.addAssetId(asset.id))
+                    }
+                }
+            }
+        }
+
+        const successes = await Promise.all(assetPromises)
+        for (const success of successes) {
+            if (!success) {
+                return false
+            }
+        }
+
+        return true
+    }
+
     async fromBuffer(buffer: ArrayBuffer) {
         const view = new SimpleView(buffer)
 
@@ -1395,291 +1434,4 @@ export class Outfit {
 
         return view.buffer
     }
-
-    /*wear(auth: Authentication, onlyItems: boolean) {
-        API.Avatar.WearOutfit(auth, this, onlyItems)
-    }*/
-
-    /*async saveToRoblox(auth: Authentication) {
-        return (await SaveOutfitToRoblox(auth, this))
-    }*/
-
-    /*saveToComputer(auth, userInfo) {
-        if (userInfo) {
-            SaveOutfitToComputer(this, userInfo)
-        } else {
-            GetUserInfo(auth).then(v => {
-                userInfo = v
-        
-                SaveOutfitToComputer(this, userInfo)
-            })
-        }
-    }*/
-
-    /*async getPurchaseInfo(auth: Authentication, userInfo: { id: number; }, ignoreOwned: boolean) { //RETURN: {purchaseInfos: purchaseInfo[], failedAssets[]: {id: Number, isOwned: boolean}}
-        const outfit = this
-
-        return new Promise((resolve) => {
-            const purchaseInfos: PurchaseInfo[] = []
-            let checkedAssets = 0
-            const failedAssets = []
-
-            function onAssetFinished(success, itemId, itemType, expectedPrice, resaleOnly, purchaseFunc) {
-                //Add asset that finished
-                if (success) {
-                    purchaseInfos.push(new PurchaseInfo(itemId, itemType, expectedPrice, resaleOnly, purchaseFunc))
-                } else {
-                    failedAssets.push({"id": itemId, "isOwned": itemType ? true : false})
-                    if (!itemType) { //itemType is used as isOwned
-                        console.warn(`Failed to check item with id ${itemId}`)
-                    } else {
-                        console.warn(`User already owns asset with id ${itemId}`)
-                    }
-                }
-
-                checkedAssets++;
-
-                //If all assets finished
-                if (checkedAssets >= outfit.assets.length) {
-                    //Remove duplicates
-                    let newPurchaseInfos = []
-                    let addedAssetIds = []
-
-                    for (let purchaseInfo of purchaseInfos) {
-                        let purchaseInfoIdentifier = purchaseInfo.itemType + purchaseInfo.itemId
-
-                        if (!addedAssetIds.includes(purchaseInfoIdentifier)) {
-                            newPurchaseInfos.push(purchaseInfo)
-                            addedAssetIds.push(purchaseInfoIdentifier)
-                        }
-                    }
-
-                    //Return list of asset purchase infos
-                    resolve({"purchaseInfos": newPurchaseInfos, "failedAssets": failedAssets})
-                }
-            }
-    
-            for (let asset of this.assets) {
-                try {
-                    if (ignoreOwned) {
-                        ItemIsOwned(auth, userInfo.id, "Asset", asset.id).then(isOwned => {
-                            if (!isOwned) {
-                                itemNotOwned()
-                            } else {
-                                onAssetFinished(false, asset.id, true)
-                            }
-                        })
-                    } else {
-                        itemNotOwned()
-                    }
-
-                    function itemNotOwned() {
-                        GetAssetDetails(auth, asset.id).then(assetDetails => {
-                            if (assetDetails.IsForSale || assetDetails.IsLimited || assetDetails.IsLimitedUnique) {
-                                switch (assetDetails.ProductType) {
-                                    case "User Product": //USER PRODUCT
-                                        if ((assetDetails.IsLimited || assetDetails.IsLimitedUnique) && (!assetDetails.Remaining)) { //is user product limited
-                                            GetAssetResellers(auth, asset.id).then(response => {
-                                                if (response.status === 200) {
-                                                    (response.json()).then(body => {
-                                                        let data = body.data
-                                                        if (data.length > 0) {
-                                                            onAssetFinished(true, asset.id, "Asset", data[0].price, true, async () => { //SHOULD WORK IN THEORY
-                                                                return PurchaseProduct(auth, assetDetails.ProductId, data[0].price, data[0].seller.id, data[0].userAssetId)
-                                                            })
-                                                        } else {
-                                                            onAssetFinished(false, asset.id)
-                                                        }
-                                                    })
-                                                } else {
-                                                    onAssetFinished(false, asset.id)
-                                                }
-                                            })
-                                        } else if (assetDetails.IsForSale) { //regular user product (does this even still exist?)
-                                            onAssetFinished(true, asset.id, "Asset", assetDetails.PriceInRobux, false, async () => { //SHOULD WORK IN THEORY
-                                                return PurchaseProductFromAssetDetails(auth, assetDetails)
-                                            })
-                                        } else {
-                                            onAssetFinished(false, asset.id)
-                                        }
-                                        break
-                                    case "Collectible Item": //COLLECTIBLE ITEM
-                                        if (assetDetails.CollectiblesItemDetails?.IsLimited && !assetDetails.Remaining) {//is collectible item limited
-                                            if (assetDetails.CollectiblesItemDetails?.CollectibleLowestResalePrice) {
-                                                GetCollectibleResellers(auth, assetDetails.CollectibleItemId).then(response => {
-                                                    if (response.status === 200) {
-                                                        (response.json()).then(body => {
-                                                            let data = body.data
-                                                            if (data.length > 0) {
-                                                                onAssetFinished(true, asset.id, "Asset", data[0].price, true, async () => { //CONFIRMED WORKING
-                                                                    return PurchaseCollectibleResale(auth, assetDetails.CollectibleItemId, data[0].price, data[0].collectibleProductId, userInfo.id, data[0].seller.sellerId, data[0].seller.sellerType, data[0].collectibleItemInstanceId)
-                                                                })
-                                                            } else {
-                                                                onAssetFinished(false, asset.id)
-                                                            }
-                                                        })
-                                                    } else {
-                                                        onAssetFinished(false, asset.id)
-                                                    }
-                                                })
-                                            } else {
-                                                onAssetFinished(false, asset.id)
-                                            }
-                                        } else if (assetDetails.IsForSale) {//regular collectible item
-                                            onAssetFinished(true, asset.id, "Asset", assetDetails.PriceInRobux, false, async () => { //CONFIRMED WORKING
-                                                console.log(assetDetails)
-                                                return PurchaseCollectibleFromAssetDetails(auth, userInfo, assetDetails)
-                                            })
-                                        } else {
-                                            onAssetFinished(false, asset.id)
-                                        }
-        
-                                        break
-                                }
-                            } else if (asset.id !== 14618207727) { //check if bundle
-                                GetAssetBundles(auth, asset.id).then(data => {
-                                    let cheapestBundle = undefined
-                                    let cheapestBundlePrice = undefined
-                                    let cheapestBundleIsResale = false
-    
-                                    for (let bundle of data) {
-                                        if (bundle.collectibleItemDetail) {
-                                            if (bundle.collectibleItemDetail.resaleRestriction === "None" && bundle.collectibleItemDetail.unitsAvailable === 0) {//limited bundle
-                                                if (bundle.collectibleItemDetail.hasResellers) {
-                                                    if (!cheapestBundle || bundle.collectibleItemDetail.lowestResalePrice < cheapestBundlePrice) {
-                                                        cheapestBundle = bundle
-                                                        cheapestBundlePrice = bundle.collectibleItemDetail.lowestResalePrice
-                                                        cheapestBundleIsResale = true
-                                                    }
-                                                }
-                                            } else {//regular bundle
-                                                if (!cheapestBundle || bundle.collectibleItemDetail.price < cheapestBundlePrice) {
-                                                    cheapestBundle = bundle
-                                                    cheapestBundlePrice = bundle.collectibleItemDetail.price
-                                                    cheapestBundleIsResale = false
-                                                }
-                                            }
-                                        } else { //assume user product unlimited (not confirmed) OR offsale collectible bundle
-                                            if (bundle.product) {
-                                                if (!cheapestBundle || bundle.product.priceInRobux < cheapestBundlePrice) {
-                                                    cheapestBundle = bundle
-                                                    cheapestBundlePrice = bundle.product.priceInRobux
-                                                    cheapestBundleIsResale = false
-                                                }
-                                            }
-                                        }
-                                    }
-    
-                                    if (cheapestBundle) { //IF IT FOUND A BUNDLE
-                                        onAssetFinished(true, cheapestBundle.id, "Bundle", cheapestBundlePrice, cheapestBundleIsResale, async () => {
-                                            return new Promise((resolve, reject) => {
-                                                let cid = cheapestBundle.collectibleItemDetail
-    
-                                                if (cid) {
-                                                    if (cheapestBundleIsResale) {
-                                                        GetCollectibleResellers(auth, cid.collectibleItemId).then(response => {
-                                                            if (response.status == 200) {
-                                                                (response.json()).then(data => {
-                                                                    data = data.data
-                                                                    if (data.length > 0) {
-                                                                        if (data[0].price === cheapestBundlePrice) {
-                                                                            console.log("bundle - collectible - limited")
-                                                                            resolve(PurchaseCollectibleResale(auth, cid.collectibleItemId, data[0].collectibleProductId, cheapestBundlePrice, userInfo.id, data[0].seller.sellerId, data[0].seller.sellerType, data[0].collectibleItemInstanceId)) //SHOULD WORK IN THEORY
-                                                                        } else {
-                                                                            console.log("bundle - collectible - limited - pruche changed")
-                                                                            resolve(new Response(JSON.stringify({"error": "Price has changed"}), {status: 500}))
-                                                                        }
-                                                                    } else {
-                                                                        console.log("bundle - collectible - limited - no resellers")
-                                                                        resolve(new Response(JSON.stringify({"error": "No resellers"}), {status: 500}))
-                                                                    }
-                                                                })
-                                                            } else {
-                                                                resolve(response)
-                                                                return
-                                                            }
-                                                        })
-                                                    } else {
-                                                        console.log("bundle - collectible - not limited")
-                                                        resolve(PurchaseCollectible(auth, cid.collectibleItemId, cid.collectibleProductId, cheapestBundlePrice, userInfo.id, cheapestBundle.creator.id, cheapestBundle.creator.type)) //SHOULD WORK IN THEORY (REQUEST URL AND BODY MATCHES ROBLOX'S GENERATED ONE)
-                                                    }
-                                                } else {
-                                                    console.log("bundle - product - not limited")
-                                                    resolve(PurchaseProduct(auth, cheapestBundle.product.id, cheapestBundlePrice, cheapestBundle.creator.id)) //NOT TESTED
-                                                }
-                                            })
-                                        })
-                                    } else {
-                                        onAssetFinished(false, asset.id)
-                                    }
-                                })
-                            } else {
-                                onAssetFinished(false, asset.id, true)
-                            }
-                        })
-                    }
-                } catch (error) { //if an error occured in the code
-                    console.warn(error)
-                    onAssetFinished(false, asset.id)
-                }
-            }
-        })
-    }
-
-    async getPrice(auth, userInfo, ignoreOwned) {
-        let purchaseData = await this.getPurchaseInfo(auth, userInfo, ignoreOwned)
-        let purchaseInfos = purchaseData.purchaseInfos
-
-        let totalPrice = 0
-
-        let checkedItems = []
-
-        for (let purchaseInfo of purchaseInfos) {
-            let purchaseInfoId = purchaseInfo.itemType + purchaseInfo.itemId
-
-            if (!checkedItems.includes(purchaseInfoId)) {
-                checkedItems.push(purchaseInfoId)
-                totalPrice += purchaseInfo.expectedPrice
-            }
-        }
-
-        for (let failedAsset of purchaseData.failedAssets) { //headless head price fix (none of the limbs count :())
-            if (failedAsset.id == 15093053680) {
-                totalPrice += 31000
-            }
-        }
-
-        return totalPrice
-    }*/
 }
-
-
-/*class PurchaseInfo {
-    itemId
-    itemType //Bundle or Asset
-    expectedPrice
-    resaleOnly
-    purchaseFunc
-
-    constructor(newItemId: number, newItemType: "Bundle" | "asset", newExpectedPrice: number, newResaleOnly: boolean, newPurchaseFunc: () => Response) {
-        this.itemId = newItemId
-        this.itemType = newItemType
-        this.expectedPrice = newExpectedPrice
-        this.resaleOnly = newResaleOnly
-        this.purchaseFunc = newPurchaseFunc
-    }
-
-    async purchase() {
-        const response = await this.purchaseFunc()
-        if (!response || response.status !== 200) {
-            return {"success": false, "response": response}
-        }
-
-        const data = await response.json()
-        if (!data.purchased) {
-            return {"success": false, "response": response}
-        }
-
-        return {"success": true, "response": response}
-    }
-}*/
