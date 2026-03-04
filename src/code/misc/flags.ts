@@ -29,5 +29,5 @@ export const ANIMATE_SKELETON = true
 export const AUTO_SKIN_EVERYTHING = false
 
 //debug
-export const SEARCH_FOR_STRING = undefined //"_URL" //this is useful if you want to find api endpoints
+export const SEARCH_FOR_STRING = undefined //"requestparams" //"looks/" //this is useful if you want to find api endpoints
 export const LOAD_TEST_PLACE = undefined //"../assets/UniversalApp.rbxm" //"../assets/WrapDeformerTest.rbxm" //"../assets/DecalTest2.rbxm" //"../assets/TransparentDominus.rbxm" //"../assets/EmissiveTest.rbxm" //"../assets/Mesh Deformation Test.rbxl" //set this to a string to load a place file

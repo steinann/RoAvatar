@@ -791,15 +791,21 @@ const API = {
 
             return (await response.json()) as MarketplaceWidgets_Result
         },
-        GetMarketplaceWidgets: async function() {
-            const response = await RBLXGet(`https://apis.roblox.com/marketplace-widgets/v1/widgets`)
+        GetMarketplaceWidgets: async function(context?: string) { //context=catalog-tab:avatars (doesnt work? weird...)
+            let url = `https://apis.roblox.com/marketplace-widgets/v1/widgets`
+            if (context) {
+                url += `?context=${context}`
+            }
+
+            const response = await RBLXGet(url)
 
             if (response.status !== 200) {
                 return response
             }
 
             return (await response.json()) as MarketplaceWidgets_Result
-        }
+        },
+        //https://apis.roblox.com/marketplace-widgets/v1/pills
     },
     "Inventory": {
         GetInventory: async function(userId: number, assetType: number, cursor?: string): Promise<Response> {

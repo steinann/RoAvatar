@@ -688,7 +688,7 @@ export class Instance {
             }
             if (SEARCH_FOR_STRING) {
                 if (property.typeID === DataType.String || property.typeID === DataType.Bytecode || property.typeID === DataType.SharedString) {
-                    if ((value as string).includes(SEARCH_FOR_STRING)) {
+                    if ((value as string).toLowerCase().includes(SEARCH_FOR_STRING)) {
                         console.log(this.GetFullName())
                         console.log(value)
                     }
@@ -1169,6 +1169,12 @@ export class RBX {
                 {
                     let totalRead = 0
                     while (totalRead < valuesLength) {
+                        //as buffer
+                        //const originalStart = chunkView.viewOffset
+                        //const length = chunkView.readUint32()
+                        //const buffer = chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1)
+                        //chunkView.viewOffset = originalStart
+
                         if (StringBufferProperties.includes(prop.propertyName)) {
                             const length = chunkView.readUint32()
                             prop.values.push(chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1))
@@ -1176,6 +1182,12 @@ export class RBX {
                             //prop.values.push(chunkView.buffer)
                         } else {
                             prop.values.push(chunkView.readUtf8String())
+                            /*const str = prop.values[prop.values.length - 1] as string
+                            if (str.includes("looks/")) {
+                                console.log(prop.values[prop.values.length - 1])
+                                console.log(buffer)
+                                saveByteArray([buffer as BlobPart], str.slice(0, 6))
+                            }*/
                         }
                         totalRead++
                     }
