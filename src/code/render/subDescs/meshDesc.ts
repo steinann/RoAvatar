@@ -1,14 +1,13 @@
 import * as THREE from 'three'
-import { BodyPartNameToEnum, HumanoidRigType, MeshType, RenderedClassTypes, WrapLayerAutoSkin } from "../rblx/constant"
-import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../rblx/rbx"
-import { API } from '../api'
-import { FileMesh } from '../mesh/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV } from '../mesh/mesh-deform'
-import { AUTO_SKIN_EVERYTHING, LAYERED_CLOTHING_ALGORITHM, USE_LEGACY_SKELETON, USE_VERTEX_COLOR } from '../misc/flags'
-import { BoneNameToIndex } from './legacy-skeleton'
-import { RBFDeformerPatch } from '../mesh/cage-mesh-deform'
+import { BodyPartNameToEnum, HumanoidRigType, MeshType, ObjectDescClassTypes, WrapLayerAutoSkin } from "../../rblx/constant"
+import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
+import { API } from '../../api'
+import { FileMesh } from '../../mesh/mesh'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV } from '../../mesh/mesh-deform'
+import { AUTO_SKIN_EVERYTHING, LAYERED_CLOTHING_ALGORITHM, USE_VERTEX_COLOR } from '../../misc/flags'
+import { RBFDeformerPatch } from '../../mesh/cage-mesh-deform'
 import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
-import { mapNum } from '../misc/misc'
+import { mapNum } from '../../misc/misc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -129,55 +128,16 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
                 skinWeights[i * 4 + 2] = skinning.boneWeights[2] / 255
                 skinWeights[i * 4 + 3] = skinning.boneWeights[3] / 255
 
-                if (USE_LEGACY_SKELETON) {
-                    skinIndices[i * 4 + 0] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
-                    skinIndices[i * 4 + 1] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[1]]]]
-                    skinIndices[i * 4 + 2] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[2]]]]
-                    skinIndices[i * 4 + 3] = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[3]]]]
-
-                    if (skinIndices[i * 4 + 0] === 0) {
-                        skinIndices[i * 4 + 0] = BoneNameToIndex["Head"]
-                    }
-                    if (skinIndices[i * 4 + 1] === 0) {
-                        skinIndices[i * 4 + 1] = BoneNameToIndex["Head"]
-                    }
-                    if (skinIndices[i * 4 + 2] === 0) {
-                        skinIndices[i * 4 + 2] = BoneNameToIndex["Head"]
-                    }
-                    if (skinIndices[i * 4 + 3] === 0) {
-                        skinIndices[i * 4 + 3] = BoneNameToIndex["Head"]
-                    }
-                } else {
-                    if (subset.boneIndices[skinning.subsetIndices[0]] >= 65535 || subset.boneIndices[skinning.subsetIndices[1]] >= 65535 || subset.boneIndices[skinning.subsetIndices[2]] >= 65535 || subset.boneIndices[skinning.subsetIndices[3]] >= 65535) {
-                        console.log(mesh)
-                        console.log(subset)
-                        console.log(skinning)
-                        throw new Error("mesh is invalid")
-                    }
-                    skinIndices[i * 4 + 0] = subset.boneIndices[skinning.subsetIndices[0]]
-                    skinIndices[i * 4 + 1] = subset.boneIndices[skinning.subsetIndices[1]]
-                    skinIndices[i * 4 + 2] = subset.boneIndices[skinning.subsetIndices[2]]
-                    skinIndices[i * 4 + 3] = subset.boneIndices[skinning.subsetIndices[3]]
-                }
-                
-                /*const resultingIndex = BoneNameToIndex[meshSkinning.nameTable[subset.boneIndices[skinning.subsetIndices[0]]]]
-                console.log(resultingIndex)
-                if (resultingIndex === 0) {
+                if (subset.boneIndices[skinning.subsetIndices[0]] >= 65535 || subset.boneIndices[skinning.subsetIndices[1]] >= 65535 || subset.boneIndices[skinning.subsetIndices[2]] >= 65535 || subset.boneIndices[skinning.subsetIndices[3]] >= 65535) {
+                    console.log(mesh)
+                    console.log(subset)
                     console.log(skinning)
-
-                    console.log(subset.boneIndices)
-                    console.log(meshSkinning.nameTable)
-                }*/
-                /*
-                for (const weight of skinning.boneWeights) {
-                    skinWeights.push(weight / 255)
+                    throw new Error("mesh is invalid")
                 }
-                for (const index of skinning.subsetIndices) {
-                    const boneName = meshSkinning.nameTable[subset.boneIndices[index]]
-                    const boneIndex = BoneNameToIndex[boneName]
-                    skinIndices.push(boneIndex)
-                }
-                */
+                skinIndices[i * 4 + 0] = subset.boneIndices[skinning.subsetIndices[0]]
+                skinIndices[i * 4 + 1] = subset.boneIndices[skinning.subsetIndices[1]]
+                skinIndices[i * 4 + 2] = subset.boneIndices[skinning.subsetIndices[2]]
+                skinIndices[i * 4 + 3] = subset.boneIndices[skinning.subsetIndices[3]]
             }
         }
         geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
@@ -198,6 +158,10 @@ export async function promiseForMesh(url: string, readOnly: boolean = false): Pr
     })
 }
 
+/**
+ * Child of a RenderableDesc
+ * Used to describe meshes
+ */
 export class MeshDesc {
     //size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
@@ -239,6 +203,15 @@ export class MeshDesc {
         
         if (!singularTrue) {
             return singularTrue
+        }
+
+        //wraptexture
+        if ((this.wrapTextureTargetOrigin && !other.wrapTextureTargetOrigin) || (this.wrapTextureTargetOrigin && !other.wrapTextureTargetOrigin)) {
+            return false
+        }
+
+        if (this.wrapTextureTargetOrigin && other.wrapTextureTargetOrigin) {
+            return this.wrapTextureTargetOrigin.isSame(other.wrapTextureTargetOrigin)
         }
 
         //deformer desc
@@ -547,7 +520,7 @@ export class MeshDesc {
     }
 
     fromInstance(child: Instance) {
-        if (!RenderedClassTypes.includes(child.className)) {
+        if (!ObjectDescClassTypes.includes(child.className)) {
             return
         }
 

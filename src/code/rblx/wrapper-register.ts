@@ -3,6 +3,7 @@ import AnimatorWrapper from "./instance/Animator";
 import BodyPartDescriptionWrapper from "./instance/BodyPartDescription";
 import FaceControlsWrapper from "./instance/FaceControls";
 import HumanoidDescriptionWrapper from "./instance/HumanoidDescription";
+import MakeupDescriptionWrapper from "./instance/MakeupDescription";
 import ModelWrapper from "./instance/Model";
 import ScriptWrapper from "./instance/Script";
 import SoundWrapper from "./instance/Sound";
@@ -19,4 +20,5 @@ export default function RegisterWrappers() {
     HumanoidDescriptionWrapper.register()
     BodyPartDescriptionWrapper.register()
     AccessoryDescriptionWrapper.register()
+    MakeupDescriptionWrapper.register()
 }

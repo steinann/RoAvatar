@@ -3,7 +3,6 @@
 //scaling notes
 /*
 R15 --> Slim = R15_Wide * R15_Proportions
-
 */
 
 import { AvatarType } from "../avatar/constant"

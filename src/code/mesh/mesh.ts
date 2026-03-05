@@ -1260,6 +1260,9 @@ export class FileMesh {
         }
     }
 
+    /**
+     * @deprecated it doesnt work with LODS
+     */
     deleteVert(i: number) {
         this.coreMesh.verts.splice(i,1)
         if (this.skinning.skinnings[i]) {

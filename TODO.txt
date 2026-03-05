@@ -25,7 +25,7 @@ ISSUES (Relating to renderer inaccuracy):
     -MAKEUP: inheritUV ignores collision, which means lipstick passes through teeth and the back of the mouth
 
 ISSUES (General):
-    -RenderableDesc's fully regenerate instead of only regenerating the part that requires regeneration
+    -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
 
 FEATURES:
     HIGH PRIORITY:

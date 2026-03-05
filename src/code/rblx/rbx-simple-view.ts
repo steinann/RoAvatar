@@ -2,9 +2,9 @@ import SimpleView from "../lib/simple-view"
 import { bitsToFloat32 } from "./rbx-read-helper"
 
 export default class RBXSimpleView {
-    view
-    viewOffset
-    buffer
+    view: DataView
+    viewOffset: number
+    buffer: ArrayBufferLike
     locked = false
 
     constructor (buffer: ArrayBufferLike) {

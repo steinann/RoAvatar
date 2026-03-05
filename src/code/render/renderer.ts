@@ -1,20 +1,19 @@
 import * as THREE from 'three';
 import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 import { download, rad, saveByteArray } from '../misc/misc';
-import { RenderableDesc } from './renderableDesc';
+import type { RenderDesc } from './renderDesc';
+import { ObjectDesc } from './objectDesc';
 import { type Connection, type Instance } from '../rblx/rbx';
 import type { Authentication } from '../api';
-import { RenderedClassTypes } from '../rblx/constant';
+import { ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
-import { getSkeletonFromHumanoid, setFACSMeshForHumanoid, updateSkeletonFromHumanoid } from './legacy-skeleton';
-import { POST_PROCESSING_IS_DOUBLE_SIZE, USE_LEGACY_SKELETON, USE_POST_PROCESSING } from '../misc/flags';
+import { POST_PROCESSING_IS_DOUBLE_SIZE, USE_POST_PROCESSING } from '../misc/flags';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 
 // MAIN DATA FOR THE RENDERER (i should have really made this a class...)
 const isRenderingMesh = new Map<Instance,boolean>()
-const renderables = new Map<Instance,RenderableDesc>()
+const renderDescs = new Map<Instance,RenderDesc>()
 const destroyConnections = new Map<Instance,Connection>()
-const skeletons = new Map<Instance,THREE.Skeleton>() //only used when USE_LEGACY_SKELETON is enabled
 
 // SETTING UP THREE JS SCENE
 //const lookAwayVector = [-0.406, 0.406, -0.819]
@@ -184,33 +183,88 @@ animate()
 export function removeInstance(instance: Instance) {
     console.log("Removed instance:", instance.Prop("Name"), instance.id)
 
-    const desc = renderables.get(instance)
+    const desc = renderDescs.get(instance)
     if (desc) {
-        desc.dispose(renderer, scene, desc.result, desc.skeletonDesc)
+        desc.dispose(renderer, scene)
     }
 
-    renderables.delete(instance)
+    renderDescs.delete(instance)
     isRenderingMesh.delete(instance)
-
-    if (USE_LEGACY_SKELETON) {
-        const skeleton = skeletons.get(instance)
-        skeletons.delete(instance)
-        if (skeleton) {
-            for (let i = 0; i < skeleton.bones.length; i++) {
-                const bone = skeleton.bones[i];
-                if (bone.parent) {
-                    bone.removeFromParent();
-                }
-            }
-        }
-    }
 
     for (const child of instance.GetChildren()) {
         removeInstance(child)
     }
 }
 
+function addRenderDesc(instance: Instance, auth: Authentication, DescClass: typeof RenderDesc) {
+    const oldDesc = renderDescs.get(instance)
+    const newDesc = new DescClass()
+    newDesc.fromInstance(instance)
+
+    if (oldDesc && !oldDesc.needsRegeneration(newDesc)) {
+        //do nothing except update
+        //console.log(`Updating ${instance.Prop("Name")}`)
+        if (!oldDesc.isSame(newDesc)) {
+            oldDesc.fromRenderDesc(newDesc)
+            oldDesc.updateResult()
+        }
+    } else {
+        //generate new mesh
+        if (!isRenderingMesh.get(instance)) {
+            //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
+
+            newDesc.result = oldDesc?.result //this is done so that the result can be disposed if a removeInstance is called during generation
+            renderDescs.set(instance, newDesc)
+            isRenderingMesh.set(instance, true)
+
+            //get the mesh
+            newDesc.compileResult(renderer, scene).then(result => {
+                if (result && !(result instanceof Response)) {
+                    newDesc.updateResult()
+
+                    if (renderDescs.get(instance)) {
+                        oldDesc?.dispose(renderer, scene)
+
+                        //update skeletonDesc for RenderDescs that have that
+                        if (result instanceof THREE.SkinnedMesh && newDesc instanceof ObjectDesc) {
+                            const skeleton = newDesc.skeletonDesc?.skeleton
+                            
+                            if (skeleton) {
+                                result.bindMode = "detached"
+                                if (newDesc.skeletonDesc) {
+                                    scene.add(newDesc.skeletonDesc.rootBone)
+                                }
+                                result.bind(skeleton)
+                                scene.add(result)
+                            }
+                        } else {
+                            scene.add(result)
+                        }
+
+                        //console.log(`Generated ${instance.Prop("Name")} ${instance.id}`)
+
+                        isRenderingMesh.set(instance, false)
+                        addInstance(instance, auth) //check instance again in case it changed during compilation
+                    } else {
+                        newDesc.dispose(renderer, scene)
+                    }
+                }
+            })
+        }
+    }
+
+    if (!destroyConnections.get(instance)) {
+        destroyConnections.set(instance, instance.Destroying.Connect(() => {
+            removeInstance(instance)
+            const connection = destroyConnections.get(instance)
+            connection?.Disconnect()
+            destroyConnections.delete(instance)
+        }))
+    }
+}
+
 export function addInstance(instance: Instance, auth: Authentication) {
+    //check that this decal isnt baked and should get its own ObjectDesc
     const isDecal = instance.className === "Decal"
     const isBakedDecal = isDecal && !instance.FindFirstChildOfClass("WrapTextureTransfer")
     let isFirstDecal = true
@@ -223,103 +277,16 @@ export function addInstance(instance: Instance, auth: Authentication) {
         }
     }
 
-    if (RenderedClassTypes.includes(instance.className) && !isBakedDecal && (!isDecal || isFirstDecal)) { //Renderables
-        const oldDesc = renderables.get(instance)
-        const newDesc = new RenderableDesc()
-        newDesc.fromInstance(instance)
-
-        if (oldDesc && !oldDesc.needsRegeneration(newDesc)) {
-            //do nothing except update
-            //console.log(`Updating ${instance.Prop("Name")}`)
-            if (!oldDesc.isSame(newDesc)) {
-                oldDesc.fromRenderableDesc(newDesc)
-                oldDesc.updateResult()
-            }
-        } else {
-            //generate new mesh
-            if (!isRenderingMesh.get(instance)) {
-                //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
-
-                newDesc.result = oldDesc?.result //this is done so that the result can be disposed if a removeInstance is called during generation
-                renderables.set(instance, newDesc)
-                isRenderingMesh.set(instance, true)
-
-                //get the mesh
-                newDesc.compileResult(renderer, scene).then(result => {
-                    if (result && !(result instanceof Response)) {
-                        newDesc.updateResult()
-
-                        if (renderables.get(instance)) {
-                            oldDesc?.dispose(renderer, scene, oldDesc.result, oldDesc.skeletonDesc)
-
-                            if (result instanceof THREE.SkinnedMesh) {
-                                let skeleton = undefined
-
-                                if (USE_LEGACY_SKELETON) { //LEGACY SKELETON LOGIC
-                                    if (instance.parent) {
-                                        const humanoid = instance.parent.FindFirstChildOfClass("Humanoid")
-                                        if (humanoid) {
-                                            const facsMesh = newDesc.meshDesc.fileMesh
-                                            if (facsMesh && instance.Prop("Name") === "Head") {
-                                                setFACSMeshForHumanoid(humanoid, facsMesh)
-                                            }
-                                            skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
-                                        } else if (instance.parent.parent) {
-                                            const humanoid = instance.parent.parent.FindFirstChildOfClass("Humanoid")
-                                            if (humanoid) {
-                                                const facsMesh = newDesc.meshDesc.fileMesh
-                                                if (facsMesh && instance.Prop("Name") === "Head") {
-                                                    setFACSMeshForHumanoid(humanoid, facsMesh)
-                                                }
-                                                skeleton = getSkeletonFromHumanoid(humanoid, skeletons, scene, destroyConnections)
-                                            }
-                                        }
-                                    }
-                                } else { //NEW SKELETON LOGIC
-                                    skeleton = newDesc.skeletonDesc?.skeleton
-                                }
-                                
-                                if (skeleton) {
-                                    result.bindMode = "detached"
-                                    if (newDesc.skeletonDesc) {
-                                        scene.add(newDesc.skeletonDesc.rootBone)
-                                    }
-                                    result.bind(skeleton)
-                                    scene.add(result)
-                                }
-                            } else {
-                                scene.add(result)
-                            }
-
-                            //console.log(`Generated ${instance.Prop("Name")} ${instance.id}`)
-
-                            isRenderingMesh.set(instance, false)
-                            addInstance(instance, auth) //check instance again in case it changed during compilation
-                        } else {
-                            newDesc.dispose(renderer, scene, newDesc.result, newDesc.skeletonDesc)
-                        }
-                    }
-                })
-            }
-        }
-
-        if (!destroyConnections.get(instance)) {
-            destroyConnections.set(instance, instance.Destroying.Connect(() => {
-                removeInstance(instance)
-                const connection = destroyConnections.get(instance)
-                connection?.Disconnect()
-                destroyConnections.delete(instance)
-            }))
-        }
-    } else if (instance.className === "Humanoid") {
-        if (USE_LEGACY_SKELETON) {
-            const humanoidSkeleton = skeletons.get(instance)
-            if (humanoidSkeleton) {
-                updateSkeletonFromHumanoid(instance, humanoidSkeleton)
-            }
-        }
+    //ObjectDesc
+    if (ObjectDescClassTypes.includes(instance.className) && !isBakedDecal && (!isDecal || isFirstDecal)) {
+        addRenderDesc(instance, auth, ObjectDesc)
     }
+    //ParticleGroupDesc
+    /*else if (ParticleGroupDescClassTypes.includes(instance.className)) {
+        addParticleGroupDesc(instance, auth)
+    }*/
 
+    //update children  too
     for (const child of instance.GetChildren()) {
         addInstance(child, auth)
     }

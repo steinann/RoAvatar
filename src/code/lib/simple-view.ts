@@ -1,7 +1,7 @@
 export default class SimpleView {
-    view
-    viewOffset
-    buffer
+    view: DataView
+    viewOffset: number
+    buffer: ArrayBuffer
 
     constructor (buffer: ArrayBuffer) {
         this.view = new DataView(buffer)

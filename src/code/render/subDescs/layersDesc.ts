@@ -1,8 +1,8 @@
-import { RBFDeformerPatch } from "../mesh/cage-mesh-deform"
-import { FileMesh } from "../mesh/mesh"
-import { inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../mesh/mesh-deform"
-import { CFrame, Vector3, type Instance } from "../rblx/rbx"
-import { traverseRigCFrame, traverseRigInstance } from "../rblx/scale"
+import { RBFDeformerPatch } from "../../mesh/cage-mesh-deform"
+import { FileMesh } from "../../mesh/mesh"
+import { inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../../mesh/mesh-deform"
+import { CFrame, Vector3, type Instance } from "../../rblx/rbx"
+import { traverseRigCFrame, traverseRigInstance } from "../../rblx/scale"
 import { promiseForMesh } from "./meshDesc"
 
 const modelLayers = new Map<Instance,ModelLayersDesc>()
@@ -146,6 +146,10 @@ export class WrapLayerDesc {
     }
 }
 
+/**
+ * Child of a MeshDesc
+ * Used to describe WrapLayers placed on top of eachother
+ */
 export class ModelLayersDesc {
     targetMeshes?: string[]
     targetCages?: string[]

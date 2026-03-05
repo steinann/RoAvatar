@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { getRenderer } from './renderer'
 import { API } from '../api'
-import { fileMeshToTHREEGeometry } from './meshDesc'
+import { fileMeshToTHREEGeometry } from './subDescs/meshDesc'
 import type { Shader_TextureComposer_Flat } from './shaders/textureComposer-flat'
 
 const compositMeshPaths = [

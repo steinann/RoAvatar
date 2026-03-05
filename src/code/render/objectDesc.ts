@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx";
-import { MaterialDesc } from "./materialDesc";
-import { MeshDesc } from "./meshDesc";
+import { MaterialDesc } from "./subDescs/materialDesc";
+import { MeshDesc } from "./subDescs/meshDesc";
 import { rad } from '../misc/misc';
 import { MeshType } from '../rblx/constant';
-import { SkeletonDesc } from './skeletonDesc';
-import { USE_LEGACY_SKELETON } from '../misc/flags';
+import { SkeletonDesc } from './subDescs/skeletonDesc';
 import { traverseRigCFrame } from '../rblx/scale';
 import { startCurrentlyLoadingAssets, stopCurrentlyLoadingAssets } from '../api';
+import { RenderDesc } from './renderDesc';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -17,7 +17,10 @@ function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.rotation.z = rad(cframe.Orientation[2])
 }
 
-export class RenderableDesc {
+/**
+ * Used to describe how Parts, MeshParts and Decals should be rendered
+ */
+export class ObjectDesc extends RenderDesc {
     cframe: CFrame = new CFrame()
     size: Vector3 = new Vector3(1,1,1)
     
@@ -29,49 +32,31 @@ export class RenderableDesc {
     isBodyPart: boolean = false
     isSkinned: boolean = false //based on compiled mesh
 
-    //adjustment
-    /*adjustPosition = new Vector3(0,0,0)
-    adjustRotation = new Vector3(0,0,0)
-    adjustScale = new Vector3(1,1,1)*/
-
     originalScale: THREE.Vector3 = new THREE.Vector3(1,1,1) //based on compiled mesh
-    result?: THREE.Mesh
-    instance?: Instance
 
-    isSame(other: RenderableDesc) {
+    isSame(other: ObjectDesc) {
         return this.cframe.isSame(other.cframe) &&
                 this.meshDesc.isSame(other.meshDesc) &&
                 this.materialDesc.isSame(other.materialDesc) &&
-            /*this.adjustPosition.isSame(other.adjustPosition) &&
-            this.adjustRotation.isSame(other.adjustRotation) &&
-            this.adjustScale.isSame(other.adjustScale) &&*/
-            this.isBodyPart === other.isBodyPart &&
-            this.size.isSame(other.size) &&
-            this.skeletonDesc === other.skeletonDesc //this looks like a mistake BUT its actually intentional
+                this.isBodyPart === other.isBodyPart &&
+                this.size.isSame(other.size) &&
+                this.skeletonDesc === other.skeletonDesc //this looks like a mistake BUT its actually intentional
     }
 
-    needsRegeneration(other: RenderableDesc) {
+    needsRegeneration(other: ObjectDesc) {
         //layered clothing cooldown
         if (this.meshDesc.layerDesc && (Date.now() / 1000) - this.meshDesc.compilationTimestamp < 0.6) {
             return false
         }
 
-        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc) //|| (!(this.size.isSame(other.size)) && (this.isSkinned || other.isSkinned))
+        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc)
     }
 
-    fromRenderableDesc(other: RenderableDesc) {
-        if (this.needsRegeneration(other)) {
-            throw new Error("These RenderableDesc objects have differences that require recompilation")
-        }
-
+    virtualFromRenderDesc(other: ObjectDesc) {
         //everything that doesnt require compilation should be here
         this.cframe = other.cframe
         this.size = other.size
-        /*this.adjustPosition = other.adjustPosition
-        this.adjustRotation = other.adjustRotation
-        this.adjustScale = other.adjustScale*/
         this.isBodyPart = other.isBodyPart
-        //this.isSkinned = other.isSkinned
     }
 
     fromInstance(child: Instance) {
@@ -158,36 +143,50 @@ export class RenderableDesc {
         this.materialDesc.fromInstance(child)
     }
 
+    disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
+        if (mesh.material) {
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+
+            for (const material of materials) {
+                for (const key of Object.keys(material)) {
+                    const value = (material as unknown as {[K in string]: unknown})[key]
+                    if (value instanceof THREE.Texture) {
+                        value.dispose()
+                    }
+                }
+                
+                material.dispose()
+            }
+        }
+        if (mesh.geometry) {
+            mesh.geometry.dispose()
+        }
+        scene.remove(mesh)
+    }
+
+    disposeSkeleton(scene: THREE.Scene, skeletonDesc: SkeletonDesc) {
+        skeletonDesc.dispose(scene)
+    }
+
+    disposeRenderLists(renderer: THREE.WebGLRenderer) {
+        renderer.renderLists.dispose()
+    }
+
     //Used to dispose OLD stuff
-    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mesh?: THREE.Mesh, skeletonDesc?: SkeletonDesc) {
+    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
         if (this.meshDesc) {
             this.meshDesc.dispose()
         }
-        if (mesh) {
-            if (mesh.material) {
-                const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
 
-                for (const material of materials) {
-                    for (const key of Object.keys(material)) {
-                        const value = (material as unknown as {[K in string]: unknown})[key]
-                        if (value instanceof THREE.Texture) {
-                            value.dispose()
-                        }
-                    }
-                    
-                    material.dispose()
-                }
-            }
-            if (mesh.geometry) {
-                mesh.geometry.dispose()
-            }
-            scene.remove(mesh)
+        const mesh = this.result
+        if (mesh) {
+            this.disposeMesh(scene, mesh)
         }
-        if (skeletonDesc) {
-            skeletonDesc.dispose(scene)
+        if (this.skeletonDesc) {
+            this.disposeSkeleton(scene, this.skeletonDesc)
         }
         if (mesh) {
-            renderer.renderLists.dispose()
+            this.disposeRenderLists(renderer)
         }
     }
 
@@ -233,11 +232,19 @@ export class RenderableDesc {
         }
 
         //skeleton
-        if (!USE_LEGACY_SKELETON && SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
+        if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
             this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
         }
 
-        this.dispose(renderer, scene, originalResult, originalSkeletonDesc)
+        if (originalResult) {
+            this.disposeMesh(scene, originalResult)
+        }
+        if (originalSkeletonDesc) {
+            this.disposeSkeleton(scene, originalSkeletonDesc)
+        }
+        if (originalResult) {
+            this.disposeRenderLists(renderer)
+        }
 
         stopCurrentlyLoadingAssets()
         return threeMesh

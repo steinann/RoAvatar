@@ -1,30 +1,3 @@
-//import * as math from "mathjs"
-//import * as numeric from "numeric"
-
-/*function patchRBFWorkerFuncmathjs([A, bx, by, bz]: [number[][], number[], number[], number[]]) {
-    const A_mat = math.matrix(A)
-
-    //solve weights
-    const LU = math.lup(A_mat)
-    const wx = (math.lusolve(LU, math.matrix(bx)).toArray() as number[]).flat()
-    const wy = (math.lusolve(LU, math.matrix(by)).toArray() as number[]).flat()
-    const wz = (math.lusolve(LU, math.matrix(bz)).toArray() as number[]).flat()
-
-    return wx.map((_, i) => [wx[i], wy[i], wz[i]] as Vec3)
-}*/
-
-/*function patchRBFWorkerFunc([A, bx, by, bz]: [number[][], number[], number[], number[]]) {
-    //compute LU
-    const LU = numeric.LU(A)
-
-    //solve weights
-    const wx = numeric.LUsolve(LU, bx)
-    const wy = numeric.LUsolve(LU, by)
-    const wz = numeric.LUsolve(LU, bz)
-
-    return wx.map((_, i) => [wx[i], wy[i], wz[i]] as Vec3)
-}*/
-
 function luDecompose(A: Float32Array[]) {
     const n = A.length
     const LU = A

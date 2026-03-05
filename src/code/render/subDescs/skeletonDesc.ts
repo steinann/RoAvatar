@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import type { MeshDesc } from "./meshDesc";
-import { CFrame, Instance, Vector3 } from '../rblx/rbx';
-import { deg, rad } from '../misc/misc';
-import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../rblx/scale';
-import { ANIMATE_SKELETON, SHOW_SKELETON_HELPER, UPDATE_SKELETON, USE_LEGACY_SKELETON } from '../misc/flags';
-import { divide, multiply } from '../mesh/mesh-deform';
-import FaceControlsWrapper from '../rblx/instance/FaceControls';
-import { AbbreviationToFaceControlProperty } from '../rblx/constant';
-import type { RenderableDesc } from './renderableDesc';
+import { CFrame, Instance, Vector3 } from '../../rblx/rbx';
+import { deg, rad } from '../../misc/misc';
+import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../../rblx/scale';
+import { ANIMATE_SKELETON, SHOW_SKELETON_HELPER, UPDATE_SKELETON } from '../../misc/flags';
+import { divide, multiply } from '../../mesh/mesh-deform';
+import FaceControlsWrapper from '../../rblx/instance/FaceControls';
+import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
+import type { ObjectDesc } from '../objectDesc';
 
 function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     bone.position.set(...cf.Position)
@@ -55,9 +55,12 @@ function getJointForInstances(parent: Instance, child: Instance, includeTransfor
     return new CFrame()
 }
 
-//is tied to a compiled meshDesc
+/**
+ * Child of a MeshDesc
+ * Used to describe skeletons
+ */
 export class SkeletonDesc {
-    renderableDesc: RenderableDesc
+    renderableDesc: ObjectDesc
     meshDesc: MeshDesc
 
     skeleton: THREE.Skeleton
@@ -66,11 +69,7 @@ export class SkeletonDesc {
     originalBoneCFrames: CFrame[] = []
     skeletonHelper?: THREE.SkeletonHelper
 
-    constructor(renderableDesc: RenderableDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
-        if (USE_LEGACY_SKELETON) {
-            throw new Error("SkeletonDesc cannot be created while USE_LEGACY_SKELETON is true")
-        }
-
+    constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
         this.renderableDesc = renderableDesc
         this.meshDesc = meshDesc
 
@@ -185,7 +184,7 @@ export class SkeletonDesc {
         return new CFrame()
     }
 
-    resetRestPos(selfInstance: Instance, includeTransform: boolean = false) {
+    updateBoneMatrix(selfInstance: Instance, includeTransform: boolean = false) {
         if (!selfInstance.parent) return
 
         for (let i = 0; i < this.bones.length; i++) {
@@ -289,25 +288,16 @@ export class SkeletonDesc {
     update(instance: Instance) {
         if (!UPDATE_SKELETON || !instance.parent) return
 
-        this.resetRestPos(instance)
+        this.updateBoneMatrix(instance)
         
         if (ANIMATE_SKELETON) {
-            //non-facs animation is done in here, quite misleading method name
-            this.resetRestPos(instance, true)
+            //non-facs animation is done in here
+            this.updateBoneMatrix(instance, true)
 
             for (const bone of this.skeleton.bones) {
                 const isFACS = this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(bone.name)
 
-                if (!isFACS) {
-                    /*const partEquivalent = this.getPartEquivalent(instance, bone.name)
-                    const parentPartEquivalent = bone.parent ? this.getPartEquivalent(instance, bone.parent.name !== "HumanoidRootNode" ? bone.parent.name : "HumanoidRootPart") : undefined
-
-                    if (partEquivalent && parentPartEquivalent) {
-                        setBoneToCFrame(bone, getJointForInstances(parentPartEquivalent, partEquivalent, true))
-                    } else if (partEquivalent) {
-                        setBoneToCFrame(bone, partEquivalent.Prop("CFrame") as CFrame)
-                    }*/
-                } else {
+                if (isFACS) {
                     const facsMesh = this.meshDesc.fileMesh
                     const facs = this.meshDesc.fileMesh?.facs
                     const head = this.getPartEquivalent(instance, "Head")

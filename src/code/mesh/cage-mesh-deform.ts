@@ -12,6 +12,10 @@ import { RBF_PATCH_COUNT, RBF_PATCH_DETAIL_SAMPLES, RBF_PATCH_SHAPE_SAMPLES } fr
 //16 ~3ms -> 33
 //8 ~3ms -> 33
 
+/**
+ * This is a naive (think thats what its called) implementation of the RBF deformer, it is extremely slow
+ * Use RBFDeformerPatch instead
+ */
 export class RBFDeformer {
     refVerts: FileMeshVertex[] = []
     distVerts: FileMeshVertex[] = []
@@ -19,7 +23,7 @@ export class RBFDeformer {
     weights: Vec3[] | undefined
 
     constructor(refMesh: FileMesh, distMesh: FileMesh) {
-        let itsTime = 3
+        let itsTime = 3 //we use this to skip verts because doing all is way too slow, even when skipping some its too slow
 
         //create arrays of refVerts and distVerts so that we can guarantee theyre identical in length
         const distVertArr = getDistVertArray(refMesh, distMesh)
