@@ -13,6 +13,16 @@ export class DisposableDesc {
                         value.dispose()
                     }
                 }
+
+                if (material instanceof THREE.ShaderMaterial) {
+                    const uniforms = material.uniforms
+                    for (const key of Object.keys(uniforms)) {
+                        const value = uniforms[key].value
+                        if (value instanceof THREE.Texture) {
+                            value.dispose()
+                        }
+                    }
+                }
                 
                 material.dispose()
             }
