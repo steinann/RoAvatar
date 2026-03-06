@@ -750,8 +750,8 @@ export class MaterialDesc {
                 vertexColors: true,
                 shadowSide: THREE.BackSide,
                 polygonOffset: this.isDecal ? true : false,
-                polygonOffsetFactor: this.isDecal ? -1.0 : undefined,
-                polygonOffsetUnits: this.isDecal ? 0.05 : undefined,
+                polygonOffsetFactor: this.isDecal ? -1.0 : 0,
+                polygonOffsetUnits: this.isDecal ? 0.05 : 0,
                 depthWrite: this.transparency > 0 ? false : true,
             })
         } else { //NOT PBR
@@ -766,8 +766,8 @@ export class MaterialDesc {
                 vertexColors: true,
                 shadowSide: THREE.BackSide,
                 polygonOffset: this.isDecal ? true : false,
-                polygonOffsetFactor: this.isDecal ? -1.0 : undefined,
-                polygonOffsetUnits: this.isDecal ? 0.05 : undefined,
+                polygonOffsetFactor: this.isDecal ? -1.0 : 0,
+                polygonOffsetUnits: this.isDecal ? 0.05 : 0,
                 depthWrite: this.transparency > 0 ? false : true,
             })
         }

@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
-import { mapNum, rad, rotationMatrixToEulerAngles } from '../misc/misc';
+import { mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
@@ -281,22 +281,30 @@ export class NumberSequence {
         return resultKey
     }
 
-    getValue(time: number) {
+    getValue(time: number, seed: number) {
         const higherKey = this.getHigherKey(time)
         const lowerKey = this.getLowerKey(time)
 
+        const rng = new RNG(seed)
+
+        const envelopeSignLow = rng.nextInt() % 2 == 0 ? 1 : -1
+        const envelopeSignHigh = rng.nextInt() % 2 == 0 ? 1 : -1
+
+        const lowValue = lowerKey ? lowerKey.value + lowerKey.envelope * rng.nextFloat() * envelopeSignLow : 0
+        const highValue = higherKey ? higherKey.value + higherKey.envelope * rng.nextFloat() * envelopeSignHigh : 0
+
         if (higherKey && !lowerKey) {
-            return higherKey.value
+            return highValue
         }
 
         if (lowerKey && !higherKey) {
-            return lowerKey.value
+            return lowValue
         }
 
         if (lowerKey && higherKey) {
             const keyTime = mapNum(time, lowerKey.time, higherKey.time, 0, 1)
 
-            return (higherKey.value - lowerKey.value) * keyTime + lowerKey.value
+            return (highValue - lowValue) * keyTime + lowValue
         }
 
         return 1

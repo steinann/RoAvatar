@@ -5,6 +5,7 @@ import { API } from '../api';
 import { rad, specialClamp } from '../misc/misc';
 import { getRendererCamera } from './renderer';
 import { NormalId, ParticleEmitterShapeInOut } from '../rblx/constant';
+import { particle_fragmentShader, particle_vertexShader } from './shaders/particleShader';
 
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min
@@ -32,6 +33,8 @@ class Particle {
 
     velocity: Vector3
     rotationSpeed: number
+    
+    seed: number = Math.random()
 
     constructor(lifetime: number, position: Vector3, rotation: number, velocity: Vector3, rotationSpeed: number) {
         this.lifetime = lifetime
@@ -90,18 +93,26 @@ class EmitterDesc extends DisposableDesc {
     offset: Vector3 = new Vector3()
     shapeInOut: number = 0
 
-    opacity: number = 1
-    blending: THREE.Blending = THREE.AdditiveBlending
-    color: ColorSequence = new ColorSequence()
-    size: NumberSequence = new NumberSequence()
-    normalizeKeypointTime: boolean = true
+    colorTexture?: string
+    alphaTexture?: string
     texture?: string
 
+    opacity: number = 1
+    blending: THREE.Blending = THREE.AdditiveBlending
+
+    color: ColorSequence = new ColorSequence()
+    size: NumberSequence = new NumberSequence()
+    transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
+    normalizeSizeKeypointTime: boolean = true
+
+    instanceOpacityBuffer?: THREE.InstancedBufferAttribute
+    instanceColorBuffer?: THREE.InstancedBufferAttribute
+    instanceSeedTimeBuffer?: THREE.InstancedBufferAttribute
     result?: THREE.InstancedMesh
     particles: Particle[] = []
 
     get maxCount() {
-        return Math.max(Math.ceil(this.lifetime.Max * this.rate), 1)
+        return Math.max(Math.ceil(this.lifetime.Max * this.rate) * 2, 1)
     }
 
     isSame(other: EmitterDesc) {
@@ -118,41 +129,78 @@ class EmitterDesc extends DisposableDesc {
         }
     }
 
-    async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
-        const originalResult = this.result
-
-        let mapToUse = undefined
-
-        if (this.texture) {
-            const source = this.texture.replace(".dds", ".png")
+    async getTexture(texture?: string, colorSpace: THREE.ColorSpace = THREE.SRGBColorSpace): Promise<THREE.Texture | undefined> {
+        if (texture) {
+            const source = texture.replace(".dds", ".png")
 
             const image = await API.Generic.LoadImage(source)
             if (image) {
                 const texture = new THREE.Texture(image)
                 texture.wrapS = THREE.RepeatWrapping
                 texture.wrapT = THREE.RepeatWrapping
-                texture.colorSpace = THREE.SRGBColorSpace
+                texture.colorSpace = colorSpace
                 
                 texture.needsUpdate = true
                 
-                mapToUse = texture
+                return texture
             }
         }
 
+        return undefined
+    }
+
+    async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
+        const originalResult = this.result
+
+        const texturePromises = [
+            this.getTexture(this.texture),
+            this.getTexture(this.alphaTexture, THREE.NoColorSpace),
+            this.getTexture(this.colorTexture)
+        ]
+
+        let [mapToUse, alphaMapToUse, colorMapToUse] = await Promise.all(texturePromises)
+
         if (!mapToUse) {
-            mapToUse = new THREE.DataTexture(new Uint8Array([0,0,0]), 1, 1, THREE.RGBFormat)
+            mapToUse = new THREE.DataTexture(new Uint8Array([0,0,0,0]), 1, 1, THREE.RGBAFormat)
+            mapToUse.needsUpdate = true
+        }
+        if (!alphaMapToUse) {
+            alphaMapToUse = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
+            alphaMapToUse.needsUpdate = true
+        }
+        if (!colorMapToUse) {
+            colorMapToUse = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
+            colorMapToUse.needsUpdate = true
         }
 
-        const material = new THREE.MeshBasicMaterial({
-            map: mapToUse,
+        const geometry = new THREE.PlaneGeometry(2,2)
+
+        this.instanceColorBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount * 3), 3)
+        geometry.setAttribute("instanceColor", this.instanceColorBuffer)
+        this.instanceOpacityBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount), 1)
+        geometry.setAttribute("instanceOpacity", this.instanceOpacityBuffer)
+        this.instanceSeedTimeBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount), 2)
+        geometry.setAttribute("instanceSeedTime", this.instanceSeedTimeBuffer)
+
+        const material = new THREE.ShaderMaterial({
             transparent: true,
             depthWrite: false,
             side: THREE.DoubleSide,
             blending: this.blending,
             opacity: this.opacity,
+
+            vertexShader: particle_vertexShader,
+            fragmentShader: particle_fragmentShader,
+            uniforms: {
+                uMap: { value: mapToUse },
+                uAlphaMap: { value: alphaMapToUse },
+                uColorMap: { value: colorMapToUse },
+
+                uOpacity: { value: this.opacity },
+            },
         })
         
-        this.result = new THREE.InstancedMesh(new THREE.PlaneGeometry(2,2), material, this.maxCount)
+        this.result = new THREE.InstancedMesh(geometry, material, this.maxCount)
         this.result.frustumCulled = false
 
         if (originalResult) {
@@ -216,31 +264,37 @@ class EmitterDesc extends DisposableDesc {
         }
 
         //emit particles
-        if (this.passedTime >= 1 / this.rate) {
+        this.passedTime = specialClamp(this.passedTime, 0, 5)
+        while (this.passedTime >= 1 / this.rate) {
             this.emit(groupDesc)
-            this.passedTime = 0
+            this.passedTime -= 1 / this.rate
         }
     }
 
     updateResult() {
-        if (!this.result) return
+        if (!this.result || !this.instanceColorBuffer || !this.instanceOpacityBuffer || !this.instanceSeedTimeBuffer) return
         this.result.count = this.particles.length
 
         for (let i = 0; i < this.result.count; i++) {
             const particle = this.particles[i]
 
-            const time = this.normalizeKeypointTime ? particle.time / particle.lifetime : particle.time
-            const size = this.size.getValue(time)
-            const color = this.color.getValue(time)
+            const time = particle.time
+            const normalizedTime = particle.time / particle.lifetime
+
+            const color = this.color.getValue(normalizedTime)
+            const size = this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0)
+            const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
             this.result.setMatrixAt(i, particle.getMatrix(size))
-            this.result.setColorAt(i, new THREE.Color(color.R, color.G, color.B))
+            this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
+            this.instanceOpacityBuffer.setX(i, opacity)
+            this.instanceSeedTimeBuffer.setXY(i, particle.seed, normalizedTime)
         }
 
         this.result.instanceMatrix.needsUpdate = true
-        if (this.result.instanceColor) {
-            this.result.instanceColor.needsUpdate = true
-        }
+        this.instanceColorBuffer.needsUpdate = true
+        this.instanceOpacityBuffer.needsUpdate = true
+        this.instanceSeedTimeBuffer.needsUpdate = true
     }
 }
 
@@ -417,6 +471,7 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Size")) emitterDesc.size = child.Prop("Size") as NumberSequence
         if (child.HasProperty("Color")) emitterDesc.color = child.Prop("Color") as ColorSequence
         if (child.HasProperty("Texture")) emitterDesc.texture = child.Prop("Texture") as string
+        if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence
 
         this.emitterDescs.push(emitterDesc)
     }
@@ -430,6 +485,8 @@ export class EmitterGroupDesc extends RenderDesc {
         //big sparkles
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/sparkles_main.dds",
+            alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
+            colorTexture: "rbxasset://textures/particles/sparkles_color.dds",
             drag: 0.2,
             acceleration: new Vector3(0,0,0),
             size: new NumberSequence([new NumberSequenceKeypoint(0, 0.37, 0), new NumberSequenceKeypoint(1, 0.37 + 0.65, 0)]),
@@ -446,6 +503,7 @@ export class EmitterGroupDesc extends RenderDesc {
         //tiny sparkles
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/sparkles_main.dds",
+            alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             drag: 2,
             acceleration: new Vector3(0,0,0),
             size: new NumberSequence([new NumberSequenceKeypoint(0, 0.1, 0), new NumberSequenceKeypoint(1, 0.1 + 0.34, 0)]),
@@ -471,8 +529,14 @@ export class EmitterGroupDesc extends RenderDesc {
         this.lowerBound = new Vector3(-boundSize, -boundSize, -boundSize)
         this.higherBound = new Vector3(boundSize, boundSize, boundSize)
 
+        const strongColor = color.clone()
+        strongColor.R *= 4
+        strongColor.G *= 4
+        strongColor.B *= 4
+
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/fire_main.dds",
+            alphaTexture: "rbxasset://textures/particles/fire_alpha.dds",
             drag: 0.4,
             acceleration: new Vector3(0,0.5 * (1*size*size/4 + 0.7*heat),0),
             rotation: new NumberRange(-90,90),
@@ -482,9 +546,9 @@ export class EmitterGroupDesc extends RenderDesc {
             spreadAngle: new Vector2(10,10),
             rate: 65,
             lifetime: new NumberRange(1,2),
-            normalizeKeypointTime: false,
+            normalizeSizeKeypointTime: false,
             timeScale: timeScale,
-            color: ColorSequence.fromColor(color),
+            color: ColorSequence.fromColor(strongColor),
         }))
 
         //this.lowerBound = new Vector3(-boundSize * 2, -boundSize * 2, -boundSize * 2)
@@ -492,6 +556,7 @@ export class EmitterGroupDesc extends RenderDesc {
 
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/fire_sparks_main.dds",
+            alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             drag: 0.4,
             acceleration: new Vector3(0,0.5 * (1 * size * size / 4 + 0.7 * heat),0),
             rotation: new NumberRange(-90,90),
@@ -501,7 +566,7 @@ export class EmitterGroupDesc extends RenderDesc {
             spreadAngle: new Vector2(10,10),
             rate: 65,
             lifetime: new NumberRange(1,2),
-            normalizeKeypointTime: false,
+            normalizeSizeKeypointTime: false,
             timeScale: timeScale,
             color: ColorSequence.fromColor(secondaryColor),
             offset: new Vector3(0, 3 * (0.3 * size + 0.05 * heat), 0)
@@ -518,6 +583,7 @@ export class EmitterGroupDesc extends RenderDesc {
 
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/smoke_main.dds",
+            alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             drag: 0.1,
             opacity: opacity,
             size: new NumberSequence([new NumberSequenceKeypoint(0, size, 0), new NumberSequenceKeypoint(1, endSize, 0)]),

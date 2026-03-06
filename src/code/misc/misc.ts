@@ -292,5 +292,26 @@ export async function imageUrlToDataUrl(imageUrl: string): Promise<string> {
     });
 }
 
+//Based on: https://stackoverflow.com/questions/424292/seedable-javascript-random-number-generator
+export class RNG {
+    m: number = 0x80000000
+    a: number = 1103515245
+    c: number = 12345
+
+    state: number
+
+    constructor(seed: number) {
+        this.state = seed
+    }
+
+    nextInt(): number {
+        this.state = (this.a * this.state + this.c) & this.m
+        return this.state
+    }
+
+    nextFloat(): number {
+        return this.nextInt() / (this.m - 1)
+    }
+}
 
 export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }
