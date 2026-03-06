@@ -1938,6 +1938,27 @@ export class RBX {
 
                         break
                     }
+                case "Color3":
+                    {
+                        const color3 = new Color3()
+
+                        const childElements = propertyNode.querySelectorAll(":scope > *")
+
+                        if (childElements.length < 3) {
+                            const intColor = Number(propertyNode.textContent)
+                            const colorRGB = intToRgb(intColor)
+                            color3.R = colorRGB.R / 255
+                            color3.G = colorRGB.G / 255
+                            color3.B = colorRGB.B / 255
+                        } else {
+                            for (const element of childElements) {
+                                color3[element.nodeName as ("R" | "G" | "B")] = Number(element.textContent)
+                            }
+                        }
+
+                        instance.addProperty(new Property(propertyNode.getAttribute("name") || "null", DataType.Color3), color3)
+                        break
+                    }
                 case "Color3uint8":
                     {
                         const color3uint8 = new Color3uint8()
@@ -1960,6 +1981,15 @@ export class RBX {
                     instance.setProperty(property.name, Number(propertyNode.textContent))
                     break
                 }
+                case "float": {
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.Float32
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, Number(propertyNode.textContent))
+                    break
+                }
             }
         }
 
@@ -1974,7 +2004,7 @@ export class RBX {
 
     fromXML(xml: Document) { //TODO: figure out how to do this accurately https://dom.rojo.space/xml.html
         console.warn("Parsing RBX xml file, the result may not be accurate")
-        //console.log(xml)
+        console.log(xml)
 
         const itemParentMap = new Map<Element,Instance>()
 
