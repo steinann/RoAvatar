@@ -653,7 +653,7 @@ export class MaterialDesc {
         if (!hasLayerOfType) return
 
         //full texture compositing
-        if (hasSpecialUVType) {
+        if (hasSpecialUVType || this.bodyPart !== undefined) {
             return this.compileTexture_FullCompose(textureType, meshDesc)
         } else if (this.layers.length > 1 || hasColorLayer) { //simple texture compositing
             return this.compileTexture_SimpleCompose(textureType)
