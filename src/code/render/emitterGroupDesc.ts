@@ -351,9 +351,9 @@ class EmitterDesc extends DisposableDesc {
         }
 
         //sort particles
-        this.particles.sort((a, b) => {
-            return b.camDistance() - a.camDistance()
-        })
+        //this.particles.sort((a, b) => {
+        //    return b.camDistance() - a.camDistance()
+        //})
     }
 
     updateResult() {
