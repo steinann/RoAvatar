@@ -98,6 +98,7 @@ class EmitterDesc extends DisposableDesc {
     texture?: string
 
     opacity: number = 1
+    lightEmission: number = 1
     blending: THREE.Blending = THREE.AdditiveBlending
 
     color: ColorSequence = new ColorSequence()
@@ -217,8 +218,8 @@ class EmitterDesc extends DisposableDesc {
         }
 
         const speed = randomBetween(this.speed.Min, this.speed.Max)
-        const spreadX = rad(randomBetween(-this.spreadAngle.X, this.spreadAngle.X))
-        const spreadY = rad(randomBetween(-this.spreadAngle.Y, this.spreadAngle.Y))
+        const spreadX = rad(randomBetween(-Math.abs(this.spreadAngle.X), Math.abs(this.spreadAngle.X)))
+        const spreadY = rad(randomBetween(-Math.abs(this.spreadAngle.Y), Math.abs(this.spreadAngle.Y)))
         const spread = new Vector2(spreadX, spreadY)
 
         let velocityMultiplierScalar = 1
@@ -472,6 +473,8 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Color")) emitterDesc.color = child.Prop("Color") as ColorSequence
         if (child.HasProperty("Texture")) emitterDesc.texture = child.Prop("Texture") as string
         if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence
+        if (child.HasProperty("LightEmission")) emitterDesc.lightEmission = child.Prop("LightEmission") as number
+        emitterDesc.blending = emitterDesc.lightEmission === 0 ? THREE.NormalBlending : THREE.AdditiveBlending
 
         this.emitterDescs.push(emitterDesc)
     }
