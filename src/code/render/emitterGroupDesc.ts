@@ -4,7 +4,7 @@ import { DisposableDesc, RenderDesc } from "./renderDesc";
 import { API } from '../api';
 import { rad, specialClamp } from '../misc/misc';
 import { getRendererCamera } from './renderer';
-import { NormalId, ParticleEmitterShapeInOut } from '../rblx/constant';
+import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../rblx/constant';
 import { particle_fragmentShader, particle_vertexShader } from './shaders/particleShader';
 
 function randomBetween(min: number, max: number): number {
@@ -44,19 +44,88 @@ class Particle {
         this.rotationSpeed = rotationSpeed
     }
 
-    getMatrix(size: number) {
+    camDistance(): number {
+        const cameraPos = new Vector3(...getRendererCamera().position.toArray())
+        const particlePos = this.position
+
+        const distance = cameraPos.minus(particlePos).magnitude()
+        return distance
+    }
+
+    getMatrix(size: number, orientation: number): THREE.Matrix4 {
         const camera = getRendererCamera()
 
         const particlePos = new THREE.Vector3(...this.position.toVec3())
 
         const translation = new THREE.Matrix4().makeTranslation(particlePos)
-        const rotation = new THREE.Matrix4().makeRotationFromQuaternion(camera.quaternion)
-        const flatRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), rad(this.rotation))
         const scale = new THREE.Matrix4().makeScale(size,size,1)
 
-        const final = translation.multiply(rotation).multiply(flatRotation).multiply(scale)
+        switch (orientation) {
+            case ParticleOrientation.FacingCameraWorldUp:
+                {
+                    const cameraLookVector = new THREE.Vector3()
+                    camera.getWorldDirection(cameraLookVector)
+                    const rotationParticlePosMatrix = new THREE.Matrix4().lookAt(new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0), cameraLookVector)
 
-        return final
+                    const _pos = new THREE.Vector3()
+                    const _scale = new THREE.Vector3()
+                    const rotationQuat = new THREE.Quaternion()
+                    rotationParticlePosMatrix.decompose(_pos, rotationQuat, _scale)
+
+                    const rotation = new THREE.Matrix4().makeRotationFromQuaternion(rotationQuat)
+                    const flatRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), rad(this.rotation))
+                    const offsetRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0), rad(-90))
+                    const offset2Rotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,1,0), rad(180))
+
+                    const final = translation.multiply(rotation).multiply(offsetRotation).multiply(offset2Rotation).multiply(flatRotation).multiply(scale)
+
+                    return final
+                }
+            case ParticleOrientation.VelocityPerpendicular:
+                {
+                    const normalizedVelocity = new THREE.Vector3(...this.velocity.normalize().toVec3())
+                    const rotationParticlePosMatrix = new THREE.Matrix4().lookAt(new THREE.Vector3(0,0,0), normalizedVelocity, new THREE.Vector3(0,1,0))
+
+                    const _pos = new THREE.Vector3()
+                    const _scale = new THREE.Vector3()
+                    const rotationQuat = new THREE.Quaternion()
+                    rotationParticlePosMatrix.decompose(_pos, rotationQuat, _scale)
+
+                    const rotation = new THREE.Matrix4().makeRotationFromQuaternion(rotationQuat)
+                    const flatRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), rad(this.rotation))
+
+                    const final = translation.multiply(rotation).multiply(flatRotation).multiply(scale)
+
+                    return final
+                }
+            case ParticleOrientation.VelocityParallel:
+                {
+                    const normalizedVelocity = new THREE.Vector3(...this.velocity.normalize().toVec3())
+                    const rotationParticlePosMatrix = new THREE.Matrix4().lookAt(particlePos, camera.position, normalizedVelocity)
+
+                    const _pos = new THREE.Vector3()
+                    const _scale = new THREE.Vector3()
+                    const rotationQuat = new THREE.Quaternion()
+                    rotationParticlePosMatrix.decompose(_pos, rotationQuat, _scale)
+
+                    const rotation = new THREE.Matrix4().makeRotationFromQuaternion(rotationQuat)
+                    const flatRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), rad(this.rotation + 90))
+
+                    const final = translation.multiply(rotation).multiply(flatRotation).multiply(scale)
+
+                    return final
+                }
+            case ParticleOrientation.FacingCamera:
+            default:
+                {
+                    const rotation = new THREE.Matrix4().makeRotationFromQuaternion(camera.quaternion)
+
+                    const flatRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), rad(this.rotation))
+                    const final = translation.multiply(rotation).multiply(flatRotation).multiply(scale)
+
+                    return final
+                }
+        }
     }
 
     tick(dt: number, drag: number, acceleration: Vector3) {
@@ -91,6 +160,7 @@ class EmitterDesc extends DisposableDesc {
     drag: number = 0
     timeScale: number = 1
 
+    orientation: number = ParticleOrientation.FacingCamera
     zOffset: number = 0
     offset: Vector3 = new Vector3()
     shapeInOut: number = 0
@@ -139,8 +209,8 @@ class EmitterDesc extends DisposableDesc {
             const image = await API.Generic.LoadImage(source)
             if (image) {
                 const texture = new THREE.Texture(image)
-                texture.wrapS = THREE.RepeatWrapping
-                texture.wrapT = THREE.RepeatWrapping
+                texture.wrapS = THREE.ClampToEdgeWrapping
+                texture.wrapT = THREE.ClampToEdgeWrapping
                 texture.colorSpace = colorSpace
                 
                 texture.needsUpdate = true
@@ -279,6 +349,11 @@ class EmitterDesc extends DisposableDesc {
             this.emit(groupDesc)
             this.passedTime -= 1 / this.rate
         }
+
+        //sort particles
+        this.particles.sort((a, b) => {
+            return b.camDistance() - a.camDistance()
+        })
     }
 
     updateResult() {
@@ -295,7 +370,7 @@ class EmitterDesc extends DisposableDesc {
             const size = this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
-            this.result.setMatrixAt(i, particle.getMatrix(size))
+            this.result.setMatrixAt(i, particle.getMatrix(size, this.orientation))
             this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
             this.instanceOpacityBuffer.setX(i, opacity)
             this.instanceSeedTimeBuffer.setXY(i, particle.seed, normalizedTime)
@@ -485,6 +560,7 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("LightEmission")) emitterDesc.lightEmission = child.Prop("LightEmission") as number
         emitterDesc.blending = emitterDesc.lightEmission === 0 ? THREE.NormalBlending : THREE.AdditiveBlending
         if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number
+        if (child.HasProperty("Orientation")) emitterDesc.orientation = child.Prop("Orientation") as number
 
         this.emitterDescs.push(emitterDesc)
     }

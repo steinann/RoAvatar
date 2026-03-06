@@ -6,6 +6,13 @@ export const xmlMagic = "<roblox "
 export const ObjectDescClassTypes = ["Part", "MeshPart", "Decal"]
 export const EmitterGroupDescClassTypes = ["ParticleEmitter", "Sparkles", "Fire", "Smoke"]
 
+export const ParticleOrientation = {
+    "FacingCamera": 0,
+    "FacingCameraWorldUp": 1,
+    "VelocityParallel": 2,
+    "VelocityPerpendicular": 3,
+}
+
 export const ParticleEmitterShapeInOut = {
     "Outward": 0,
     "Inward": 1,
