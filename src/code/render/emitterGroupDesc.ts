@@ -86,6 +86,7 @@ class EmitterDesc extends DisposableDesc {
     speed: NumberRange = new NumberRange(1,1)
     rotation: NumberRange = new NumberRange(0,0)
     rotationSpeed: NumberRange = new NumberRange(0,0)
+    localAcceleration: Vector3 = new Vector3(0,0,0)
     acceleration: Vector3 = new Vector3(0,0,0)
     drag: number = 0
     timeScale: number = 1
@@ -253,7 +254,13 @@ class EmitterDesc extends DisposableDesc {
 
         //tick particles
         for (const particle of this.particles) {
-            particle.tick(dt * this.timeScale, this.drag, this.acceleration)
+            const localAccelerationCF = new CFrame(...this.localAcceleration.toVec3())
+            const rotatedWorldCF = groupDesc.cframe.clone()
+            rotatedWorldCF.Position = [0,0,0]
+            const localAccelerationToWorldCF = rotatedWorldCF.multiply(localAccelerationCF)
+            const localAccelerationToWorld = new Vector3(...localAccelerationToWorldCF.Position)
+
+            particle.tick(dt * this.timeScale, this.drag, this.acceleration.add(localAccelerationToWorld))
         }
 
         //destroy old particles
@@ -491,7 +498,6 @@ export class EmitterGroupDesc extends RenderDesc {
             alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             colorTexture: "rbxasset://textures/particles/sparkles_color.dds",
             drag: 0.2,
-            acceleration: new Vector3(0,0,0),
             size: new NumberSequence([new NumberSequenceKeypoint(0, 0.37, 0), new NumberSequenceKeypoint(1, 0.37 + 0.65, 0)]),
             speed: new NumberRange(5,5),
             rotation: new NumberRange(-90, 90),
@@ -508,7 +514,6 @@ export class EmitterGroupDesc extends RenderDesc {
             texture: "rbxasset://textures/particles/sparkles_main.dds",
             alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             drag: 2,
-            acceleration: new Vector3(0,0,0),
             size: new NumberSequence([new NumberSequenceKeypoint(0, 0.1, 0), new NumberSequenceKeypoint(1, 0.1 + 0.34, 0)]),
             speed: new NumberRange(8,8),
             rotation: new NumberRange(-90, 90),
@@ -541,7 +546,7 @@ export class EmitterGroupDesc extends RenderDesc {
             texture: "rbxasset://textures/particles/fire_main.dds",
             alphaTexture: "rbxasset://textures/particles/fire_alpha.dds",
             drag: 0.4,
-            acceleration: new Vector3(0,0.5 * (1*size*size/4 + 0.7*heat),0),
+            localAcceleration: new Vector3(0,0.5 * (1*size*size/4 + 0.7*heat),0),
             rotation: new NumberRange(-90,90),
             size: new NumberSequence([new NumberSequenceKeypoint(0, 1.1*size, 0), new NumberSequenceKeypoint(2, Math.max(1.1*size - 0.8*size*2, 0), 0)]),
             speed: new NumberRange(0.4*(0.2*size*size + 0.2 * heat), 0.4*(0.2*size*size + 0.2 * heat)),
@@ -589,6 +594,7 @@ export class EmitterGroupDesc extends RenderDesc {
             alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             drag: 0.1,
             opacity: opacity,
+            acceleration: new Vector3(0, 0, 0.4),
             size: new NumberSequence([new NumberSequenceKeypoint(0, size, 0), new NumberSequenceKeypoint(1, endSize, 0)]),
             rotation: new NumberRange(-90, 90),
             speed: new NumberRange(riseVelocity * 0.9, riseVelocity * 1),
