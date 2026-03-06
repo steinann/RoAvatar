@@ -270,6 +270,7 @@ export class MeshDesc {
 
         const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
         if (mesh instanceof Response) {
+            console.warn("Failed to get mesh for compileMesh", mesh)
             return mesh
         }
 
@@ -277,6 +278,7 @@ export class MeshDesc {
         if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {
             const headMesh = await API.Asset.GetMesh(this.headMesh, undefined, true)
             if (headMesh instanceof Response) {
+                console.warn("Failed to get headMesh for compileMesh", headMesh)
                 return headMesh
             }
             if (headMesh.facs) {
@@ -385,6 +387,7 @@ export class MeshDesc {
                 //get target mesh
                 const targetMeshes = await this.modelLayersDesc.compileTargetMeshes()
                 if (!targetMeshes || (targetMeshes instanceof Response)) {
+                    console.warn("Failed to get targetMeshes", targetMeshes)
                     return targetMeshes
                 }
 

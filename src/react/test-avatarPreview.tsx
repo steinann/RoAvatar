@@ -177,6 +177,8 @@ export default function Test_AvatarPreview(): React.JSX.Element {
                                                                                                     //addInstance(rig, auth)
                                                                                                     console.log(rig)
                                                                                                     addInstance(rig, auth)
+                                                                                                } else {
+                                                                                                    console.warn("Failed to apply humanoidDescription", result)
                                                                                                 }
                                                                                             })
                                                                                         }

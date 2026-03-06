@@ -69,6 +69,7 @@ function useLooks(auth: Authentication | undefined, searchData: Search_Payload, 
                 API.Looks.GetUserLooks(userInfo.id, nextPageToken).then(looksResult => {
                     if (loadId !== lastLoadId) return
                     if (looksResult instanceof Response) {
+                        console.warn("Failed to get looksResult", looksResult)
                         setIsLoading(false)
                         return
                     }
@@ -145,6 +146,8 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
                             } else {
                                 setHasPremium(false)
                             }
+                        } else {
+                            console.warn("Failed to get subscriptionResult", subscriptionResult)
                         }
                     })
                 }

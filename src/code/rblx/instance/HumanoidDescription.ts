@@ -601,6 +601,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 assetPromises.push(new Promise((resolve) => {
                                     API.Asset.IsLayered(asset.id).then((isLayered) => {
                                         if (isLayered instanceof Response) {
+                                            console.warn("Failed to get isLayered", isLayered)
                                             resolve(isLayered)
                                         } else {
                                             if (!instance.destroyed) {

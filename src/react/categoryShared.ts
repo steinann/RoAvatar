@@ -125,6 +125,8 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                         break
                     }
                 }
+            } else {
+                console.warn("Failed to get bundleDetails", result)
             }
         })
     }

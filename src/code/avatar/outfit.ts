@@ -1090,6 +1090,8 @@ export class Outfit {
                     break
                 }
             }
+        } else {
+            console.warn("Failed to get bundleDetails", bundleDetails)
         }
 
         return false

@@ -273,6 +273,7 @@ const API = {
 
             const rbx = await API.Asset.GetRBX(ROAVATAR_DATA_URL)
             if (rbx instanceof Response) {
+                console.warn("Failed to get RoAvatarData", rbx)
                 return rbx
             }
 

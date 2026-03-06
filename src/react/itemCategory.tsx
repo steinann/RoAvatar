@@ -116,6 +116,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                             //prevent too much spam
                             if (loadId !== lastLoadId) return
                             if (itemDetails instanceof Response) {
+                                console.warn("Failed to get itemDetails", itemDetails)
                                 lastDetailsRateLimit = Date.now() / 1000
                                 setIsLoading(false)
                                 return
@@ -166,6 +167,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                             setIsLoading(false)
                         })
                     } else {
+                        console.warn("Failed to get avatar inventory", body)
                         setIsLoading(false)
                     }
                 })

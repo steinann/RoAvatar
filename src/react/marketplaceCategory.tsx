@@ -113,6 +113,8 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
                     }
                     
                     setItems(prev => [...prev, ...newItems])
+                } else {
+                    console.warn("Failed to get catalog search", response)
                 }
                 setIsLoading(false)
             })

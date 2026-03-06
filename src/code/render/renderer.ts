@@ -251,6 +251,8 @@ function addRenderDesc(instance: Instance, auth: Authentication, DescClass: type
                     } else {
                         newDesc.dispose(renderer, scene)
                     }
+                } else {
+                    console.warn("Failed to compile mesh", results)
                 }
             })
         }
