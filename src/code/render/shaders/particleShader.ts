@@ -16,12 +16,10 @@ void main() {
     vInstanceOpacity = instanceOpacity;
     vInstanceSeedTime = instanceSeedTime;
 
-    vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
+    vec4 modelViewPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+    modelViewPosition.z += uZOffset;
 
-    float worldUnitZOffset = uZOffset * projectionMatrix[2][2];
-
-    gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
-    gl_Position.z += worldUnitZOffset;
+    gl_Position = projectionMatrix * modelViewPosition;
 }
 `
 
