@@ -91,6 +91,7 @@ class EmitterDesc extends DisposableDesc {
     drag: number = 0
     timeScale: number = 1
 
+    zOffset: number = 0
     offset: Vector3 = new Vector3()
     shapeInOut: number = 0
 
@@ -199,6 +200,7 @@ class EmitterDesc extends DisposableDesc {
                 uColorMap: { value: colorMapToUse },
 
                 uOpacity: { value: this.opacity },
+                uZOffset: { value: this.zOffset },
             },
         })
         
@@ -482,6 +484,7 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence
         if (child.HasProperty("LightEmission")) emitterDesc.lightEmission = child.Prop("LightEmission") as number
         emitterDesc.blending = emitterDesc.lightEmission === 0 ? THREE.NormalBlending : THREE.AdditiveBlending
+        if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number
 
         this.emitterDescs.push(emitterDesc)
     }

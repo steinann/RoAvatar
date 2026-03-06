@@ -8,6 +8,8 @@ varying vec3 vInstanceColor;
 varying float vInstanceOpacity;
 varying vec2 vInstanceSeedTime;
 
+uniform float uZOffset;
+
 void main() {
     vUv = uv;
     vInstanceColor = instanceColor;
@@ -16,7 +18,10 @@ void main() {
 
     vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
 
+    float worldUnitZOffset = uZOffset * projectionMatrix[2][2];
+
     gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
+    gl_Position.z += worldUnitZOffset;
 }
 `
 
