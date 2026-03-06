@@ -1142,12 +1142,19 @@ export class Instance {
             if (humanoid) {
                 const handle = this.FindFirstChild("Handle")
                 if (handle) {
-                    const accessoryAttachment = handle.FindFirstChildOfClass("Attachment")
+                    let accessoryAttachment = null
                     let bodyAttachment = null
-                    const bodyDescendants = this.parent.GetDescendants()
-                    for (const child of bodyDescendants) {
-                        if (child.className === "Attachment" && accessoryAttachment && child.Property("Name") === accessoryAttachment.Property("Name") && child.parent && child.parent.parent === this.parent) {
-                            bodyAttachment = child
+
+                    for (const child of handle.GetChildren()) {
+                        if (child.className === "Attachment") {
+                            const bodyDescendants: Instance[] = this.parent.GetDescendants()
+                            for (const bodyChild of bodyDescendants) {
+                                if (bodyChild.className === "Attachment" && child && bodyChild.Property("Name") === child.Property("Name") && bodyChild.parent && bodyChild.parent.parent === this.parent) {
+                                    bodyAttachment = bodyChild
+                                    accessoryAttachment = child
+                                    break
+                                }
+                            }
                         }
                     }
 
