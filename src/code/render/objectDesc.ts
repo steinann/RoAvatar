@@ -143,33 +143,8 @@ export class ObjectDesc extends RenderDesc {
         this.materialDesc.fromInstance(child)
     }
 
-    disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
-        if (mesh.material) {
-            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-
-            for (const material of materials) {
-                for (const key of Object.keys(material)) {
-                    const value = (material as unknown as {[K in string]: unknown})[key]
-                    if (value instanceof THREE.Texture) {
-                        value.dispose()
-                    }
-                }
-                
-                material.dispose()
-            }
-        }
-        if (mesh.geometry) {
-            mesh.geometry.dispose()
-        }
-        scene.remove(mesh)
-    }
-
     disposeSkeleton(scene: THREE.Scene, skeletonDesc: SkeletonDesc) {
         skeletonDesc.dispose(scene)
-    }
-
-    disposeRenderLists(renderer: THREE.WebGLRenderer) {
-        renderer.renderLists.dispose()
     }
 
     //Used to dispose OLD stuff
@@ -178,24 +153,25 @@ export class ObjectDesc extends RenderDesc {
             this.meshDesc.dispose()
         }
 
-        const mesh = this.result
-        if (mesh) {
-            this.disposeMesh(scene, mesh)
+        if (this.results) {
+            for (const mesh of this.results) {
+                this.disposeMesh(scene, mesh)
+            }
         }
         if (this.skeletonDesc) {
             this.disposeSkeleton(scene, this.skeletonDesc)
         }
-        if (mesh) {
+        if (this.results) {
             this.disposeRenderLists(renderer)
         }
     }
 
-    async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
+    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh[] | Response | undefined> {
         startCurrentlyLoadingAssets()
 
-        const originalResult = this.result
+        const originalResult = this.results
         const originalSkeletonDesc = this.skeletonDesc
-        this.result = undefined
+        this.results = undefined
         this.skeletonDesc = undefined
 
         //compile dependencies
@@ -219,7 +195,7 @@ export class ObjectDesc extends RenderDesc {
         threeMesh.receiveShadow = true
         threeMaterial.needsUpdate = true
 
-        this.result = threeMesh
+        this.results = [threeMesh]
         
         //scale
         this.originalScale = threeMesh.scale.clone()
@@ -237,7 +213,7 @@ export class ObjectDesc extends RenderDesc {
         }
 
         if (originalResult) {
-            this.disposeMesh(scene, originalResult)
+            this.disposeMeshes(scene, originalResult)
         }
         if (originalSkeletonDesc) {
             this.disposeSkeleton(scene, originalSkeletonDesc)
@@ -247,11 +223,11 @@ export class ObjectDesc extends RenderDesc {
         }
 
         stopCurrentlyLoadingAssets()
-        return threeMesh
+        return this.results
     }
 
     getScale() {
-        if (!this.result) {
+        if (!this.results) {
             return new Vector3(1,1,1)
         }
 
@@ -263,8 +239,8 @@ export class ObjectDesc extends RenderDesc {
         }
     }
 
-    updateResult() {
-        if (this.result) {
+    updateResults() {
+        if (this.results) {
             let resultCF = this.cframe
 
             if (this.isSkinned && this.instance) {
@@ -281,21 +257,23 @@ export class ObjectDesc extends RenderDesc {
             }
 
             //apply size
-            this.result.scale.set(...this.getScale().toVec3())
-            
-            setTHREEMeshCF(this.result, resultCF)
-            this.result.updateMatrix()
-            this.result.updateMatrixWorld(true)
-            
-            if (this.skeletonDesc && this.instance) {
-                if (this.result && this.result instanceof THREE.SkinnedMesh) {
-                    this.result.bindMatrix.copy(this.result.matrixWorld.clone())
-                    this.result.bindMatrixInverse.copy(this.result.matrixWorld.clone().invert())
-                }
-                if (this.instance.className !== "Decal") {
-                    this.skeletonDesc.update(this.instance)
-                } else if (this.instance.parent) {
-                    this.skeletonDesc.update(this.instance.parent)
+            for (const result of this.results) {
+                result.scale.set(...this.getScale().toVec3())
+                
+                setTHREEMeshCF(result, resultCF)
+                result.updateMatrix()
+                result.updateMatrixWorld(true)
+                
+                if (this.skeletonDesc && this.instance) {
+                    if (result instanceof THREE.SkinnedMesh) {
+                        result.bindMatrix.copy(result.matrixWorld.clone())
+                        result.bindMatrixInverse.copy(result.matrixWorld.clone().invert())
+                    }
+                    if (this.instance.className !== "Decal") {
+                        this.skeletonDesc.update(this.instance)
+                    } else if (this.instance.parent) {
+                        this.skeletonDesc.update(this.instance.parent)
+                    }
                 }
             }
         }

@@ -4,7 +4,13 @@ export const xmlMagic = "<roblox "
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
 export const ObjectDescClassTypes = ["Part", "MeshPart", "Decal"]
-export const ParticleGroupDescClassTypes = ["ParticleEmitter", "Sparkles", "Fire"]
+export const EmitterGroupDescClassTypes = ["ParticleEmitter", "Sparkles", "Fire", "Smoke"]
+
+export const ParticleEmitterShapeInOut = {
+    "Outward": 0,
+    "Inward": 1,
+    "InAndOut": 2,
+}
 
 export const MakeupType = {
     "Face": 0,
@@ -389,6 +395,11 @@ export const DataType = {
     "Enum": 0x12,
     "Referent": 0x13,
 
+    "NumberSequence": 0x15,
+    "ColorSequence": 0x16,
+
+    "NumberRange": 0x17,
+
     "Color3uint8": 0x1a,
     "Int64": 0x1b,
     "SharedString": 0x1c,
@@ -433,119 +444,6 @@ export const FaceControlNames = [
     "UpperLipSuck",
     "TongueDown", "TongueOut", "TongueUp"
 ]
-
-/**
- * @deprecated Face bone names are not standardized
- */
-export const FaceBoneNames = [
-    "TongueBase",
-    "RightOuterBrow",
-    "RightEyeRoot",
-    "LeftLowerCornerMouth",
-    "RightLowerOuterEyelid",
-    "RightInnerBrow",
-    "LeftLowerEyelid",
-    "LeftEyePupil",
-    "Chin",
-    "RightUpperEyelid",
-    "RightLowerOuterMouth",
-    "LeftUpperInnerEyelid",
-    "LeftUpperEyelid",
-    "LeftUpperOuterEyelid",
-    "LeftEyeBar",
-    "LowerTeethRoot",
-    "LeftLowerOuterMouth",
-    "RightUpperOuterEyelid",
-    "TongueTip",
-    "RightUpperInnerEyelid",
-    "RightLowerInnerEyelid",
-    "LeftUpperOuterMouth",
-    "Jaw",
-    "LeftOuterBrow",
-    "RightLowerCornerMouth",
-    "LeftLowerOuterEyelid",
-    "LeftCheek",
-    "LeftEyeRoot",
-    "RightCheek",
-    "LeftLowerInnerEyelid",
-    "RightEyePupil",
-    "TongueRoot",
-    "RightEyeBar",
-    "UpperTeethRoot",
-    "LeftInnerBrow",
-    "RightLowerEyelid",
-    "RightUpperOuterMouth"
-]
-
-const ExtraFaceBoneNames = [
-    "TongueBase",
-    "RightLowerOuterMouth",
-    "RightUpperOuterEyelid",
-    "joint27",
-    "RightOuterBrow",
-    "RightEyeRoot",
-    "LeftLowerEyelid",
-    "joint2",
-    "joint17",
-    "LeftLowerOuterMouth",
-    "RightLowerOuterEyelid",
-    "LeftLowerCornerMouth",
-    "LeftUpperOuterEyelid",
-    "joint28",
-    "joint15",
-    "joint25",
-    "LeftUpperOuterMouth",
-    "joint18",
-    "joint26",
-    "RightLowerInnerEyelid",
-    "joint23",
-    "joint24",
-    "RightUpperEyelid",
-    "Chin",
-    "joint19",
-    "joint21",
-    "joint9",
-    "LeftCheek",
-    "joint22",
-    "Jaw",
-    "LeftOuterBrow",
-    "RightLowerCornerMouth",
-    "LeftLowerOuterEyelid",
-    "joint4",
-    "joint11",
-    "joint3",
-    "joint16",
-    "joint1",
-    "LeftUpperInnerEyelid",
-    "joint14",
-    "LeftUpperEyelid",
-    "joint8",
-    "joint20",
-    "RightUpperOuterMouth",
-    "joint7",
-    "joint12",
-    "joint6",
-    "joint13",
-    "joint5",
-    "joint10",
-    "LeftLowerInnerEyelid",
-    "TongueRoot",
-    "RightInnerBrow",
-    "TongueTip",
-    "RightUpperInnerEyelid",
-    "LowerTeethRoot",
-    "LeftEyeRoot",
-    "RightCheek",
-    "LeftInnerBrow",
-    "RightLowerEyelid",
-    "UpperTeethRoot"
-]
-
-for (const extraBoneName of ExtraFaceBoneNames) {
-    if (!FaceBoneNames.includes(extraBoneName)) {
-        FaceBoneNames.push(extraBoneName)
-    }
-}
 
 export const AbbreviationToFaceControlProperty: {[K in string]: string} = {
     "c_COR": "Corrugator",

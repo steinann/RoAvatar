@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
-import { rad, rotationMatrixToEulerAngles } from '../misc/misc';
+import { mapNum, rad, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
@@ -73,6 +73,30 @@ export class Vector2 {
 
     clone() {
         return new Vector2(this.X, this.Y)
+    }
+
+    isSame(other: Vector2) {
+        return isSameFloat(this.X, other.X) &&
+                isSameFloat(this.Y, other.Y)
+    }
+}
+
+export class NumberRange {
+    Min: number = 0
+    Max: number = 0
+
+    constructor(Min: number = 0, Max: number = 0) {
+        this.Min = Min
+        this.Max = Max
+    }
+
+    clone() {
+        return new NumberRange(this.Min, this.Max)
+    }
+
+    isSame(other: NumberRange) {
+        return isSameFloat(this.Min, other.Min) &&
+                isSameFloat(this.Max, other.Max)
     }
 }
 
@@ -157,6 +181,22 @@ export class Color3 {
     toColor3uint8() {
         return new Color3uint8(Math.round(this.R * 255), Math.round(this.G * 255), Math.round(this.B * 255))
     }
+
+    multiply(vec3: Color3) {
+        return new Color3(this.R * vec3.R, this.G * vec3.G, this.B * vec3.B)
+    }
+
+    divide(vec3: Color3) {
+        return new Color3(this.R / vec3.R, this.G / vec3.G, this.B / vec3.B)
+    }
+
+    add(vec3: Color3) {
+        return new Color3(this.R + vec3.R, this.G + vec3.G, this.B + vec3.B)
+    }
+
+    minus(vec3: Color3) {
+        return new Color3(this.R - vec3.R, this.G - vec3.G, this.B - vec3.B)
+    }
 }
 
 export class Color3uint8 {
@@ -176,6 +216,175 @@ export class Color3uint8 {
 
     toColor3() {
         return new Color3(this.R / 255, this.G / 255, this.B / 255)
+    }
+}
+
+export class NumberSequenceKeypoint {
+    time: number
+    value: number
+    envelope: number
+
+    constructor(time: number, value: number, envelope: number = 0) {
+        this.time = time
+        this.value = value
+        this.envelope = envelope
+    }
+
+    clone() {
+        return new NumberSequenceKeypoint(this.time, this.value, this.envelope)
+    }
+}
+
+export class NumberSequence {
+    keypoints: NumberSequenceKeypoint[] = []
+
+    constructor(keypoints: NumberSequenceKeypoint[] = []) {
+        this.keypoints = keypoints
+    }
+
+    clone() {
+        const copy = new NumberSequence()
+        for (const keypoint of this.keypoints) {
+            copy.keypoints.push(keypoint.clone())
+        }
+
+        return copy
+    }
+
+    getLowerKey(time: number) {
+        let resultKey = null
+
+        for (const key of this.keypoints) {
+            if (key.time <= time) {
+                if (resultKey && resultKey.time > key.time) {
+                    continue
+                }
+                resultKey = key
+            }
+        }
+
+        return resultKey
+    }
+
+    getHigherKey(time: number) {
+        let resultKey = null
+
+        for (const key of this.keypoints) {
+            if (key.time > time) {
+                if (resultKey && resultKey.time < key.time) {
+                    continue
+                }
+                resultKey = key
+            }
+        }
+
+        return resultKey
+    }
+
+    getValue(time: number) {
+        const higherKey = this.getHigherKey(time)
+        const lowerKey = this.getLowerKey(time)
+
+        if (higherKey && !lowerKey) {
+            return higherKey.value
+        }
+
+        if (lowerKey && !higherKey) {
+            return lowerKey.value
+        }
+
+        if (lowerKey && higherKey) {
+            const keyTime = mapNum(time, lowerKey.time, higherKey.time, 0, 1)
+
+            return (higherKey.value - lowerKey.value) * keyTime + lowerKey.value
+        }
+
+        return 1
+    }
+}
+
+export class ColorSequenceKeypoint {
+    time: number
+    value: Color3
+
+    constructor(time: number, r: number, g: number, b: number) {
+        this.time = time
+        this.value = new Color3(r,g,b)
+    }
+
+    clone() {
+        return new ColorSequenceKeypoint(this.time, this.value.R, this.value.G, this.value.B)
+    }
+}
+
+export class ColorSequence {
+    keypoints: ColorSequenceKeypoint[] = []
+
+    static fromColor(color: Color3) {
+        const colorSequence = new ColorSequence()
+        colorSequence.keypoints.push(new ColorSequenceKeypoint(0, color.R, color.G, color.B))
+
+        return colorSequence
+    }
+
+    clone() {
+        const copy = new ColorSequence()
+        for (const keypoint of this.keypoints) {
+            copy.keypoints.push(keypoint.clone())
+        }
+
+        return copy
+    }
+
+    getLowerKey(time: number) {
+        let resultKey = null
+
+        for (const key of this.keypoints) {
+            if (key.time <= time) {
+                if (resultKey && resultKey.time > key.time) {
+                    continue
+                }
+                resultKey = key
+            }
+        }
+
+        return resultKey
+    }
+
+    getHigherKey(time: number) {
+        let resultKey = null
+
+        for (const key of this.keypoints) {
+            if (key.time > time) {
+                if (resultKey && resultKey.time < key.time) {
+                    continue
+                }
+                resultKey = key
+            }
+        }
+
+        return resultKey
+    }
+
+    getValue(time: number) {
+        const higherKey = this.getHigherKey(time)
+        const lowerKey = this.getLowerKey(time)
+
+        if (higherKey && !lowerKey) {
+            return higherKey.value
+        }
+
+        if (lowerKey && !higherKey) {
+            return lowerKey.value
+        }
+
+        if (lowerKey && higherKey) {
+            const keyTime = mapNum(time, lowerKey.time, higherKey.time, 0, 1)
+
+            return (higherKey.value.minus(lowerKey.value)).multiply(new Color3(keyTime, keyTime, keyTime)).add(lowerKey.value)
+        }
+
+        return new Color3(0,0,0)
     }
 }
 
@@ -766,6 +975,10 @@ export class Instance {
         return this.Property(name)
     }
 
+    PropOrDefault(name: string, def: unknown) {
+        return this.HasProperty(name) ? this.Prop(name) : def
+    }
+
     PropertyType(name: string): number | undefined {
         return this._properties.get(name)?.typeID
     }
@@ -1005,6 +1218,9 @@ class PROP {
                 case DataType.Color3:
                 case DataType.Color3uint8:
                 case DataType.CFrame:
+                case DataType.NumberRange:
+                case DataType.NumberSequence:
+                case DataType.ColorSequence:
                     copy.values.push((value as {clone: () => unknown}).clone())
                     break
                 default:
@@ -1398,6 +1614,44 @@ export class RBX {
 
                     for (const referent of referents) {
                         prop.values.push(referent)
+                    }
+                    break
+                }
+            case DataType.NumberSequence:
+                {
+                    for (let i = 0; i < valuesLength; i++) {
+                        const length = chunkView.readUint32()
+
+                        const numberSequence = new NumberSequence()
+
+                        for (let j = 0; j < length; j++) {
+                            numberSequence.keypoints.push(new NumberSequenceKeypoint(chunkView.readNormalFloat32(), chunkView.readNormalFloat32(), chunkView.readNormalFloat32()))
+                        }
+
+                        prop.values.push(numberSequence)
+                    }
+                    break
+                }
+            case DataType.ColorSequence:
+                {
+                    for (let i = 0; i < valuesLength; i++) {
+                        const length = chunkView.readUint32()
+
+                        const colorSequence = new ColorSequence()
+
+                        for (let j = 0; j < length; j++) {
+                            colorSequence.keypoints.push(new ColorSequenceKeypoint(chunkView.readNormalFloat32(), chunkView.readNormalFloat32(), chunkView.readNormalFloat32(), chunkView.readNormalFloat32()))
+                            chunkView.readNormalFloat32()
+                        }
+
+                        prop.values.push(colorSequence)
+                    }
+                    break
+                }
+            case DataType.NumberRange:
+                {
+                    for (let i = 0; i < valuesLength; i++) {
+                        prop.values.push(new NumberRange(chunkView.readNormalFloat32(), chunkView.readNormalFloat32()))
                     }
                     break
                 }
@@ -1971,6 +2225,7 @@ export class RBX {
                                         bufferLength += 4
                                         break
                                     case DataType.Vector2:
+                                    case DataType.NumberRange:
                                         bufferLength += 4 * 2
                                         break
                                     case DataType.Color3:

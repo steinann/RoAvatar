@@ -752,6 +752,7 @@ export class MaterialDesc {
                 polygonOffset: this.isDecal ? true : false,
                 polygonOffsetFactor: this.isDecal ? -1.0 : undefined,
                 polygonOffsetUnits: this.isDecal ? 0.05 : undefined,
+                depthWrite: this.transparency > 0 ? false : true,
             })
         } else { //NOT PBR
             material = new THREE.MeshPhongMaterial({
@@ -767,6 +768,7 @@ export class MaterialDesc {
                 polygonOffset: this.isDecal ? true : false,
                 polygonOffsetFactor: this.isDecal ? -1.0 : undefined,
                 polygonOffsetUnits: this.isDecal ? 0.05 : undefined,
+                depthWrite: this.transparency > 0 ? false : true,
             })
         }
 

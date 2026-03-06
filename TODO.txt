@@ -23,6 +23,7 @@ ISSUES (Relating to renderer inaccuracy):
     -MATERIALDESC: bad looking white lines on this asset 17803581539
     -MATERIALDESC: face appears on certain dynamic head in r6: https://www.roblox.com/catalog/115499438051492/Friendly-Grin-Head
     -MAKEUP: inheritUV ignores collision, which means lipstick passes through teeth and the back of the mouth
+    -EMITTER: Transparency is ignored
 
 ISSUES (General):
     -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
@@ -37,15 +38,12 @@ FEATURES:
         -Button that shows assets in bundle
         -Reset to currently wearing
         -Add apply button to filter menu
-    MEDIUM PRIORITY:
-        -Publish outfits to Roblox (like in the mobile app)
-        -Save outfit as .rbxm
         -Gear inside preview
+    MEDIUM PRIORITY:
+        -Save outfit as .rbxm
         -Autosave setting
         -Layered clothing quality setting
         -Write custom number in scale sliders
         -Snapping for adjustment sliders
         -Custom tooltip
         -Highlight searched text in item name
-    LOW PRIORITY:
-        -Particle rendering

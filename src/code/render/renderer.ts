@@ -5,10 +5,11 @@ import type { RenderDesc } from './renderDesc';
 import { ObjectDesc } from './objectDesc';
 import { type Connection, type Instance } from '../rblx/rbx';
 import type { Authentication } from '../api';
-import { ObjectDescClassTypes } from '../rblx/constant';
+import { EmitterGroupDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { POST_PROCESSING_IS_DOUBLE_SIZE, USE_POST_PROCESSING } from '../misc/flags';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
+import { EmitterGroupDesc } from './emitterGroupDesc';
 
 // MAIN DATA FOR THE RENDERER (i should have really made this a class...)
 const isRenderingMesh = new Map<Instance,boolean>()
@@ -138,7 +139,7 @@ if (lightingType === "WellLit") {
     scene.add( directionalLight2 );
 }
 
-const planeGeometry = new THREE.PlaneGeometry( 20, 20, 32, 32 );
+const planeGeometry = new THREE.PlaneGeometry( 100, 100, 1, 1 );
 const planeShadowMaterial = new THREE.ShadowMaterial({opacity: 1.0});
 const shadowPlane = new THREE.Mesh( planeGeometry, planeShadowMaterial );
 shadowPlane.rotation.set(rad(-90),0,0)
@@ -206,39 +207,41 @@ function addRenderDesc(instance: Instance, auth: Authentication, DescClass: type
         //console.log(`Updating ${instance.Prop("Name")}`)
         if (!oldDesc.isSame(newDesc)) {
             oldDesc.fromRenderDesc(newDesc)
-            oldDesc.updateResult()
+            oldDesc.updateResults()
         }
     } else {
         //generate new mesh
         if (!isRenderingMesh.get(instance)) {
             //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
 
-            newDesc.result = oldDesc?.result //this is done so that the result can be disposed if a removeInstance is called during generation
+            newDesc.results = oldDesc?.results //this is done so that the result can be disposed if a removeInstance is called during generation
             renderDescs.set(instance, newDesc)
             isRenderingMesh.set(instance, true)
 
             //get the mesh
-            newDesc.compileResult(renderer, scene).then(result => {
-                if (result && !(result instanceof Response)) {
-                    newDesc.updateResult()
+            newDesc.compileResults(renderer, scene).then(results => {
+                if (results && !(results instanceof Response)) {
+                    newDesc.updateResults()
 
                     if (renderDescs.get(instance)) {
                         oldDesc?.dispose(renderer, scene)
 
-                        //update skeletonDesc for RenderDescs that have that
-                        if (result instanceof THREE.SkinnedMesh && newDesc instanceof ObjectDesc) {
-                            const skeleton = newDesc.skeletonDesc?.skeleton
-                            
-                            if (skeleton) {
-                                result.bindMode = "detached"
-                                if (newDesc.skeletonDesc) {
-                                    scene.add(newDesc.skeletonDesc.rootBone)
+                        for (const result of results) {
+                            //update skeletonDesc for RenderDescs that have that
+                            if (result instanceof THREE.SkinnedMesh && newDesc instanceof ObjectDesc) {
+                                const skeleton = newDesc.skeletonDesc?.skeleton
+                                
+                                if (skeleton) {
+                                    result.bindMode = "detached"
+                                    if (newDesc.skeletonDesc) {
+                                        scene.add(newDesc.skeletonDesc.rootBone)
+                                    }
+                                    result.bind(skeleton)
+                                    scene.add(result)
                                 }
-                                result.bind(skeleton)
+                            } else {
                                 scene.add(result)
                             }
-                        } else {
-                            scene.add(result)
                         }
 
                         //console.log(`Generated ${instance.Prop("Name")} ${instance.id}`)
@@ -281,10 +284,10 @@ export function addInstance(instance: Instance, auth: Authentication) {
     if (ObjectDescClassTypes.includes(instance.className) && !isBakedDecal && (!isDecal || isFirstDecal)) {
         addRenderDesc(instance, auth, ObjectDesc)
     }
-    //ParticleGroupDesc
-    /*else if (ParticleGroupDescClassTypes.includes(instance.className)) {
-        addParticleGroupDesc(instance, auth)
-    }*/
+    //EmitterGroupDesc
+    else if (EmitterGroupDescClassTypes.includes(instance.className)) {
+        addRenderDesc(instance, auth, EmitterGroupDesc)
+    }
 
     //update children  too
     for (const child of instance.GetChildren()) {
