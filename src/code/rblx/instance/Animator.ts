@@ -184,7 +184,7 @@ export default class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    restPose() {
+    restPose(includeMotors: boolean = true, includeFACS: boolean = true) {
         const rig = this.instance.parent?.parent
 
         if (!rig) {
@@ -194,9 +194,9 @@ export default class AnimatorWrapper extends InstanceWrapper {
         const descendants = rig.GetDescendants()
 
         for (const child of descendants) {
-            if (child.className === "Motor6D") {
+            if (child.className === "Motor6D" && includeMotors) {
                 child.setProperty("Transform", new CFrame(0,0,0))
-            } else if (child.className === "FaceControls") {
+            } else if (child.className === "FaceControls" && includeFACS) {
                 const propertyNames = child.getPropertyNames()
                 for (const propertyName of propertyNames) {
                     if (FaceControlNames.includes(propertyName)) {
@@ -231,6 +231,12 @@ export default class AnimatorWrapper extends InstanceWrapper {
             }
         }
 
+        const hasMood = this.data.currentMoodAnimation && this.data.currentMoodAnimation.length > 0
+        const isEmote = this.data.currentAnimation?.startsWith("emote.")
+
+        if (!hasMood && !isEmote) {
+            this.restPose(false, true)
+        }
 
         const rig = this.instance.parent?.parent
         if (rig) {
