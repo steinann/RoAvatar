@@ -641,22 +641,25 @@ export class EmitterGroupDesc extends RenderDesc {
         //this.lowerBound = new Vector3(-boundSize * 2, -boundSize * 2, -boundSize * 2)
         //this.higherBound = new Vector3(boundSize * 2, boundSize * 2, boundSize * 2)
 
+        const sparkSize = size * 0.2
+
         this.emitterDescs.push(this.createEmitter({
-            texture: "rbxasset://textures/particles/fire_sparks_main.dds",
+            texture: "rbxasset://textures/particles/fire_main.dds",
             alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
+            colorTexture: "rbxasset://textures/particles/fire_sparks_color.dds",
             drag: 0.4,
             acceleration: new Vector3(0,0.5 * (1 * size * size / 4 + 0.7 * heat),0),
             rotation: new NumberRange(-90,90),
-            size: new NumberSequence([new NumberSequenceKeypoint(0, 1.1*size, 0), new NumberSequenceKeypoint(2, Math.max(1.1 * size - (-size * 0.2 / 2) * 2, 0), 0)]),
+            size: new NumberSequence([new NumberSequenceKeypoint(0, 1.1*sparkSize, 0), new NumberSequenceKeypoint(3, Math.max(1.1 * sparkSize - (-sparkSize / 3) * 3, 0), 0)]),
             speed: new NumberRange(0.4 * (0.2 * size * size + 0.2 * heat), 0.4 * (0.2 * size * size + 0.2 * heat)),
             rotationSpeed: new NumberRange(100,100),
             spreadAngle: new Vector2(10,10),
             rate: 65,
-            lifetime: new NumberRange(1,2),
+            lifetime: new NumberRange(1.5,3),
             normalizeSizeKeypointTime: false,
             timeScale: timeScale,
             color: ColorSequence.fromColor(secondaryColor),
-            offset: new Vector3(0, 3 * (0.3 * size + 0.05 * heat), 0)
+            blending: THREE.AdditiveBlending,
         }))
     }
 
