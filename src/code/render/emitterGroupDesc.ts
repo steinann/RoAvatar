@@ -11,14 +11,14 @@ function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min
 }
 
-function randomVelocity(speed: number, spread: Vector2) {
+function velocityFromSpread(speed: number, spread: Vector2) {
 	const theta = spread.X
 	const phi = spread.Y
 
     const velocity = new Vector3(
-        speed * Math.sin(phi) * Math.cos(theta),
-        speed * Math.sin(phi) * Math.sin(theta),
-        speed * Math.cos(phi)
+        -speed * Math.sin(phi),
+        -speed * Math.cos(phi) * Math.sin(theta),
+        -speed * Math.cos(phi) * Math.cos(theta)
     )
 
 	return velocity
@@ -293,8 +293,8 @@ class EmitterDesc extends DisposableDesc {
         }
 
         const speed = randomBetween(this.speed.Min, this.speed.Max)
-        const spreadX = rad(randomBetween(-Math.abs(this.spreadAngle.X), Math.abs(this.spreadAngle.X)))
-        const spreadY = rad(randomBetween(-Math.abs(this.spreadAngle.Y), Math.abs(this.spreadAngle.Y)))
+        const spreadX = rad((Math.random() - 0.5) * 2 * Math.abs(this.spreadAngle.X))
+        const spreadY = rad((Math.random() - 0.5) * 2 * Math.abs(this.spreadAngle.Y))
         const spread = new Vector2(spreadX, spreadY)
 
         let velocityMultiplierScalar = 1
@@ -305,7 +305,7 @@ class EmitterDesc extends DisposableDesc {
         }
         const velocityMultiplier = new THREE.Vector3(velocityMultiplierScalar,velocityMultiplierScalar,velocityMultiplierScalar)
 
-        const velocityFront = randomVelocity(speed, spread)
+        const velocityFront = velocityFromSpread(speed, spread)
         const velocityOriginal = new THREE.Vector3(...velocityFront.toVec3()).multiply(velocityMultiplier)
         const velocityLocal = velocityOriginal.applyQuaternion(groupDesc.getNormalQuaternionForVelocity())
         
@@ -454,23 +454,23 @@ export class EmitterGroupDesc extends RenderDesc {
         switch (this.emitterDir) {
             case NormalId.Right:
                 {
-                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(1,0,0))
+                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), new THREE.Vector3(1,0,0))
                 }
             case NormalId.Top:
                 {
-                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(0,1,0))
+                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), new THREE.Vector3(0,1,0))
                 }
             case NormalId.Back:
                 {
-                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,1))
+                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), new THREE.Vector3(0,0,1))
                 }
             case NormalId.Left:
                 {
-                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(-1,0,0))
+                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), new THREE.Vector3(-1,0,0))
                 }
             case NormalId.Bottom:
                 {
-                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(0,-1,0))
+                    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), new THREE.Vector3(0,-1,0))
                 }
             case NormalId.Front:
             default:
@@ -594,6 +594,22 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number
         if (child.HasProperty("Orientation")) emitterDesc.orientation = child.Prop("Orientation") as number
         if (child.HasProperty("LockedToPart")) emitterDesc.lockedToPart = child.Prop("LockedToPart") as boolean
+
+        /*emitterDesc.texture = "rbxasset://textures/particles/test.dds"
+        emitterDesc.color = ColorSequence.fromColor(new Color3(1,1,1))
+        emitterDesc.transparency = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
+        emitterDesc.size = new NumberSequence([new NumberSequenceKeypoint(0,0.2,0)])
+        emitterDesc.acceleration = new Vector3(0,0,0)
+        emitterDesc.lifetime = new NumberRange(1,1)
+        emitterDesc.rate = 100
+        emitterDesc.speed = new NumberRange(4,4)
+        emitterDesc.drag = 1
+        emitterDesc.timeScale = 1
+        emitterDesc.spreadAngle = new Vector2(0,20)
+        emitterDesc.rotation = new NumberRange(0,0)
+        emitterDesc.rotationSpeed = new NumberRange(0,0)
+        emitterDesc.shapeInOut = ParticleEmitterShapeInOut.Outward
+        this.emitterDir = NormalId.Left*/
 
         this.emitterDescs.push(emitterDesc)
     }
