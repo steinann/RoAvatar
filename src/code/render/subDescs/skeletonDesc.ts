@@ -117,6 +117,8 @@ export class SkeletonDesc {
                 this.originalBoneCFrames.push(boneCF)
                 setBoneToCFrame(threeBone, boneCF)
 
+                //console.log(threeBone.name, boneCF)
+
                 parentThreeBone.add(threeBone)
             } else {
                 rootBone = threeBone
@@ -129,6 +131,18 @@ export class SkeletonDesc {
         if (!rootBone) {
             throw new Error("FileMesh has no root bone")
         } else {
+            if (rootBone && rootBone.name !== "Root") {
+                const trueRootBone = new THREE.Bone()
+                trueRootBone.name = "Root"
+                trueRootBone.position.set(0,0,0)
+                trueRootBone.rotation.set(0,0,0, "YXZ")
+                this.originalBoneCFrames.unshift(new CFrame())
+                this.bones.unshift(trueRootBone)
+
+                trueRootBone.add(rootBone)
+                rootBone = trueRootBone
+            }
+
             this.rootBone = rootBone
         }
 
@@ -141,6 +155,8 @@ export class SkeletonDesc {
             scene.add(skeletonHelper)
             this.skeletonHelper = skeletonHelper
         }
+
+        //console.log(this.skeleton)
 
         //scene.add(this.rootBone)
     }

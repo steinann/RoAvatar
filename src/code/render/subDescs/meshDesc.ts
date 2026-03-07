@@ -116,6 +116,7 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
         const skinIndices = new Uint16Array(meshSkinning.skinnings.length * 4)
         const skinWeights = new Float32Array(meshSkinning.skinnings.length * 4)
         
+        const hasRootBone = meshSkinning.nameTable.includes("Root")
         //const skinIndices = []
         //const skinWeights = []
         
@@ -134,10 +135,14 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
                     console.log(skinning)
                     throw new Error("mesh is invalid")
                 }
-                skinIndices[i * 4 + 0] = subset.boneIndices[skinning.subsetIndices[0]]
-                skinIndices[i * 4 + 1] = subset.boneIndices[skinning.subsetIndices[1]]
-                skinIndices[i * 4 + 2] = subset.boneIndices[skinning.subsetIndices[2]]
-                skinIndices[i * 4 + 3] = subset.boneIndices[skinning.subsetIndices[3]]
+                const index0 = subset.boneIndices[skinning.subsetIndices[0]]
+                const index1 = subset.boneIndices[skinning.subsetIndices[1]]
+                const index2 = subset.boneIndices[skinning.subsetIndices[2]]
+                const index3 = subset.boneIndices[skinning.subsetIndices[3]]
+                skinIndices[i * 4 + 0] = !hasRootBone && index0 > 0 ? index0 + 1 : index0
+                skinIndices[i * 4 + 1] = !hasRootBone && index1 > 0 ? index1 + 1 : index1
+                skinIndices[i * 4 + 2] = !hasRootBone && index2 > 0 ? index2 + 1 : index2
+                skinIndices[i * 4 + 3] = !hasRootBone && index3 > 0 ? index3 + 1 : index3
             }
         }
         geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
