@@ -7,12 +7,14 @@ import MakeupDescriptionWrapper from "./instance/MakeupDescription";
 import ModelWrapper from "./instance/Model";
 import ScriptWrapper from "./instance/Script";
 import SoundWrapper from "./instance/Sound";
+import ToolWrapper from "./instance/Tool";
 
 //register wrappers
 export default function RegisterWrappers() {
     ModelWrapper.register()
     ScriptWrapper.register()
     SoundWrapper.register()
+    ToolWrapper.register()
 
     AnimatorWrapper.register()
     FaceControlsWrapper.register()

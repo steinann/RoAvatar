@@ -20,6 +20,7 @@ export const RBF_PATCH_SHAPE_SAMPLES = 32 //amount of far-away vertices (importa
 export const USE_VERTEX_COLOR = true
 export const USE_POST_PROCESSING = false //this is needed to enable bloom, but ugly since it disables anti aliasing...
 export const POST_PROCESSING_IS_DOUBLE_SIZE = true //does this count as anti aliasing?
+export const GEAR_ENABLED = false
 
 //skeleton
 export const SHOW_SKELETON_HELPER = false

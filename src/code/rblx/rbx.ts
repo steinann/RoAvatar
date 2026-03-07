@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
-import { mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
+import { hexToRgb, mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
@@ -14,6 +14,7 @@ import * as LZ4 from './lz4'
 import * as fzstd from 'fzstd';
 import { GetWrapperForInstance } from './instance/InstanceWrapper';
 import { SEARCH_FOR_STRING } from '../misc/flags';
+import { BrickColors } from '../avatar/constant';
 
 //datatype structs
 export class UDim {
@@ -580,6 +581,7 @@ export class Instance {
     children: Instance[] = []
     parent?: Instance = undefined
     destroyed: boolean = false
+    hasWrappered: boolean = false
 
     classID?: number //dont use this to identify instance class, it is only used during file loading
     objectFormat?: number //same as above
@@ -796,7 +798,8 @@ export class Instance {
     createWrapper() {
         //instance wrappers (notice how its way shorter than the legacy part)
         const wrapper = GetWrapperForInstance(this)
-        if (wrapper) {
+        if (wrapper && !this.hasWrappered) {
+            this.hasWrappered = true
             wrapper.created()
         }
     }
@@ -951,6 +954,16 @@ export class Instance {
                     const cf = this.Prop("CFrame") as CFrame
                     const pos = cf.Position
                     return new Vector3(pos[0], pos[1], pos[2])
+                    break
+                }
+            case "Color3uint8":
+                {
+                    if (this.HasProperty("BrickColor")) {
+                        const hex = BrickColors[this.Prop("BrickColor") as number]
+                        const rgb = hexToRgb(hex)
+                        const color3uint8 = new Color3uint8(rgb?.r, rgb?.g, rgb?.b)
+                        return color3uint8
+                    }
                     break
                 }
             default:
@@ -2029,6 +2042,10 @@ export class RBX {
             }
 
             currentItems = newCurrentItems
+        }
+
+        for (const child of this.dataModel.GetDescendants()) {
+            child.createWrapper()
         }
 
         this.treeGenerated = true

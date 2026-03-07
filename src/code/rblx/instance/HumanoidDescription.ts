@@ -6,6 +6,7 @@ ISSUES (++ Probably fixed, -- Not fixed)
 import { API, idFromStr } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
+import { GEAR_ENABLED } from "../../misc/flags";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { delta_CIEDE2000 } from "../color-similarity";
@@ -19,7 +20,7 @@ import { InstanceWrapper } from "./InstanceWrapper";
 import MakeupDescriptionWrapper from "./MakeupDescription";
 
 type ClothingDiffType = "Shirt" | "Pants" | "GraphicTShirt"
-type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory" | "makeup"
+type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory" | "makeup" | "gear"
 
 function isSameAccessoryDesc(desc0: Instance, desc1: Instance) {
     return hasSameVal(desc0, desc1, "AssetId") &&
@@ -60,6 +61,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         "Pants",
         "Shirt",
         "Face",
+        "_Gear",
     ]
 
     cancelApply: boolean = false //apply changes to original description to reflect progress, this way we dont have to mark the entire old one dirty if we cancel OR combine comparison of both humanoid descriptions?
@@ -96,6 +98,9 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         // OTHER
         if (!this.instance.HasProperty("Face")) this.instance.addProperty(new Property("Face", DataType.Int64), 0n)
 
+        // FAKE
+        if (!this.instance.HasProperty("_Gear")) this.instance.addProperty(new Property("_Gear", DataType.NonSerializable), 0n)
+
         //many properties are missing because theyre not actually serialized, check for accessorydescriptions and bodypartdescriptions that are children
     }
 
@@ -124,6 +129,8 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         this.instance.setProperty("Shirt", 0n)
 
         this.instance.setProperty("Face", 0n)
+
+        this.instance.setProperty("_Gear", 0n)
 
         for (const child of this.instance.GetChildren()) {
             child.Destroy()
@@ -199,6 +206,12 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
 
         if (!faceSame) {
             diffs.push("face")
+        }
+
+        // GEAR
+        const gearSame = hasSameVal(self, other, "_Gear")
+        if (!gearSame) {
+            diffs.push("gear")
         }
 
         //ACCESSORIES
@@ -692,6 +705,11 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
                             instance.setParent(this.instance)
                         }
                         break
+                    case "Gear":
+                        {
+                            this.instance.setProperty("_Gear", asset.id)
+                        }
+                        break
                     default:
                         console.warn(`Unsupported assetType: ${asset.assetType.name}`)
             }
@@ -1086,6 +1104,46 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
+    /**
+     * @returns undefined on success
+     */
+    async _applyGear(humanoid: Instance): Promise<undefined | Response> {
+        if (!GEAR_ENABLED) return
+
+        const rig = humanoid.parent
+        if (!rig) {
+            return undefined
+        }
+
+        const id = this.instance.Prop("_Gear") as bigint
+
+        if (id > 0) {
+            const rbx = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
+            if (this.cancelApply) return undefined
+            if (rbx instanceof RBX) {
+                const dataModel = rbx.generateTree()
+                const tool = dataModel.GetChildren()[0]
+                if (tool) {
+                    const oldTool = rig.FindFirstChildOfClass("Tool")
+                    if (oldTool) {
+                        oldTool.Destroy()
+                    }
+
+                    tool.setParent(rig)
+                }
+            } else {
+                return rbx
+            }
+        } else {
+            const oldTool = rig.FindFirstChildOfClass("Tool")
+            if (oldTool) {
+                oldTool.Destroy()
+            }
+        }
+
+        return undefined
+    }
+
     _inheritAccessoryReferences(originalW: HumanoidDescriptionWrapper) {
         for (const accessoryDesc of originalW.getAccessoryDescriptions()) {
             for (const newAccessoryDesc of this.getAccessoryDescriptions()) {
@@ -1428,6 +1486,7 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
         promises.push(this._applyFace(humanoid))
         promises.push(this._applyAnimations(humanoid))
         promises.push(this._applyMakeup(humanoid))
+        promises.push(this._applyGear(humanoid))
         
         const values = await Promise.all(promises)
         if (this.cancelApply) return undefined
@@ -1477,6 +1536,11 @@ export default class HumanoidDescriptionWrapper extends InstanceWrapper {
             //face
             if (diffs.includes("face")) {
                 miniPromises.push(this._applyFace(humanoid))
+            }
+
+            //gear
+            if (diffs.includes("gear")) {
+                miniPromises.push(this._applyGear(humanoid))
             }
 
             //clothing
