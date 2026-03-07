@@ -148,6 +148,8 @@ class Particle {
 class EmitterDesc extends DisposableDesc {
     passedTime: number = 0
 
+    lockedToPart: boolean = false
+
     lifetime: NumberRange = new NumberRange(1,1)
     rate: number = 10
     spreadAngle: Vector2 = new Vector2(0,0)
@@ -321,18 +323,45 @@ class EmitterDesc extends DisposableDesc {
         this.particles.push(particle)
     }
 
+    vectorLocalToWorld(pivot: CFrame, vector: Vector3) {
+        const localVectorCF = new CFrame(...vector.toVec3())
+        const rotatedWorldCF = pivot.clone()
+        rotatedWorldCF.Position = [0,0,0]
+        const localVectorToWorldCF = rotatedWorldCF.multiply(localVectorCF)
+        const localVectorToWorld = new Vector3(...localVectorToWorldCF.Position)
+
+        return localVectorToWorld
+    }
+
     tick(dt: number, groupDesc: EmitterGroupDesc) {
         this.passedTime += dt * this.timeScale
 
+        //locked to part logic
+        if (this.lockedToPart) {
+            for (const particle of this.particles) {
+                //update position
+                const particleCF = new CFrame(...particle.position.toVec3())
+                const localParticleCF = groupDesc.lastCframe.inverse().multiply(particleCF)
+                const newParticleCF = groupDesc.cframe.multiply(localParticleCF)
+                const newParticleCFOnlyOrientation = newParticleCF.clone()
+                newParticleCFOnlyOrientation.Position = [0,0,0]
+
+                particle.position = new Vector3(...newParticleCF.Position)
+
+                //update velocity
+                particle.velocity = new Vector3(...newParticleCFOnlyOrientation.multiply(new CFrame(...particle.velocity.toVec3())).Position)
+            }
+        }
+
         //tick particles
         for (const particle of this.particles) {
-            const localAccelerationCF = new CFrame(...this.localAcceleration.toVec3())
-            const rotatedWorldCF = groupDesc.cframe.clone()
-            rotatedWorldCF.Position = [0,0,0]
-            const localAccelerationToWorldCF = rotatedWorldCF.multiply(localAccelerationCF)
-            const localAccelerationToWorld = new Vector3(...localAccelerationToWorldCF.Position)
+            const acceleration = this.lockedToPart ? new Vector3(0,0,0) : this.acceleration
+            let localAccelerationToWorld = this.vectorLocalToWorld(groupDesc.cframe, this.localAcceleration)
+            if (this.lockedToPart) {
+                localAccelerationToWorld = localAccelerationToWorld.add(this.vectorLocalToWorld(groupDesc.cframe, this.acceleration))
+            }
 
-            particle.tick(dt * this.timeScale, this.drag, this.acceleration.add(localAccelerationToWorld))
+            particle.tick(dt * this.timeScale, this.drag, acceleration.add(localAccelerationToWorld))
         }
 
         //destroy old particles
@@ -390,6 +419,7 @@ export class EmitterGroupDesc extends RenderDesc {
     lowerBound: Vector3 = new Vector3(0,0,0)
     higherBound: Vector3 = new Vector3(0,0,0)
 
+    lastCframe: CFrame = new CFrame()
     cframe: CFrame = new CFrame()
     emitterDir: number = NormalId.Top
 
@@ -508,6 +538,8 @@ export class EmitterGroupDesc extends RenderDesc {
                         this.cframe = (parentParent.Prop("CFrame") as CFrame).multiply(this.cframe)
                     }
                 }
+
+                this.lastCframe = this.cframe
             }
 
             //get emit bounds
@@ -561,6 +593,7 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.blending = emitterDesc.lightEmission === 0 ? THREE.NormalBlending : THREE.AdditiveBlending
         if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number
         if (child.HasProperty("Orientation")) emitterDesc.orientation = child.Prop("Orientation") as number
+        if (child.HasProperty("LockedToPart")) emitterDesc.lockedToPart = child.Prop("LockedToPart") as boolean
 
         this.emitterDescs.push(emitterDesc)
     }
@@ -737,5 +770,7 @@ export class EmitterGroupDesc extends RenderDesc {
             emitterDesc.tick(dt, this)
             emitterDesc.updateResult()
         }
+
+        this.lastCframe = this.cframe.clone()
     }
 }
