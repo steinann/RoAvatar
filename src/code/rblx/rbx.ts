@@ -1059,6 +1059,7 @@ export class Instance {
         this.ChildAdded.Clear()
         this.Destroying.Clear()
         this.Changed.Clear()
+        this.AncestryChanged.Clear()
 
         this.setParent(null)
 

@@ -3,6 +3,10 @@ import type { Instance } from "../rbx";
 const ClassNameToWrapper = new Map<string, typeof InstanceWrapper>()
 
 export function GetWrapperForInstance(instance: Instance): InstanceWrapper | undefined {
+    if (ClassNameToWrapper.size === 0) {
+        throw new Error("RegisterWrappers need to be called before using RBX")
+    }
+
     const staticWrapper = ClassNameToWrapper.get(instance.className)
     if (staticWrapper) {
         return new staticWrapper(instance)
