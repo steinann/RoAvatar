@@ -1,24 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
-import { API, Authentication } from './code/api'
 import { AuthContext } from './react/context/auth-context'
-import { Outfit } from './code/avatar/outfit'
 import { OutfitContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import ItemCategory from './react/itemCategory'
-import { CategoryDictionary, DefaultSearchData, SortInfo, SpecialInfo } from './code/avatar/sorts'
 import SaveButton from './react/saveButton'
 import UndoRedo from './react/undoRedo'
 import SpecialCategory from './react/specialCategory'
-import { AvatarType } from './code/avatar/constant'
 import ItemCard from './react/itemCard'
-import { ItemInfo } from './code/avatar/asset'
-import { arrayBufferToBase64, base64ToArrayBuffer } from './code/misc/misc'
 import AvatarAdjustment from './react/avatarAdjustment'
-import { type NavigationMenuItems, type Search_Payload } from './code/api-constant'
 import MarketplaceCategory from './react/marketplaceCategory'
-import { HAIR_IS_BODYPART } from './code/misc/flags'
 import RadialButton from './react/generic/radialButton'
 import SearchFilter from './react/searchFilter'
 import SettingsButton from './react/settingsButton'
@@ -27,6 +19,7 @@ import TryInGameButton from './react/tryInGame'
 import Tip from './react/generic/tip'
 import { AlertContext } from './react/context/alert-context'
 import InfoButton from './react/infoButton'
+import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer } from 'roavatar-renderer'
 
 declare const browser: typeof chrome;
 
@@ -265,7 +258,7 @@ function App() {
           const marketplaceSource: {[k in string]: {[k in string]: SpecialInfo}} = {}
 
           //move hair to accessories
-          if (!HAIR_IS_BODYPART) {
+          if (!FLAGS.HAIR_IS_BODYPART) {
             //find body category
             let bodyCategory = undefined
             for (const category of result.categories) {

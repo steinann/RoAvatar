@@ -1,16 +1,12 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
-import { Outfit } from "../code/avatar/outfit"
-import { API, Authentication } from "../code/api"
 import ItemCard from "./itemCard"
-import { AssetTypes, BundleTypes, ItemInfo } from "../code/avatar/asset"
-import { CategoryDictionary, SpecialInfo } from "../code/avatar/sorts"
 import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
-import type { Inventory_Result, ItemDetails_Result, Search_Payload } from "../code/api-constant"
 import NothingLoaded from "./nothingLoaded"
 import { AlertContext } from "./context/alert-context"
+import { Authentication, type Search_Payload, type ItemDetails_Result, API, CategoryDictionary, SpecialInfo, type Inventory_Result, Outfit, ItemInfo, AssetTypes, BundleTypes } from "roavatar-renderer"
 
 type ItemList = {itemType: "Asset" | "Bundle", id: number}[]
 async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, searchData: Search_Payload): Promise<undefined | Response | ItemDetails_Result> {

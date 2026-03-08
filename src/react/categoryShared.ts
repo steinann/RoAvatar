@@ -1,7 +1,4 @@
-import { API } from "../code/api";
-import { CatalogBundleTypes, ItemInfo, ToRemoveBeforeBundleType, WearableAssetTypes } from "../code/avatar/asset";
-import { Outfit } from "../code/avatar/outfit";
-import { DefaultAnimations, type AnimationProp } from "../code/rblx/constant";
+import { API, CatalogBundleTypes, DefaultAnimations, Outfit, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
 
 export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void, animName: string) => {
     if (item.itemType !== "Asset") {

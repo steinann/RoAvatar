@@ -1,8 +1,8 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
-import { arrayBufferToBase64 } from "../code/misc/misc"
 import RadialButton from "./generic/radialButton"
 import Icon from "./generic/icon"
+import { arrayBufferToBase64 } from "roavatar-renderer"
 
 export default function ShareButton(): React.JSX.Element {
     const outfit = useContext(OutfitContext)

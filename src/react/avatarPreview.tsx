@@ -2,15 +2,7 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
-import { addInstance, getRendererCamera, getRendererControls, mount } from "../code/render/renderer"
-import { AvatarType, LayeredClothingAssetOrder } from "../code/avatar/constant"
-import { API, Authentication } from "../code/api"
-import { Connection, Instance, RBX, Vector3 } from "../code/rblx/rbx"
-import { Outfit } from "../code/avatar/outfit"
-import HumanoidDescriptionWrapper from "../code/rblx/instance/HumanoidDescription"
-import AnimatorWrapper from "../code/rblx/instance/Animator"
-import { base64ToArrayBuffer } from "../code/misc/misc"
-import { LOAD_TEST_PLACE } from '../code/misc/flags';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mount, Connection, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3 } from 'roavatar-renderer';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -36,7 +28,7 @@ function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: st
                     const newRig = result.generateTree().GetChildren()[0]
 
                     currentRig = newRig
-                    addInstance(currentRig, auth)
+                    RBXRenderer.addInstance(currentRig, auth)
 
                     setError(undefined)
                 } else {
@@ -56,16 +48,16 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
     if (!currentlyUpdatingPreview) {
         currentlyUpdatingPreview = true
 
-        if (LOAD_TEST_PLACE) {
-            API.Asset.GetRBX(LOAD_TEST_PLACE).then((result) => {
+        if (FLAGS.LOAD_TEST_PLACE) {
+            API.Asset.GetRBX(FLAGS.LOAD_TEST_PLACE).then((result) => {
                 if (result instanceof RBX) {
-                    console.log("Loaded", LOAD_TEST_PLACE)
+                    console.log("Loaded", FLAGS.LOAD_TEST_PLACE)
                     console.log(result)
 
                     const root = result.generateTree()
                     console.log(root)
                     currentRig = root
-                    addInstance(root, auth)
+                    RBXRenderer.addInstance(root, auth)
                 }
             })
 
@@ -99,7 +91,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
 
                     hrpWrapper.applyDescription(humanoid).then((result) => {
                         if (currentRig) {
-                            addInstance(currentRig, auth)
+                            RBXRenderer.addInstance(currentRig, auth)
                         }
                         if (result instanceof Instance) {
                             failedLastDescription = false
@@ -281,16 +273,18 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             if (cameraLocked && currentRig) {
                 const upperTorso = currentRig.FindFirstChild("HumanoidRootPart")
                 if (upperTorso) {
-                    const controls = getRendererControls()
-                    const camera = getRendererCamera()
+                    const controls = RBXRenderer.getRendererControls()
+                    const camera = RBXRenderer.getRendererCamera()
 
                     const pos = upperTorso.Prop("Position") as Vector3
-                    
-                    const offset = new THREE.Vector3().subVectors(camera.position, controls.target)
 
-                    controls.target.set(pos.X, pos.Y + 0.5, pos.Z)
-                    camera.position.set(pos.X + offset.x, pos.Y + 0.5 + offset.y, pos.Z + offset.z)
-                    controls.update()
+                    if (controls) {
+                        const offset = new THREE.Vector3().subVectors(camera.position, controls.target)
+
+                        controls.target.set(pos.X, pos.Y + 0.5, pos.Z)
+                        camera.position.set(pos.X + offset.x, pos.Y + 0.5 + offset.y, pos.Z + offset.z)
+                        controls.update()
+                    }
                 }
             }
 
@@ -306,7 +300,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                         const animatorW = new AnimatorWrapper(animator)
                         animatorW.renderAnimation(deltaTime)
                         
-                        addInstance(currentRig, auth)
+                        RBXRenderer.addInstance(currentRig, auth)
                     }
                 }
             }

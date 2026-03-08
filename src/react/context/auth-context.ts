@@ -1,4 +1,4 @@
 import { createContext } from 'react'
-import type { Authentication } from '../../code/api'
+import { Authentication } from 'roavatar-renderer'
 
 export const AuthContext = createContext<Authentication | undefined>(undefined)

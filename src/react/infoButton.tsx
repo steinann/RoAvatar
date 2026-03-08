@@ -2,8 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react"
 import RadialButton from "./generic/radialButton"
 import Icon from "./generic/icon"
 import { AlertContext } from "./context/alert-context"
-import { RoAvatarData, RoAvatarDataError, versionToNumber } from "../code/rblx/roavatar-data-parser"
-import { API } from "../code/api"
+import { RoAvatarData, RoAvatarDataError, API, versionToNumber } from "roavatar-renderer"
 
 export default function InfoButton(): React.JSX.Element {
     const alert = useContext(AlertContext)

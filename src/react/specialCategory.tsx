@@ -1,6 +1,4 @@
-import type { Search_Payload } from "../code/api-constant"
-import type { Outfit } from "../code/avatar/outfit"
-import type { SpecialInfo } from "../code/avatar/sorts"
+import type { SpecialInfo, Search_Payload, Outfit } from "roavatar-renderer"
 import BodyColorCategory from "./bodyColorCategory"
 import EmoteCategory from "./emoteCategory"
 import LocalOutfitCategory from "./localOutfitCategory"

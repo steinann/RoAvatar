@@ -1,11 +1,8 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import type { ItemInfo } from "../code/avatar/asset";
-import { API, Authentication } from "../code/api";
-import { browserOpenURL } from "../code/browser";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
-import type { Outfit } from "../code/avatar/outfit";
 import { AlertContext } from "./context/alert-context";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL } from "roavatar-renderer";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {

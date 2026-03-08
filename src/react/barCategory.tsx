@@ -1,4 +1,4 @@
-import type { CategoryDictionary } from "../code/avatar/sorts"
+import type { CategoryDictionary } from "roavatar-renderer"
 import BarButton from "./barButton"
 
 export default function BarCategory({children, source, currentCategory, setCurrentCategory, className = "" }: React.PropsWithChildren & { source?: typeof CategoryDictionary | typeof CategoryDictionary.Inventory | typeof CategoryDictionary.Inventory.Recent, currentCategory?: string, setCurrentCategory?: (a: string) => void, className?: string } ): React.JSX.Element {

@@ -1,13 +1,10 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
-import { Outfit } from "../code/avatar/outfit"
-import { API, Authentication } from "../code/api"
 import ItemCard from "./itemCard"
-import { AssetTypes, CatalogBundleTypes, ItemInfo } from "../code/avatar/asset"
 import { defaultOnClick } from "./categoryShared"
-import type { Search_Payload } from "../code/api-constant"
 import NothingLoaded from "./nothingLoaded"
+import { type Search_Payload, Authentication, API, Outfit, ItemInfo, AssetTypes, CatalogBundleTypes } from "roavatar-renderer"
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined

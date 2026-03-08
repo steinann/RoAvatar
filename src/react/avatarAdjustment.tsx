@@ -2,11 +2,8 @@ import { useContext, useEffect, useRef, useState } from "react";
 import SliderInput from "./generic/sliderInput";
 import ItemCard from "./itemCard";
 import { OutfitContext } from "./context/outfit-context";
-import { accessoryRefinementLowerBounds, accessoryRefinementTypes, accessoryRefinementUpperBounds } from "../code/avatar/constant";
 import { AuthContext } from "./context/auth-context";
-import { Asset, AssetMeta, ItemInfo, LayeredAssetTypes, SpecialLayeredAssetTypes } from "../code/avatar/asset";
-import type { Outfit } from "../code/avatar/outfit";
-import { mapNum } from "../code/misc/misc";
+import { accessoryRefinementLowerBounds, accessoryRefinementTypes, accessoryRefinementUpperBounds, Asset, AssetMeta, ItemInfo, LayeredAssetTypes, mapNum, Outfit, SpecialLayeredAssetTypes } from "roavatar-renderer"
 
 type Axis = "x" | "y" | "z"
 type AdjustType = "position" | "rotation" | "scale"

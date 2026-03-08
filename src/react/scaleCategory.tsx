@@ -1,9 +1,7 @@
 import { useContext } from "react"
 import { OutfitContext } from "./context/outfit-context"
-import { mapNum } from "../code/misc/misc"
-import type { Outfit, ScaleName } from "../code/avatar/outfit"
-import { AvatarType } from "../code/avatar/constant"
 import SliderInput from "./generic/sliderInput"
+import { Outfit, type ScaleName, mapNum, AvatarType } from "roavatar-renderer"
 
 //TODO: Make changing scale less laggy by not requiring mesh compilation for skinnedmeshes
 

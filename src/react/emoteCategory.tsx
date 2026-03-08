@@ -1,13 +1,10 @@
 import { useCallback, useContext, useEffect, useState } from "react"
-import { API, type Authentication } from "../code/api"
-import { ItemInfo } from "../code/avatar/asset"
-import type { Outfit } from "../code/avatar/outfit"
 import ItemCategory from "./itemCategory"
 import BarCategory from "./barCategory"
 import { AuthContext } from "./context/auth-context"
 import React from "react"
 import ItemCard from "./itemCard"
-import type { Search_Payload } from "../code/api-constant"
+import { Authentication, ItemInfo, API, type Search_Payload, Outfit } from "roavatar-renderer"
 
 //Box that represents slot in emote wheel
 function EmoteBox({ setAnimName, setCurrentSlot, currentSlot, slot, auth, itemInfo }: {setAnimName: (a: string) => void, setCurrentSlot: (a: number) => void, currentSlot: number, slot: number, auth?: Authentication, itemInfo?: ItemInfo}): React.JSX.Element {

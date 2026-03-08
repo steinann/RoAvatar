@@ -1,14 +1,11 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
-import type { Search_Payload, UserLooks_Result } from "../code/api-constant";
-import { Outfit } from "../code/avatar/outfit";
-import { AuthContext } from "./context/auth-context";
-import { ItemInfo } from "../code/avatar/asset";
 import ItemCard from "./itemCard";
-import { API, type Authentication } from "../code/api";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
+import { type Search_Payload, Authentication, type UserLooks_Result, API, Outfit, ItemInfo } from "roavatar-renderer";
+import { AuthContext } from "./context/auth-context";
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined

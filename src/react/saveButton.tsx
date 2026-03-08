@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
-import { API } from "../code/api"
 import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
 import { AlertContext } from "./context/alert-context"
+import { API } from "roavatar-renderer"
 
 let lastHistoryIndex: number | undefined = undefined
 

@@ -1,4 +1,4 @@
-import type { Search_Payload } from "../code/api-constant"
+import type { Search_Payload } from "roavatar-renderer"
 
 export default function NothingLoaded({loadedAll, itemCount, keyword, searchData, forceText}: {loadedAll: boolean, itemCount: number, searchData: Search_Payload, keyword?: string, forceText?: string}): React.JSX.Element {
     const shouldShow = loadedAll && itemCount === 0

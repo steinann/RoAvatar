@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react"
 import Icon from "./generic/icon"
 import RadialButton from "./generic/radialButton"
 import ToggleButton from "./generic/toggleButton"
-import { DefaultSearchData } from "../code/avatar/sorts"
 import SelectInput from "./generic/selectInput"
+import { DefaultSearchData } from "roavatar-renderer"
 
 function Filter({name, gap, children}: React.PropsWithChildren & {name: string, gap?: number | string}) {
     return <div className="filter">

@@ -1,9 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
-import { arrayBufferToBase64 } from "../code/misc/misc"
 import RadialButton from "./generic/radialButton"
-import { API } from "../code/api"
-import { ROAVATAR_TRYON_PLACE } from "../code/misc/flags"
+import { arrayBufferToBase64, API, FLAGS } from "roavatar-renderer"
 
 export default function TryInGameButton(): React.JSX.Element {
     const outfit = useContext(OutfitContext)
@@ -45,7 +43,7 @@ export default function TryInGameButton(): React.JSX.Element {
             </textarea>
             <div className="dialog-line"></div>
             <RadialButton className="basic-radial-button" onClick={
-                ()=>{API.Generic.JoinPlace(ROAVATAR_TRYON_PLACE)}
+                ()=>{API.Generic.JoinPlace(FLAGS.ROAVATAR_TRYON_PLACE)}
             }>Play</RadialButton>
         </dialog>
     </>

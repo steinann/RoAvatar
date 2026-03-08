@@ -1,10 +1,8 @@
 import { useContext, useRef, useState } from "react";
-import { hexToRgb } from "../code/misc/misc";
 import { OutfitContext } from "./context/outfit-context";
-import type { BodyColor3s, BodyColors, Outfit } from "../code/avatar/outfit";
-import { FullBodyColors, RegularBodyColors } from "../code/avatar/constant";
 import SelectInput from "./generic/selectInput";
 import RadialButton from "./generic/radialButton";
+import { Outfit, hexToRgb, BodyColors, BodyColor3s, RegularBodyColors, FullBodyColors } from "roavatar-renderer";
 
 //convert name of part to name used by BodyColors (kinda)
 function partNameToHexName(partName: string) {
