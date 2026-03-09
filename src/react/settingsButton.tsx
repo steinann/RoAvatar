@@ -10,7 +10,7 @@ function SettingsToggle({text, storage}: {text: string, storage: string}): React
 
     useEffect(() => {
         (chrome || browser).storage.local.get([storage]).then((result) => {
-            _setValue(result[storage])
+            _setValue(result[storage] ? true : false)
         })
     })
 
