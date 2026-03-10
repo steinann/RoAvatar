@@ -37,7 +37,6 @@ FEATURES:
         -Button that shows assets in bundle
         -Reset to currently wearing
         -Add apply button to filter menu
-        -Gear inside preview
     MEDIUM PRIORITY:
         -Save outfit as .rbxm
         -Autosave setting
