@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { RBXRenderer, RegisterWrappers } from 'roavatar-renderer'
+import { RBXRenderer } from 'roavatar-renderer'
 
 const darkTheme = document.getElementById("style-dark-theme")
 const lightTheme = document.getElementById("style-light-theme")
@@ -16,7 +16,6 @@ if (theme === "light") {
   lightTheme?.remove()
 }
 
-RegisterWrappers()
 RBXRenderer.fullSetup()
 
 createRoot(document.getElementById('root')!).render(
