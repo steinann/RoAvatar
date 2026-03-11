@@ -12,7 +12,7 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: AutoSkin ignores vertex groups, https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
     -LC: Layered clothing uses RBF-deformation for cage layering instead of linear deformation
     -LC: Layering breaks when 2 meshes with identical caging are worn
-    -LC: Instead of putting the attachment in the correct position we cheat
+    -LC: Instead of putting the attachment in the correct position we cheat, which also doesnt work for not-deformed clothing, see https://www.roblox.com/catalog/15188573401/Holdable-Ghostwalker-Sword-White-RIGHT
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
