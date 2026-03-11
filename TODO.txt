@@ -13,7 +13,6 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: Layered clothing uses RBF-deformation for cage layering instead of linear deformation
     -LC: Layering breaks when 2 meshes with identical caging are worn
     -LC: Instead of putting the attachment in the correct position we cheat
-    -ANIMATION: Blinking happens even when mood in not equipped
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
@@ -22,7 +21,6 @@ ISSUES (Relating to renderer inaccuracy):
     -MATERIALDESC: bad looking white lines on this asset 17803581539
     -MATERIALDESC: face appears on certain dynamic head in r6: https://www.roblox.com/catalog/115499438051492/Friendly-Grin-Head
     -MAKEUP: inheritUV ignores collision, which means lipstick passes through teeth and the back of the mouth
-    -EMITTER: Transparency is ignored
 
 ISSUES (General):
     -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
