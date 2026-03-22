@@ -5,12 +5,19 @@ import Icon from "./generic/icon";
 
 declare const browser: typeof chrome;
 
-function SettingsToggle({text, storage}: {text: string, storage: string}): React.JSX.Element {
+function SettingsToggle({text, storage, defaultValue}: {text: string, storage: string, defaultValue: boolean}): React.JSX.Element {
     const [value, _setValue] = useState(false)
 
     useEffect(() => {
         (chrome || browser).storage.local.get([storage]).then((result) => {
-            _setValue(result[storage] ? true : false)
+            let value = defaultValue
+
+            const storageResult = result[storage]
+            if (storageResult !== undefined && storageResult !== null) {
+                value = storageResult as boolean
+            }
+
+            _setValue(value)
         })
     })
 
@@ -57,7 +64,7 @@ export default function SettingsButton(): React.JSX.Element {
             
             {/*Actual settings*/}
             <div className="dialog-line"></div>
-            <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default"/>
+            <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={false}/>
         </dialog>
     </>
 }

@@ -29,6 +29,7 @@ function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: st
 
                     currentRig = newRig
                     RBXRenderer.addInstance(currentRig, auth)
+                    //console.log("new rig", currentRig)
 
                     setError(undefined)
                 } else {
@@ -299,6 +300,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
 
                         const animatorW = new AnimatorWrapper(animator)
                         animatorW.renderAnimation(deltaTime)
+
+                        currentRig.preRender()
                         
                         RBXRenderer.addInstance(currentRig, auth)
                     }
