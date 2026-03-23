@@ -19,7 +19,7 @@ import TryInGameButton from './react/tryInGame'
 import Tip from './react/generic/tip'
 import { AlertContext } from './react/context/alert-context'
 import InfoButton from './react/infoButton'
-import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer } from 'roavatar-renderer'
+import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer } from 'roavatar-renderer'
 
 declare const browser: typeof chrome;
 
@@ -557,11 +557,13 @@ declare global {
         getRBX: (a: string) => void;
         renderOutfit: (outfit: Outfit) => Promise<string | undefined>;
         createLook: typeof API.Looks.CreateLook;
+        exportScene: typeof RBXRenderer.exportScene;
     }
 }
 
 window.arrayBufferToBase64 = arrayBufferToBase64
 window.base64ToArrayBuffer = base64ToArrayBuffer
+window.exportScene = RBXRenderer.exportScene
 
 export default App
 
