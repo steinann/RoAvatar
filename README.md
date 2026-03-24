@@ -40,3 +40,7 @@ The renderer that this extension uses now has a standalone github repository and
 [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https://github.com/steinann/RoAvatar-Renderer)
 
 Copyright (C) 2026 RoAvatar authors & @steinann on GitHub
+
+## Links
+
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/roavatar)
