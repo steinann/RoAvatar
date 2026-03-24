@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
-import { Authentication, ItemInfo, Outfit, API, browserOpenURL } from "roavatar-renderer";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString } from "roavatar-renderer";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
@@ -75,7 +75,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         if (auth && itemInfo) {
             if (imageUrl === "loading") {
                 const thumbnailType = itemInfo.itemType === "Bundle" ? "BundleThumbnail" : itemInfo.itemType
-                API.Thumbnails.GetThumbnail(auth, thumbnailType, itemInfo.id, "150x150").then((result) => {
+                API.Thumbnails.GetThumbnail(auth, thumbnailType, itemInfo.id, "150x150", itemInfo.headShape).then((result) => {
                     if (!result) {
                         if (itemInfo.itemType === "Bundle" || itemInfo.itemType === "Outfit") {
                             setImageUrl("../assets/broken-avatar-200px.png")
@@ -128,12 +128,13 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     if (auth && itemInfo) { //loaded item
         //get url
         let url = undefined
+        const cleanName = cleanString(itemInfo.name)
         if (itemInfo.itemType === "Asset") {
-            url = `https://www.roblox.com/catalog/${itemInfo.id}`
+            url = `https://www.roblox.com/catalog/${itemInfo.id}/${cleanName}`
         } else if (itemInfo.itemType === "Bundle")  {
-            url = `https://www.roblox.com/bundles/${itemInfo.id}`
+            url = `https://www.roblox.com/bundles/${itemInfo.id}/${cleanName}`
         } else if (itemInfo.itemType === "Look") {
-            url = `https://www.roblox.com/looks/${itemInfo.id}`
+            url = `https://www.roblox.com/looks/${itemInfo.id}/${cleanName}`
         }
 
         return (<>

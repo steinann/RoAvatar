@@ -173,11 +173,11 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
     }
 
     //determine on click function for itemcards
-    const onClickFunc = (_auth: Authentication, item: ItemInfo) => {
+    const onClickFunc = (auth: Authentication, item: ItemInfo) => {
         const newOutfit = new Outfit()
         API.Looks.GetLook(item.id.toString()).then(lookDetails => {
             if (!(lookDetails instanceof Response)) {
-                newOutfit.fromLook(lookDetails.look).then((success) => {
+                newOutfit.fromLook(lookDetails.look, auth).then((success) => {
                     if (success) {
                         setOutfit(newOutfit)
                     } else if (alert) {

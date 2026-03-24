@@ -124,8 +124,8 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
     }
 
     //determine on click function for itemcards
-    const onClickFunc = (_auth: Authentication, item: ItemInfo) => {
-        items[Number(item.id)].toOutfit().then((newOutfit) => {
+    const onClickFunc = (auth: Authentication, item: ItemInfo) => {
+        items[Number(item.id)].toOutfit(auth).then((newOutfit) => {
             setOutfit(newOutfit)
         })
     }

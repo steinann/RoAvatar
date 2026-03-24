@@ -188,7 +188,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                             console.log("buffer", buffer)
                             const arrayBuffer = base64ToArrayBuffer(buffer.replace(/\s/g, ''))
                             const outfit = new Outfit()
-                            outfit.fromBuffer(arrayBuffer).then(() => {
+                            outfit.fromBuffer(arrayBuffer, auth).then(() => {
                                 setOutfit(outfit)
                                 hasLoadedAvatar = true
                             })

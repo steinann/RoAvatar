@@ -8,7 +8,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
     if (!outfit.containsAsset(Number(item.id)) && item.itemType === "Asset") { //if asset (not worn)
         const newOutfit = outfit.clone(); 
         if (WearableAssetTypes.includes(item.type)) {
-            newOutfit.addAsset(Number(item.id), item.type, item.name);
+            newOutfit.addAsset(Number(item.id), item.type, item.name, item.supportsHeadShapes);
         }
         if (item.type.endsWith("Animation") && item.type !== "EmoteAnimation" && item.type !== "MoodAnimation") {
             const entry = DefaultAnimations[item.type as AnimationProp]
@@ -49,7 +49,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                         }
 
                         for (const asset of result.assets) {
-                            newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                            newOutfit.addAsset(asset.id, asset.assetType.id, asset.name, asset.supportsHeadShapes)
                         }
                         setOutfit(newOutfit)
                     }
@@ -77,7 +77,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
 
                 if (!isWorn) {
                     for (const asset of result.assets) {
-                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name, asset.supportsHeadShapes)
                     }
                 } else {
                     for (const asset of result.assets) {
@@ -104,7 +104,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
 
                                 if (!isWorn) { //equip
                                     for (const asset of result.assets) {
-                                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name)
+                                        newOutfit.addAsset(asset.id, asset.assetType.id, asset.name, asset.supportsHeadShapes)
                                     }
 
                                     if (bundleType === "Character") {

@@ -435,7 +435,7 @@ function App() {
                   if (id && !isNaN(id) && id > 0 && auth) {
                     const newOutfit = outfit.clone()
                     if (!isBundle) {
-                      newOutfit.addAssetId(id).then((success) => {
+                      newOutfit.addAssetId(id, auth).then((success) => {
                         if (success) {
                           if (addAssetInputRef.current) {
                             addAssetInputRef.current.value = ""
@@ -486,7 +486,9 @@ function App() {
               {/*worn items list*/}
               <div className='worn-items dark-scrollbar'>
                 {outfit.assets.map(asset => {
-                  return <ItemCard key={asset._uuid} auth={auth} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name)} onClick={() => {
+                  const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
+                  itemInfo.headShape = asset.meta?.headShape
+                  return <ItemCard key={asset._uuid} auth={auth} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
                     const newOutfit = outfit.clone()
                     newOutfit.removeAsset(asset.id)
                     setOutfit(newOutfit)
