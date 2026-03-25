@@ -1852,3 +1852,18 @@ textarea {
         opacity: 1;
     }
 }
+
+.headadjustment-category {
+    width: 90%;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.headadjustment-title {
+    color: var(--font-color);
+    font-size: 1.5em;
+    margin-top: 2em;
+    margin-bottom: 0.5em;
+}
