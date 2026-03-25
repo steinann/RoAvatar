@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mount, Connection, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3 } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3 } from 'roavatar-renderer';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -123,13 +123,13 @@ let animationInterval: number | undefined = undefined
 export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, animName }: React.PropsWithChildren & { setSaveAlwaysOn: (a: boolean) => void, setOutfit: (a: Outfit) => void, animName: string}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
-    const containerRef = useCallback(mount, [])
+    const containerRef = useCallback(mountElement, [])
 
     const [cameraLocked, setCameraLocked] = useState(true)
     const [error, _setError] = useState<string | undefined>(undefined)
     const [warning, _setWarning] = useState<string | undefined>(undefined)
-    const [loadingConnection, setLoadingConnection] = useState<Connection | undefined>(undefined)
-    const [isLoading, setIsLoading] = useState<boolean>(false)
+    //const [loadingConnection, setLoadingConnection] = useState<Connection | undefined>(undefined)
+    //const [isLoading, setIsLoading] = useState<boolean>(false)
 
     function setError(error: string | undefined) {
         if (error) {
@@ -146,13 +146,13 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     }
 
     //create loading connection
-    useEffect(() => {
+    /*useEffect(() => {
         if (!loadingConnection) {
             setLoadingConnection(API.Events.OnLoadingAssets.Connect((newIsLoading) => {
                 setIsLoading(newIsLoading as boolean)
             }))
         }
-    }, [loadingConnection])
+    }, [loadingConnection])*/
 
     //set warning based on outfit
     useEffect(() => {
@@ -334,7 +334,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
         </button>
         {/*Loading icon*/}
-        <span className='loader' style={{
+        {/*<span className='loader' style={{
             opacity: isLoading ? 1 : 0,
             position: "absolute",
             bottom: "12px",
@@ -342,7 +342,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             width: "24px",
             height: "24px",
             transition: "0.1s",
-            }}></span>
+            }}></span>*/}
 
         {/*Error/warning text*/}
         <div className={`preview-info ${previewInfoClass}`}>
