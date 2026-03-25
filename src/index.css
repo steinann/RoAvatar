@@ -334,6 +334,7 @@ body {
     margin-left: 15px;
 
     overflow-y: auto;
+    scrollbar-gutter: stable;
     height: 100%;
 
     position: relative;
@@ -1864,6 +1865,6 @@ textarea {
 .headadjustment-title {
     color: var(--font-color);
     font-size: 1.5em;
-    margin-top: 2em;
+    margin-top: 1.5em;
     margin-bottom: 0.5em;
 }
