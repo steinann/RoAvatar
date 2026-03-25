@@ -253,11 +253,11 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     }
 
                     //mood animation
-                    if (outfit.containsAssetType("MoodAnimation") && !animName.startsWith("emote.")) {
+                    /*if (!animName.startsWith("emote.")) {
                         animatorW.playAnimation("mood", "mood")
                     } else {
                         animatorW.stopMoodAnimation()
-                    }
+                    }*/
                 }
             }
         }
