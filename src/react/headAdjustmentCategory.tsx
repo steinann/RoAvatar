@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./context/auth-context";
 import { OutfitContext } from "./context/outfit-context";
-import { API, AssetMeta, ItemInfo, type AvatarInventory_Result, type Outfit } from "roavatar-renderer";
+import { AllHeadShapes, API, AssetMeta, ItemInfo, type AvatarInventory_Result, type Outfit } from "roavatar-renderer";
 import ToggleButton from "./generic/toggleButton";
 import ItemCard from "./itemCard";
 import NothingLoaded from "./nothingLoaded";
@@ -31,6 +31,29 @@ export default function HeadAdjustmentCategory({setOutfit}: {setOutfit: (a: Outf
                         "availabilityStatus": "",
                         "acquisitionTime": "",
                     })
+                    for (const headShape of AllHeadShapes) {
+                        let foundShape = false
+                        for (const alreadyHeadShape of result.avatarInventoryItems) {
+                            if (alreadyHeadShape.headShape === headShape) {
+                                foundShape = true
+                                break
+                            }
+                        }
+
+                        if (!foundShape) {
+                            result.avatarInventoryItems.push({
+                                "headShape": headShape,
+                                "itemId": 0,
+                                "itemName": "Virtual",
+                                "itemCategory": {
+                                    itemType: 0,
+                                    itemSubType: 0
+                                },
+                                "availabilityStatus": "",
+                                "acquisitionTime": "",
+                            })
+                        }
+                    }
                     setHeadShapesList(result)
                 }
             })
@@ -76,9 +99,9 @@ export default function HeadAdjustmentCategory({setOutfit}: {setOutfit: (a: Outf
                     <div className="item-container dark-scrollbar" style={{width: "100%", margin: 0}}>
                         {supportHeadShapes && headShapesList ? 
                         headShapesList.avatarInventoryItems.map((headShape) => {
-                            const itemInfo = new ItemInfo("Asset", "DynamicHead", dynamicHeadAsset.id, dynamicHeadAsset.name)
+                            const itemInfo = new ItemInfo("Asset", "DynamicHead", dynamicHeadAsset.id, headShape.headShape || dynamicHeadAsset.name)
                             itemInfo.headShape = headShape.headShape
-                            return <ItemCard key={itemInfo.headShape && itemInfo.headShape.length > 0 ? itemInfo.headShape : "none"} auth={auth} itemInfo={itemInfo} includeName={false} isWorn={dynamicHeadAsset.meta?.headShape === itemInfo.headShape} onClick={(itemInfo) => {
+                            return <ItemCard key={itemInfo.headShape && itemInfo.headShape.length > 0 ? itemInfo.headShape : "none"} buttonClassName={headShape.itemName === "Virtual" ? "item-template-button" : undefined} auth={auth} itemInfo={itemInfo} includeName={false} isWorn={dynamicHeadAsset.meta?.headShape === itemInfo.headShape} onClick={(itemInfo) => {
                                 const newOutfit = outfit.clone()
                                 for (const asset of newOutfit.assets) {
                                     if (asset.assetType.name === "DynamicHead") {
@@ -86,7 +109,11 @@ export default function HeadAdjustmentCategory({setOutfit}: {setOutfit: (a: Outf
                                             asset.meta = new AssetMeta()
                                         }
 
-                                        asset.meta.headShape = itemInfo.headShape
+                                        if (asset.meta.headShape !== itemInfo.headShape) {
+                                            asset.meta.headShape = itemInfo.headShape
+                                        } else {
+                                            asset.meta.headShape = undefined
+                                        }
                                     }
                                 }
                                 setOutfit(newOutfit)
