@@ -211,7 +211,7 @@ body {
 }
 
 .icon-button:hover {
-    background-color: #ffffff36;
+    background-color: var(--icon-button-hover);
 }
 
 .focus-disabled {
@@ -244,6 +244,14 @@ body {
     border-radius: 1em;
     overflow-x: auto;
     overflow-y: hidden;
+}
+
+.bar-divider {
+    width: 2px;
+    height: 2em;
+    background-color: var(--bar-divider);
+    display: block;
+    margin: 0 3px;
 }
 
 .width-fill-available {
@@ -1898,7 +1906,7 @@ textarea {
 
 .item-expiry-time {
     position: absolute;
-    color: var(--font-color);
+    color: #fff;
     background-color: rgba(7, 7, 7, 0.7);
     right: 7.5%;
     top: 7.5%;

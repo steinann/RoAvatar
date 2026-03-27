@@ -1,4 +1,4 @@
-import type { CategoryDictionary } from "roavatar-renderer"
+import { SortDivision, type CategoryDictionary } from "roavatar-renderer"
 import BarButton from "./barButton"
 
 export default function BarCategory({children, source, currentCategory, setCurrentCategory, className = "" }: React.PropsWithChildren & { source?: typeof CategoryDictionary | typeof CategoryDictionary.Inventory | typeof CategoryDictionary.Inventory.Recent, currentCategory?: string, setCurrentCategory?: (a: string) => void, className?: string } ): React.JSX.Element {
@@ -6,10 +6,16 @@ export default function BarCategory({children, source, currentCategory, setCurre
 
     if (source && setCurrentCategory) {
         for (const key of Object.keys(source)) {
-            if (!key.startsWith("_")) {
-                realChildren.push(
-                    <BarButton category={key} currentCategory={currentCategory} setCategory={setCurrentCategory}/>
-                )
+            const value = source[key]
+
+            if (!(value instanceof SortDivision)) {
+                if (!key.startsWith("_")) {
+                    realChildren.push(
+                        <BarButton category={key} currentCategory={currentCategory} setCategory={setCurrentCategory}/>
+                    )
+                }
+            } else {
+                realChildren.push(<div className="bar-divider"></div>)
             }
         }
     }

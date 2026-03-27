@@ -19,7 +19,7 @@ import TryInGameButton from './react/tryInGame'
 import Tip from './react/generic/tip'
 import { AlertContext } from './react/context/alert-context'
 import InfoButton from './react/infoButton'
-import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer } from 'roavatar-renderer'
+import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer, SortDivision } from 'roavatar-renderer'
 
 declare const browser: typeof chrome;
 
@@ -527,7 +527,7 @@ function App() {
               <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource][categoryType]} currentCategory={subCategoryType} setCurrentCategory={setSubCategoryType}/>
               {/*old subcategory picker Unused <SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>*/}
               {/*appropriate category element for inventory*/
-              subCategoryType ? <>
+              subCategoryType && !(CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortDivision) ? <>
                 {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
                 (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}>
 

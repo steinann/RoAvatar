@@ -6,7 +6,7 @@ import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
 import NothingLoaded from "./nothingLoaded"
 import { AlertContext } from "./context/alert-context"
-import { Authentication, type Search_Payload, type ItemDetails_Result, API, CategoryDictionary, SpecialInfo, type Inventory_Result, Outfit, ItemInfo, AssetTypes, BundleTypes } from "roavatar-renderer"
+import { Authentication, type Search_Payload, type ItemDetails_Result, API, CategoryDictionary, type Inventory_Result, Outfit, ItemInfo, AssetTypes, BundleTypes, SortInfo } from "roavatar-renderer"
 
 type ItemList = {itemType: "Asset" | "Bundle", id: number}[]
 async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, searchData: Search_Payload): Promise<undefined | Response | ItemDetails_Result> {
@@ -80,7 +80,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
     }, [category, subCategory])
 
     const sortInfo = CategoryDictionary.Inventory[category][subCategory]
-    if (sortInfo instanceof SpecialInfo) {
+    if (!(sortInfo instanceof SortInfo)) {
         throw new Error("ItemCategory does not support special sort types")
     }
 
