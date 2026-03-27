@@ -2,7 +2,8 @@ import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
-import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString } from "roavatar-renderer";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, specialClamp } from "roavatar-renderer";
+import Icon from "./generic/icon";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
@@ -37,6 +38,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const [updateOpen, setUpdateOpen] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [renameOpen, setRenameOpen] = useState(false)
+
+    const [renameValue, setRenameValue] = useState(itemInfo?.name || "")
 
     const cardRef = useRef<HTMLAnchorElement>(null)
     const nameRef = useRef(null)
@@ -125,6 +128,46 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const actualClassName = `item${className ? ` ${className}` : ""}`
     const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}`
 
+    let timeIcon = "nest_clock_farsight_analog"
+    let timeText = ""
+    let timeInfo = ""
+
+    const acquisitionTime = itemInfo?.acquisitionTime
+    const expirationTime = itemInfo?.expirationTime
+
+    if (acquisitionTime && expirationTime) {
+        const currentTime = new Date()
+        const timeDiffAcquisition = expirationTime.getTime()/1000 - acquisitionTime.getTime()/1000
+        const timeDiffNow = expirationTime.getTime()/1000 - currentTime.getTime()/1000
+
+        const percent = specialClamp(Math.floor(timeDiffNow / timeDiffAcquisition * 10), 1, 9) * 10
+        timeIcon = `clock_loader_${percent}`
+    }
+
+    if (expirationTime) {
+        const currentTime = new Date()
+        let timeAppend = "s"
+        let timeDiff = expirationTime.getTime()/1000 - currentTime.getTime()/1000
+        if (timeDiff > 60) {
+            timeDiff /= 60
+            timeAppend = "m"
+
+            if (timeDiff > 60) {
+                timeDiff /= 60
+                timeAppend = "h"
+
+                if (timeDiff > 24) {
+                    timeDiff /= 24
+                    timeAppend = "d"
+                }
+            }
+        }
+        timeDiff = Math.round(timeDiff)
+
+        timeInfo = `Expires ${expirationTime.toLocaleString()}`
+        timeText = `${timeDiff}${timeAppend}`
+    }
+
     if (auth && itemInfo) { //loaded item
         //get url
         let url = undefined
@@ -202,11 +245,12 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             <span className="dialog-title roboto-700">Rename Character</span>
             <div className="dialog-line"></div>
             <span className="dialog-text dialog-text-margin roboto-400">Choose a new name for your character</span>
-            <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
+            <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name" value={renameValue} onChange={() => {setRenameValue(outfitNameInputRef.current?.value || "")}}></input>
             <div className="dialog-line"></div>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                     setRenameOpen(false)
+                    setRenameValue(itemInfo.name)
                 }}>Cancel</RadialButton>
                 <RadialButton className="dialog-confirm roboto-600" onClick={() => {
                     setRenameOpen(false)
@@ -253,6 +297,10 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 }}>
                 {/*Worn item icon*/}
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
+                {/*Expiry time icon*/}
+                {expirationTime ? <div className="item-expiry-time" title={timeInfo}>
+                    <Icon style={{fontSize: "16px"}}>{timeIcon}</Icon><span className="item-expiry-time-text roboto-600">{timeText}</span>
+                </div> : null}
                 {/*Orders for layered clothing ordering*/}
                 {showOrderArrows ? <div className="order-arrows">
                     <button className="arrow-up" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, true)}}}><span className="material-symbols-outlined">arrow_upward</span></button>
@@ -262,9 +310,9 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 canEditOutfit ? <button className="edit-outfit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
                 {/*Manage outfit buttons*/
                 editOpen ? <div className="edit-outfit-menu">
-                    {!isSpecialOutfit || updateCallback ? <button className="roboto-600" onClick={()=>{setUpdateOpen(true)}}>Update</button> : null}
-                    {!isSpecialOutfit || renameCallback ? <button className="roboto-600" onClick={()=>{setRenameOpen(true)}}>Rename</button> : null}
-                    {!isSpecialOutfit || deleteCallback ? <button className="roboto-600" onClick={()=>{setDeleteOpen(true)}}>Delete</button> : null}
+                    {!isSpecialOutfit || updateCallback ? <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(true)}}>Update</button> : null}
+                    {!isSpecialOutfit || renameCallback ? <button className="roboto-600" onClick={()=>{setEditOpen(false); setRenameOpen(true)}}>Rename</button> : null}
+                    {!isSpecialOutfit || deleteCallback ? <button className="roboto-600" onClick={()=>{setEditOpen(false); setDeleteOpen(true)}}>Delete</button> : null}
                     <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
                 </div> : null}
                 {/*Item tags*/}

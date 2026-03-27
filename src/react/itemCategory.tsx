@@ -227,6 +227,8 @@ type AvatarInventoryItem = {
     itemCategory: {itemType: number, itemSubType: number},
     outfitDetail?: {assets: {id: number}[]},
     limitedType?: "Limited" | "LimitedUnique",
+    expirationTime?: string,
+    acquisitionTime?: string
 }
 
 export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
@@ -296,6 +298,13 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                 itemInfo.bundledAssets.push(asset.id)
             }
         }
+        if (item.acquisitionTime) {
+            itemInfo.acquisitionTime = new Date(item.acquisitionTime)
+        }
+        if (item.expirationTime) {
+            itemInfo.expirationTime = new Date(item.expirationTime)
+        }
+
 
         itemInfos.push(itemInfo)
     }

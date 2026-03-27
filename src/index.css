@@ -1895,3 +1895,21 @@ textarea {
         display: none;
     }
 }
+
+.item-expiry-time {
+    position: absolute;
+    color: var(--font-color);
+    background-color: rgba(7, 7, 7, 0.7);
+    right: 7.5%;
+    top: 7.5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    border-radius: 4px;
+    gap: 3px;
+}
+
+.item-expiry-time-text {
+    font-size: 14px;
+}

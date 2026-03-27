@@ -26,6 +26,7 @@ FLAGS.HIDE_LAYERED_CLOTHING = false
 FLAGS.HSR_SHOW_RAY = false
 FLAGS.ENABLE_HSR = true
 FLAGS.CACHE_HSR_HITS = true
+//FLAGS.SHOW_CAGE = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
 RBXRenderer.fullSetup().then(() => {
