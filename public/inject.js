@@ -17,7 +17,8 @@ var observer = new MutationObserver(function (mutations) {
         iframe.style.width = "100%"
         iframe.style.aspectRatio = "16/9"
         iframe.style.borderStyle = "hidden"
-        iframe.style.maxHeight = "80vh"
+        iframe.style.height = "90vh"
+        
         contentElement.appendChild(iframe)
         contentElement.style.paddingTop = "0"
         contentElement.style.marginTop = "0"

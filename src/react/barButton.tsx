@@ -1,6 +1,6 @@
 import Icon from "./generic/icon"
 
-export default function BarButton({currentCategory, category, setCategory }:{currentCategory?: string, category: string, setCategory: (a: string) => void}): React.JSX.Element {
+export default function BarButton({currentCategory, category, setCategory}:{currentCategory?: string, category: string, setCategory: (a: string) => void}): React.JSX.Element {
     const className = `bar-button roboto-600${category===currentCategory ? " bar-button-selected" : ""}`
     const onClick = () => {setCategory(category)}
     let icon = undefined
@@ -13,5 +13,5 @@ export default function BarButton({currentCategory, category, setCategory }:{cur
             break
     }
 
-    return <button className={className} onClick={onClick}>{icon}{category}</button>
+    return <button className={className} title={icon ? category : undefined} onClick={onClick}>{icon}<span className={`${icon ? " hide-max-width-1150" : ""}`}>{category}</span></button>
 }

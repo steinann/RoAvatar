@@ -284,6 +284,12 @@ body {
     align-items: center;
 }
 
+@media screen and (max-width: 1250px) {
+    .bar-button {
+        font-size: 1em;
+    }
+}
+
 .bar-button:hover {
     background-color: var(--body-background);
 }
@@ -616,6 +622,21 @@ body {
     width: 60px;
     height: 60px;
     margin-right: 3px;
+}
+
+@media screen and (max-height: 670px) {
+    .worn-list-item .item-image {
+        height: 100%;
+        width: auto;
+        aspect-ratio: 1;
+    }
+
+    .worn-list-item {
+        height: 100%;
+        aspect-ratio: 1;
+        margin-right: 3px;
+        width: auto;
+    }
 }
 
 .scale-category {
@@ -1867,4 +1888,10 @@ textarea {
     font-size: 1.5em;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
+}
+
+@media screen and (max-width: 1150px) {
+    .hide-max-width-1150 {
+        display: none;
+    }
 }

@@ -307,6 +307,12 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     }
                 }
             }
+
+            //update renderer size
+            const container = document.getElementById("avatar-preview")
+            if (container) {
+                RBXRenderer.setRendererSize(container.clientWidth, container.clientHeight)
+            }
         }, 1000 / 60)
     }, [auth, cameraLocked])
 
@@ -321,7 +327,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         previewInfoMessage = error
     }
 
-    return (<div className="avatar-preview" ref={containerRef} onMouseDown={(e) => {
+    return (<div id="avatar-preview" className="avatar-preview" ref={containerRef} onMouseDown={(e) => {
         if (e.buttons == 2 && (e.target as HTMLCanvasElement).id === "OutfitInfo-outfit-image-3d") {
             setCameraLocked(false)
         }
