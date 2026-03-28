@@ -54,6 +54,8 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
                 if (loadId !== lastLoadId) return
                 setNextPageToken(null)
 
+                console.log("Loaded local outfits:", localOutfits.length)
+
                 const newSearchedItems: LocalOutfit[] = []
                 for (const item of localOutfits) {
                     if (!searchData.keyword || item.name.toLowerCase().includes(searchData.keyword.toLowerCase())) {
@@ -208,13 +210,16 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                                 })
                             }).then(() => {
                                 API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
+                                chrome.storage.local.getBytesInUse(null).then((bytes) => {
+                                    console.log("Storage used MB:", bytes / 1e6)
+                                })
                                 refresh()
                             }).finally(() => {
                                 setIsSaving(false)
                             })
                         } else {
                             if (alert) {
-                                alert(items.length >= 250 ? "Too many outfits" : "Failed to save outfit", 3000, false)
+                                alert(items.length >= 1000 ? "Too many outfits" : "Failed to save outfit", 3000, false)
                             }
                         }
                     }}>Create</RadialButton>
