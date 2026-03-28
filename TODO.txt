@@ -14,10 +14,12 @@ ISSUES (Relating to renderer inaccuracy):
     -LC: Instead of putting the attachment in the correct position we cheat, which also doesnt work for not-deformed clothing, see https://www.roblox.com/catalog/15188573401/Holdable-Ghostwalker-Sword-White-RIGHT
     -ANIMATION: Inaccurate motor6d when a bundle has a weird rest pose, see bundle 197642307876020 as an example
         -This is because we ignore the RigAnimationData in the animation that is used when Workspace.Retargeting is Enabled!
+        -Now theres also HumanoidRigDescription, which is a way nicer class
     -ANIMATION: Blending is not correct, at all. It shouldnt lerp with the rest pose like its doing now...
     -ANIMATION: CFrame CAN contain NaN value appearently... see https://www.roblox.com/catalog/92018855869257/Hide-Your-Username-and-Flex-your-Long
     -MATERIALDESC: When a fully composed texture has transparency the color of the transparent parts may look incorrect
         -This may be caused by this issue with ThreeJS: https://github.com/mrdoob/three.js/issues/32802
+        -This issue does not occur currently as special uv types never have transparent backgrounds
     -MATERIALDESC: bad looking white lines on this asset 17803581539
     -MATERIALDESC: face appears on certain dynamic head in r6: https://www.roblox.com/catalog/115499438051492/Friendly-Grin-Head
     -MATERIALDESC: This head should appear transparent https://www.roblox.com/bundles/7396/Glass-Head (oh no its gone)
@@ -44,3 +46,5 @@ FEATURES:
         -Snapping for adjustment sliders and numbers
         -Custom tooltip
         -Highlight searched text in item name
+    LOW PRIORITY:
+        -Testing out facial animations using camera
