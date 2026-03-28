@@ -20,6 +20,7 @@ import Tip from './react/generic/tip'
 import { AlertContext } from './react/context/alert-context'
 import InfoButton from './react/infoButton'
 import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer, SortDivision } from 'roavatar-renderer'
+import CaptureButton from './react/captureButton'
 
 declare const browser: typeof chrome;
 
@@ -501,6 +502,7 @@ function App() {
 
               {/*extra buttons*/}
               <div className='main-left-top'>
+                <CaptureButton/>
                 <SettingsButton/>
                 <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
                   (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {

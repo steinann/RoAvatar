@@ -1031,6 +1031,10 @@ dialog::backdrop {
     font-size: 1.5em;
     border-radius: 12px;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4em;
 }
 
 .dialog-cancel {
@@ -1920,4 +1924,17 @@ textarea {
 
 .item-expiry-time-text {
     font-size: 14px;
+}
+
+.outfit-capture-container {
+    align-self: center;
+}
+
+.outfit-capture {
+    height: 50vh;
+    max-height: 720px;
+    width: auto;
+    aspect-ratio: 1;
+    background-color: var(--bar-divider);
+    border-radius: 12px;
 }
