@@ -5,7 +5,7 @@ import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
-import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, imageUrlToDataUrl } from "roavatar-renderer";
+import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, imageUrlToDataUrl, download } from "roavatar-renderer";
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
@@ -60,8 +60,8 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
                         newSearchedItems.push(item)
                     }
                 }
-                setItems(prev => [...prev, ...localOutfits])
-                setSearchedItems(prev => [...prev, ...newSearchedItems])
+                setItems(localOutfits)
+                setSearchedItems(newSearchedItems)
             }).finally(() => {
                 if (loadId !== lastLoadId) return
                 setIsLoading(false)
@@ -128,6 +128,29 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
         items[Number(item.id)].toOutfit(auth).then((newOutfit) => {
             setOutfit(newOutfit)
         })
+    }
+
+    //add a way to backup using the console
+    window.downloadLocalOutfits = () => {
+        const outfits = []
+        for (const outfit of items) {
+            outfits.push(outfit.toJson())
+        }
+
+        download("localOutfits.json", JSON.stringify(outfits))
+    }
+
+    window.uploadLocalOutfits = (a: string) => {
+        const obj = JSON.parse(a)
+        const outfits = []
+
+        for (const outfitData of obj) {
+            const localOutfit = new LocalOutfit(new Outfit())
+            localOutfit.fromJson(outfitData)
+            outfits.push(localOutfit)
+        }
+
+        API.LocalOutfit.SetLocalOutfits(outfits)
     }
 
     //create item cards
@@ -272,4 +295,11 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
         
     </div>
     )
+}
+
+declare global {
+    interface Window {
+        downloadLocalOutfits: () => void,
+        uploadLocalOutfits: (a: string) => void
+    }
 }
