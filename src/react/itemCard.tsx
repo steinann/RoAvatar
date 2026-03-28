@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
-import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, specialClamp } from "roavatar-renderer";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber } from "roavatar-renderer";
 import Icon from "./generic/icon";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
@@ -140,7 +140,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         const timeDiffAcquisition = expirationTime.getTime()/1000 - acquisitionTime.getTime()/1000
         const timeDiffNow = expirationTime.getTime()/1000 - currentTime.getTime()/1000
 
-        const percent = specialClamp(Math.floor(timeDiffNow / timeDiffAcquisition * 10), 1, 9) * 10
+        const percent = snapToNumber(timeDiffNow / timeDiffAcquisition * 100, [10, 20, 40, 60, 80, 90])
         timeIcon = `clock_loader_${percent}`
     }
 
