@@ -707,7 +707,19 @@ body {
     font-size: 1.5em;
 }
 
-.scale-value {
+.scale-value input {
+    color: var(--font-color);
+    font-size: 1.5em;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    display: inline;
+    text-align: right;
+    outline: none;
+    width: 4em;
+}
+
+.scale-value span {
     color: var(--font-color);
     font-size: 1.5em;
 }

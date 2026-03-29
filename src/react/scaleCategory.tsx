@@ -1,16 +1,67 @@
-import { useContext } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
 import SliderInput from "./generic/sliderInput"
 import { Outfit, type ScaleName, mapNum, AvatarType } from "roavatar-renderer"
 
-//TODO: Make changing scale less laggy by not requiring mesh compilation for skinnedmeshes
-
 //Slider-like input but specifically for scale
 function ScaleInput({outfit, setOutfit, _setOutfit, scale, scaleName, min, max}: {outfit: Outfit, setOutfit: (a: Outfit) => void, _setOutfit: (a: Outfit) => void, scale: ScaleName, scaleName: string, min: number, max: number}): React.JSX.Element {
+    const [proposedValue, setProposedValue] = useState<string | undefined>(undefined)
+    
+    const valueToShow = proposedValue !== undefined ? proposedValue : Math.round(outfit.scale[scale] * 100)
+
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    //remove proposed value on unfocus
+    useEffect(() => {
+        const input = inputRef.current
+        if (!input) return
+
+        function focusoutEvent() {
+            setProposedValue(undefined)
+        }
+
+        input.addEventListener("focusout", focusoutEvent)
+
+        return () => {
+            input.removeEventListener("focusout", focusoutEvent)
+        }
+    })
+
     return <>
         <div className="scale-info">
             <span className="scale-name roboto-600">{scaleName}</span>
-            <span className="scale-value roboto-600">{Math.round(outfit.scale[scale] * 100) + "%"}</span>
+            <div className="scale-value">
+                <input ref={inputRef} className="roboto-600"
+                    value={valueToShow}
+                    onChange={(e) => {
+                        const input = inputRef.current
+                        if (input) {
+                            //get value as only numbers
+                            let strNum = e.target.value.match(/\d+/g)?.toString()
+                            if (!strNum) strNum = ""
+                            
+                            if (strNum.length <= 3) {
+                                const proposedValue = strNum
+
+                                const proposedValueNum = proposedValue.length > 0 ? Number(proposedValue) : -1000
+                                if (proposedValueNum >= Math.round(min * 100) && proposedValueNum <= Math.round(max * 100)) { //if valid
+                                    //update outfit
+                                    const newOutfit = outfit.clone()
+                                    newOutfit.scale[scale] = proposedValueNum / 100
+                                    newOutfit.scale.depth = 1 - (1 - outfit.scale.width) / 2
+                                    
+                                    setOutfit(newOutfit)
+                                    setProposedValue(undefined)
+                                } else { //not valid
+                                    //update proposal
+                                    setProposedValue(proposedValue)
+                                }
+                            }
+                        }
+                    }}
+                />
+                <span className="roboto-600">%</span>
+            </div>
         </div>
         <SliderInput value={mapNum(outfit.scale[scale],min,max,0,1)} setValue={(value: number, mouseUp: boolean) => {
             const newOutfit = outfit.clone()

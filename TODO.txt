@@ -35,14 +35,11 @@ FEATURES:
         -Load other peoples avatar/outfits
         -Lines and such when adjusting accessory
         -Better alert and warnings system
-        -Button that shows assets in bundle
         -Reset to currently wearing
-        -Make layered clothing more asynchronous
     MEDIUM PRIORITY:
         -Show studio importer plugin somewhere in the extension
         -Autosave setting
         -Layered clothing quality setting
-        -Write custom number in scale sliders
         -Snapping for adjustment sliders and numbers
         -Custom tooltip
         -Highlight searched text in item name
