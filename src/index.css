@@ -1405,13 +1405,11 @@ dialog::backdrop {
     color: var(--body-background);
 }
 
-.edit-outfit {
+.itemcard-button {
     position: absolute;
     aspect-ratio: 1;
     border: none;
     border-radius: 10000px;
-    left: 2.5%;
-    top: 2.5%;
     color: var(--font-color);
     background-color: transparent;
     cursor: pointer;
@@ -1421,7 +1419,12 @@ dialog::backdrop {
     align-items: center;
 }
 
-.edit-outfit:hover {
+.edit-outfit {
+    left: 2.5%;
+    top: 2.5%;
+}
+
+.itemcard-button:hover {
     background-color: #ffffff36;
 }
 
@@ -1913,7 +1916,7 @@ textarea {
     color: #fff;
     background-color: rgba(7, 7, 7, 0.7);
     right: 7.5%;
-    top: 7.5%;
+    bottom: 7.5%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1937,4 +1940,40 @@ textarea {
     aspect-ratio: 1;
     background-color: var(--bar-divider);
     border-radius: 12px;
+}
+
+.item-bundle-details {
+    right: 2.5%;
+    top: 2.5%;
+}
+
+.item-bundle-details-frame {
+    position: fixed;
+    z-index: 2;
+    width: 300px;
+    background-color: var(--container);
+    padding: 12px 12px 20px 12px;
+    border-radius: 12px;
+    box-shadow: 0px 0px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.item-bundle-details-frame-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.5em;
+    color: var(--font-color);
+    align-self: center;
+    width: 280px;
+}
+
+.item-bundle-details-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 360px;
+    height: auto;
+    scrollbar-gutter: auto;
+    min-height: 70px;
 }

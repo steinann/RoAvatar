@@ -1,12 +1,12 @@
 import React, { useRef } from "react";
 
 //fancy button that has a circle come from the mouse on click
-export default function RadialButton({ children, ref, title, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave }: React.PropsWithChildren & {ref?: React.RefObject<HTMLButtonElement | null>, title?: string, className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void}): React.JSX.Element {
+export default function RadialButton({ children, ref, title, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave, shouldPreventEffect = () => {return false} }: React.PropsWithChildren & {ref?: React.RefObject<HTMLButtonElement | null>, title?: string, className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void, shouldPreventEffect?: (e: React.MouseEvent<HTMLButtonElement>) => boolean}): React.JSX.Element {
     const circleRef = useRef(null);
     const buttonRef = useRef(null);
 
     function selfHandleOnClick(e: React.MouseEvent<HTMLButtonElement>): void {
-        if (!effectDisabled) {
+        if (!effectDisabled && !shouldPreventEffect(e)) {
             const button = (ref || buttonRef).current as unknown as HTMLButtonElement;
             const newTop = e.clientY - button.getBoundingClientRect().top;
             const newLeft = e.clientX - button.getBoundingClientRect().left;

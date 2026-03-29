@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { AuthContext } from './react/context/auth-context'
-import { OutfitContext } from './react/context/outfit-context'
+import { OutfitContext, OutfitFuncContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import ItemCategory from './react/itemCategory'
@@ -403,147 +403,149 @@ function App() {
     <AlertContext value={alert}>
       <AuthContext value={auth}>
         <OutfitContext value={outfit}>
-          <div className='main'>
-            <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}`} onMouseEnter={stopAlert}>
-              {alertText}
-            </div>
+          <OutfitFuncContext value={{setOutfit: setOutfit, setAnimName: setCurrentAnimName, animName: currentAnimName}}>
+            <div className='main'>
+              <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}`} onMouseEnter={stopAlert}>
+                {alertText}
+              </div>
 
-            <dialog style={addAssetOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={addAssetDialogRef} onCancel={() => {setAddAssetOpen(false)}}>
-              <span className="dialog-title roboto-700">Add Item</span>
-              <div className="dialog-line"></div>
-              <span className="dialog-text dialog-text-margin roboto-400">Paste in the URL for an item to add to the character</span>
-              <input ref={addAssetInputRef} className="dialog-text-input roboto-400" placeholder="Item URL"></input>
-              <div className="dialog-line"></div>
-              <div className="dialog-actions">
-                <RadialButton className="dialog-cancel roboto-600" onClick={() => {
-                  setAddAssetOpen(false)
-                }}>Cancel</RadialButton>
-                <RadialButton className="dialog-confirm roboto-600" onClick={() => {
-                  setAddAssetOpen(false)
+              <dialog style={addAssetOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={addAssetDialogRef} onCancel={() => {setAddAssetOpen(false)}}>
+                <span className="dialog-title roboto-700">Add Item</span>
+                <div className="dialog-line"></div>
+                <span className="dialog-text dialog-text-margin roboto-400">Paste in the URL for an item to add to the character</span>
+                <input ref={addAssetInputRef} className="dialog-text-input roboto-400" placeholder="Item URL"></input>
+                <div className="dialog-line"></div>
+                <div className="dialog-actions">
+                  <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+                    setAddAssetOpen(false)
+                  }}>Cancel</RadialButton>
+                  <RadialButton className="dialog-confirm roboto-600" onClick={() => {
+                    setAddAssetOpen(false)
 
-                  const idValue = addAssetInputRef.current?.value || ""
-                  const ids = idValue.match(/^\d+|\d+\b|\d+(?=\w)/g)
-                  let id = null
-                  if (ids) {
-                    id = Number(ids[0])
-                  }
-
-                  let isBundle = false
-                  if (addAssetInputRef.current?.value.includes("/bundles/")) {
-                    isBundle = true
-                  }
-
-                  if (id && !isNaN(id) && id > 0 && auth) {
-                    const newOutfit = outfit.clone()
-                    if (!isBundle) {
-                      newOutfit.addAssetId(id, auth).then((success) => {
-                        if (success) {
-                          if (addAssetInputRef.current) {
-                            addAssetInputRef.current.value = ""
-                          }
-
-                          setOutfit(newOutfit)
-                        } else {
-                          alert(`Failed to add asset with id ${id}`, 3000, false)
-                        }
-                      })
-                    } else {
-                      newOutfit.addBundleId(id).then((success) => {
-                        if (success) {
-                          if (addAssetInputRef.current) {
-                            addAssetInputRef.current.value = ""
-                          }
-
-                          setOutfit(newOutfit)
-                        } else {
-                          alert(`Failed to add bundle with id ${id}`, 3000, false)
-                        }
-                      })
+                    const idValue = addAssetInputRef.current?.value || ""
+                    const ids = idValue.match(/^\d+|\d+\b|\d+(?=\w)/g)
+                    let id = null
+                    if (ids) {
+                      id = Number(ids[0])
                     }
-                  }
-                }}>Add</RadialButton>
-              </div>
-          </dialog>
 
-            {/*LEFT SIDE*/}
-            <div className='main-left division-down'>
-              {/*header*/}
-              <div className='main-left-top'>
-                <img className='header-icon' src="../assets/icons/128x128.png"></img>
-                <span className='editor-header roboto-600'>RoAvatar</span>
-              </div>
+                    let isBundle = false
+                    if (addAssetInputRef.current?.value.includes("/bundles/")) {
+                      isBundle = true
+                    }
 
-              {/*avatar preview*/}
-              <AvatarPreview setSaveAlwaysOn={setSaveAlwaysOn} setOutfit={setOutfit} animName={currentAnimName}>
-                <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
-              </AvatarPreview>
+                    if (id && !isNaN(id) && id > 0 && auth) {
+                      const newOutfit = outfit.clone()
+                      if (!isBundle) {
+                        newOutfit.addAssetId(id, auth).then((success) => {
+                          if (success) {
+                            if (addAssetInputRef.current) {
+                              addAssetInputRef.current.value = ""
+                            }
 
-              {/*save and undo*/}
-              <div className="save-and-history">
-                <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitHistory.length}/>
-                <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
-              </div>
+                            setOutfit(newOutfit)
+                          } else {
+                            alert(`Failed to add asset with id ${id}`, 3000, false)
+                          }
+                        })
+                      } else {
+                        newOutfit.addBundleId(id).then((success) => {
+                          if (success) {
+                            if (addAssetInputRef.current) {
+                              addAssetInputRef.current.value = ""
+                            }
 
-              {/*worn items list*/}
-              <div className='worn-items dark-scrollbar'>
-                {outfit.assets.map(asset => {
-                  const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
-                  itemInfo.headShape = asset.meta?.headShape
-                  return <ItemCard key={itemInfo.headShape ? asset._uuid + itemInfo.headShape : asset._uuid} auth={auth} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
-                    const newOutfit = outfit.clone()
-                    newOutfit.removeAsset(asset.id)
-                    setOutfit(newOutfit)
+                            setOutfit(newOutfit)
+                          } else {
+                            alert(`Failed to add bundle with id ${id}`, 3000, false)
+                          }
+                        })
+                      }
+                    }
+                  }}>Add</RadialButton>
+                </div>
+              </dialog>
+
+              {/*LEFT SIDE*/}
+              <div className='main-left division-down'>
+                {/*header*/}
+                <div className='main-left-top'>
+                  <img className='header-icon' src="../assets/icons/128x128.png"></img>
+                  <span className='editor-header roboto-600'>RoAvatar</span>
+                </div>
+
+                {/*avatar preview*/}
+                <AvatarPreview setSaveAlwaysOn={setSaveAlwaysOn} setOutfit={setOutfit} animName={currentAnimName}>
+                  <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+                </AvatarPreview>
+
+                {/*save and undo*/}
+                <div className="save-and-history">
+                  <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitHistory.length}/>
+                  <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
+                </div>
+
+                {/*worn items list*/}
+                <div className='worn-items dark-scrollbar'>
+                  {outfit.assets.map(asset => {
+                    const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
+                    itemInfo.headShape = asset.meta?.headShape
+                    return <ItemCard key={itemInfo.headShape ? asset._uuid + itemInfo.headShape : asset._uuid} auth={auth} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
+                      const newOutfit = outfit.clone()
+                      newOutfit.removeAsset(asset.id)
+                      setOutfit(newOutfit)
+                    }}/>
+                  })}
+                  <ItemCard auth={auth} forceImage='../assets/newnewoutfit.png' imageAffectedByTheme={true} className='worn-list-item' buttonClassName='item-template-button' showViewButton={false} includeName={false} itemInfo={new ItemInfo("None", "", -1, "Add Asset")} onClick={() => {
+                    setAddAssetOpen(true)
+                  }}></ItemCard>
+                </div>
+
+                {/*extra buttons*/}
+                <div className='main-left-top'>
+                  <CaptureButton/>
+                  <SettingsButton/>
+                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
+                    (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
+                      setShowDefaultEditorTip(shouldActive);
+                    })
                   }}/>
-                })}
-                <ItemCard auth={auth} forceImage='../assets/newnewoutfit.png' imageAffectedByTheme={true} className='worn-list-item' buttonClassName='item-template-button' showViewButton={false} includeName={false} itemInfo={new ItemInfo("None", "", -1, "Add Asset")} onClick={() => {
-                  setAddAssetOpen(true)
-                }}></ItemCard>
+                  <ShareButton/>
+                  <TryInGameButton/>
+                  <InfoButton/>
+                </div>
               </div>
 
-              {/*extra buttons*/}
-              <div className='main-left-top'>
-                <CaptureButton/>
-                <SettingsButton/>
-                <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
-                  (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
-                    setShowDefaultEditorTip(shouldActive);
-                  })
-                }}/>
-                <ShareButton/>
-                <TryInGameButton/>
-                <InfoButton/>
+              {/*RIGHT SIDE*/}
+              <div className='main-right division-down'>
+                {/*category source (inventory/marketplace)*/}
+                <div className="right-top">
+                  <BarCategory className="" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
+                  <SearchFilter categorySource={categorySource} minPrice={minPrice} setMinPrice={setMinPrice} maxPrice={maxPrice} setMaxPrice={setMaxPrice} creator={creator} setCreator={setCreator} sortType={sortType} setSortType={setSortType} limitedOnly={limitedOnly} setLimitedOnly={setLimitedOnly} searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword} includeOffsale={includeOffsale} setIncludeOffsale={setIncludeOffsale}/>
+                </div>
+                {/*category picker*/}
+                <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>
+
+                {/*subcategorycategory picker*/}
+                <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource][categoryType]} currentCategory={subCategoryType} setCurrentCategory={setSubCategoryType}/>
+                {/*old subcategory picker Unused <SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>*/}
+                {/*appropriate category element for inventory*/
+                subCategoryType && !(CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortDivision) ? <>
+                  {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
+                  (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}>
+
+                  </ItemCategory>)
+                  :
+                  <SpecialCategory searchData={searchData} specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
+                  }
+                </> : null}
+                {/*Marketplace category element*/
+                categorySource === "Marketplace" && taxonomy.length > 0 ? <>
+                  <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}/>
+                </> : null}
               </div>
             </div>
-
-            {/*RIGHT SIDE*/}
-            <div className='main-right division-down'>
-              {/*category source (inventory/marketplace)*/}
-              <div className="right-top">
-                <BarCategory className="" source={CategoryDictionary} currentCategory={categorySource} setCurrentCategory={setCategorySource}/>
-                <SearchFilter categorySource={categorySource} minPrice={minPrice} setMinPrice={setMinPrice} maxPrice={maxPrice} setMaxPrice={setMaxPrice} creator={creator} setCreator={setCreator} sortType={sortType} setSortType={setSortType} limitedOnly={limitedOnly} setLimitedOnly={setLimitedOnly} searchKeyword={searchKeyword} tempSearchKeyword={tempSearchKeyword} setSearchKeyword={setSearchKeyword} setTempSearchKeyword={setTempSearchKeyword} includeOffsale={includeOffsale} setIncludeOffsale={setIncludeOffsale}/>
-              </div>
-              {/*category picker*/}
-              <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource]} currentCategory={categoryType} setCurrentCategory={setCategoryType}/>
-
-              {/*subcategorycategory picker*/}
-              <BarCategory className='width-fill-available' source={CategoryDictionary[categorySource][categoryType]} currentCategory={subCategoryType} setCurrentCategory={setSubCategoryType}/>
-              {/*old subcategory picker Unused <SubCategory currentCategory={categoryType} currentSubCategory={subCategoryType} setSubCategory={setSubCategoryType}/>*/}
-              {/*appropriate category element for inventory*/
-              subCategoryType && !(CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortDivision) ? <>
-                {CategoryDictionary[categorySource][categoryType][subCategoryType] instanceof SortInfo ?
-                (<ItemCategory searchData={searchData} categoryType={categoryType} subCategoryType={subCategoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}>
-
-                </ItemCategory>)
-                :
-                <SpecialCategory searchData={searchData} specialInfo={CategoryDictionary[categorySource][categoryType][subCategoryType]} categoryType={categoryType} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName} _setOutfit={_setOutfit}/>
-                }
-              </> : null}
-              {/*Marketplace category element*/
-              categorySource === "Marketplace" && taxonomy.length > 0 ? <>
-                <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}/>
-              </> : null}
-            </div>
-          </div>
+          </OutfitFuncContext>
         </OutfitContext>
       </AuthContext>
     </AlertContext>

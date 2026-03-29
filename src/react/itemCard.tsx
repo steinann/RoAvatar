@@ -1,9 +1,10 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
-import { OutfitContext } from "./context/outfit-context";
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
 import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber } from "roavatar-renderer";
 import Icon from "./generic/icon";
+import ItemCardBundleDetails from "./itemCardBundleDetails";
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
@@ -29,6 +30,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     }): React.JSX.Element {
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
+    const outfitFuncContext = useContext(OutfitFuncContext)
     
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
@@ -44,6 +46,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     const cardRef = useRef<HTMLAnchorElement>(null)
     const nameRef = useRef(null)
     const editRef = useRef<HTMLButtonElement>(null)
+    const bundleDetailsRef = useRef<HTMLDivElement>(null)
     const updateDialogRef = useRef<HTMLDialogElement>(null)
     const deleteDialogRef = useRef<HTMLDialogElement>(null)
     const renameDialogRef = useRef<HTMLDialogElement>(null)
@@ -292,8 +295,14 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     //on item clicked
                     e.preventDefault();
                     if ((e.target as HTMLButtonElement).classList.contains("item-view")) return;
+                    if (bundleDetailsRef.current && bundleDetailsRef.current.contains(e.target as Node)) return;
                     if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return;
                     if (onClick) onClick(itemInfo)
+                }} shouldPreventEffect={(e) => {
+                    if ((e.target as HTMLButtonElement).classList.contains("item-view")) return true;
+                    if (bundleDetailsRef.current && bundleDetailsRef.current.contains(e.target as Node)) return true;
+                    if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return true;
+                    return false
                 }}>
                 {/*Worn item icon*/}
                 {<span className="material-symbols-outlined worn-item-check" style={{opacity: isWorn ? 1 : 0}}>check_box</span>}
@@ -307,13 +316,21 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     <button className="arrow-down" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, false)}}}><span className="material-symbols-outlined">arrow_downward</span></button>
                 </div> : null}
                 {/*Edit outfit button*/
-                canEditOutfit ? <button className="edit-outfit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
+                canEditOutfit ? <button className="edit-outfit itemcard-button" title="Edit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
+                {/*Bundle details button*/}
+                {["Outfit", "Bundle", "Look"].includes(itemInfo.itemType) || itemInfo.type === "LocalOutfit" ? <ItemCardBundleDetails
+                    itemInfo={itemInfo}
+                    ref={bundleDetailsRef}
+                    setAnimName={outfitFuncContext.setAnimName}
+                    setOutfit={outfitFuncContext.setOutfit}
+                    animName={outfitFuncContext.animName}
+                    /> : null}
                 {/*Manage outfit buttons*/
                 editOpen ? <div className="edit-outfit-menu">
-                    {!isSpecialOutfit || updateCallback ? <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(true)}}>Update</button> : null}
-                    {!isSpecialOutfit || renameCallback ? <button className="roboto-600" onClick={()=>{setEditOpen(false); setRenameOpen(true)}}>Rename</button> : null}
-                    {!isSpecialOutfit || deleteCallback ? <button className="roboto-600" onClick={()=>{setEditOpen(false); setDeleteOpen(true)}}>Delete</button> : null}
-                    <button className="roboto-600" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
+                    {!isSpecialOutfit || updateCallback ? <button className="roboto-600" title="Update" onClick={()=>{setEditOpen(false); setUpdateOpen(true)}}>Update</button> : null}
+                    {!isSpecialOutfit || renameCallback ? <button className="roboto-600" title="Rename" onClick={()=>{setEditOpen(false); setRenameOpen(true)}}>Rename</button> : null}
+                    {!isSpecialOutfit || deleteCallback ? <button className="roboto-600" title="Delete" onClick={()=>{setEditOpen(false); setDeleteOpen(true)}}>Delete</button> : null}
+                    <button className="roboto-600" title="Cancel" onClick={()=>{setEditOpen(false); setUpdateOpen(false); setDeleteOpen(false); setRenameOpen(false)}}>Cancel</button>
                 </div> : null}
                 {/*Item tags*/}
                 {itemInfo.limitedType === "Limited" ? <span className="tag-limited"></span> : null}
