@@ -321,7 +321,6 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 {["Outfit", "Bundle", "Look"].includes(itemInfo.itemType) || itemInfo.type === "LocalOutfit" ? <ItemCardBundleDetails
                     itemInfo={itemInfo}
                     ref={bundleDetailsRef}
-                    setAnimName={outfitFuncContext.setAnimName}
                     setOutfit={outfitFuncContext.setOutfit}
                     animName={outfitFuncContext.animName}
                     /> : null}

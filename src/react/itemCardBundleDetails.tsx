@@ -7,7 +7,7 @@ import { AuthContext } from "./context/auth-context";
 import { defaultOnClick } from "./categoryShared";
 import { OutfitContext } from "./context/outfit-context";
 
-export default function ItemCardBundleDetails({ref, itemInfo, setAnimName, setOutfit, animName}: {ref: React.Ref<HTMLDivElement>, itemInfo: ItemInfo, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void, animName: string}): React.JSX.Element {
+export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animName}: {ref: React.Ref<HTMLDivElement>, itemInfo: ItemInfo, setOutfit: (a: Outfit) => void, animName: string}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
 
@@ -193,7 +193,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, setAnimName, setOu
                 <>
                     {assets && assets.length > 0 ? assets.map((asset) => (
                         <ItemCard auth={auth} itemInfo={asset} isWorn={outfit.containsAsset(Number(asset.id))}
-                        onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, setAnimName, setOutfit, animName)}}
+                        onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, ()=>{}, setOutfit, animName)}}
                         />
                     ))
                     :
