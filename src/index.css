@@ -505,6 +505,16 @@ body {
     cursor: pointer;
 }
 
+@media screen and (max-height: 600px) {
+    .emote-bar {
+        height: 60px
+    }
+
+    .emote-box {
+        width: 60px
+    }
+}
+
 .emote-box img {
     width: 100%;
     height: 100%;
@@ -700,6 +710,12 @@ body {
     justify-content: space-between;
     margin-bottom: 0.5em;
     margin-top: 2em;
+}
+
+@media screen and (max-height: 600px) {
+    .scale-info {
+        margin-top: 0.5em;
+    }
 }
 
 .scale-name {
@@ -1146,6 +1162,13 @@ dialog::backdrop {
     transition: 0.1s;
 }
 
+@media screen and (max-height: 600px) {
+    .adjustment-menu {
+        width: 65%;
+        margin-left: 15%;
+    }
+}
+
 .adjustment-bar {
     display: flex;
     flex-direction: row;
@@ -1464,6 +1487,23 @@ dialog::backdrop {
     border-style: solid;
     border-color: transparent;
     border-width: 1px;
+}
+
+@media screen and (max-height: 670px) {
+    .edit-outfit-menu {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        background-color: #00000066;
+        justify-content: center;
+        align-items: center;
+        gap: 1px;
+    }
+    .edit-outfit-menu button {
+        padding: 0px;
+    }
 }
 
 .edit-outfit-menu button:hover {
@@ -1969,6 +2009,7 @@ textarea {
     box-shadow: 0px 0px 20px;
     display: flex;
     flex-direction: column;
+    cursor: auto;
 }
 
 .item-bundle-details-frame-top {

@@ -30,6 +30,11 @@ FLAGS.CACHE_HSR_HITS = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
 RBXRenderer.fullSetup().then(() => {
+  if (theme === "light") {
+    RBXRenderer.wellLitDirectionalLightIntensity *= 2.25
+    RBXRenderer.setBackgroundColor(0xdbdbdc)
+  }
+
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
