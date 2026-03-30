@@ -57,6 +57,10 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
             const assetItemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
             totalAssets.push(assetItemInfo)
         }
+        if (totalAssets.length === 0) {
+            setFailedToLoad(true)
+        }
+
         setAssets(totalAssets)
     }
 
@@ -102,6 +106,11 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
                             addOutfitAssets(outfit)
                         }
                     })
+                })
+                break
+            case "Avatar":
+                API.Avatar.GetAvatarDetails(Number(itemInfo.id)).then((outfit) => {
+                    addOutfitAssets(outfit)
                 })
                 break
             case "None":

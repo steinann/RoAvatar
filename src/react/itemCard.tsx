@@ -318,7 +318,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 {/*Edit outfit button*/
                 canEditOutfit ? <button className="edit-outfit itemcard-button" title="Edit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
                 {/*Bundle details button*/}
-                {["Outfit", "Bundle", "Look"].includes(itemInfo.itemType) || itemInfo.type === "LocalOutfit" ? <ItemCardBundleDetails
+                {["Outfit", "Bundle", "Look", "Avatar"].includes(itemInfo.itemType) || itemInfo.type === "LocalOutfit" ? <ItemCardBundleDetails
                     itemInfo={itemInfo}
                     ref={bundleDetailsRef}
                     setOutfit={outfitFuncContext.setOutfit}

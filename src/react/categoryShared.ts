@@ -30,7 +30,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
         newOutfit.removeAsset(Number(item.id));
         setOutfit(newOutfit)
     } else if (item.itemType === "Outfit" && (item.type === "Outfit" || item.type === "Character")) { //if full outfit
-        API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
+        API.Avatar.GetOutfitDetails(item.id, item.creatorId || outfit.creatorId || 0).then((result) => {
             if (result instanceof Outfit) {
                 //check if we need to unequip or equip
                 const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
@@ -70,7 +70,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
             newOutfit.removeAssetType(type)
         }
 
-        API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
+        API.Avatar.GetOutfitDetails(item.id, item.creatorId || outfit.creatorId || 0).then((result) => {
             if (result instanceof Outfit) {
                 //check if we need to unequip or equip
                 const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
@@ -93,9 +93,11 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
             if (!(result instanceof Response)) {
                 const bundleType = CatalogBundleTypes[result.bundleType]
 
+                const ogItem = item
+
                 for (const item of result.bundledItems) {
                     if (item.type === "UserOutfit") { //find first outfit in bundle
-                        API.Avatar.GetOutfitDetails(item.id, outfit.creatorId || 1).then((result) => {
+                        API.Avatar.GetOutfitDetails(item.id, ogItem.creatorId || outfit.creatorId || 1).then((result) => {
                             if (result instanceof Outfit) {
                                 //check if we need to unequip or equip
                                 const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
@@ -124,6 +126,12 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                 }
             } else {
                 console.warn("Failed to get bundleDetails", result)
+            }
+        })
+    } else if (item.itemType === "Avatar") {
+        API.Avatar.GetAvatarDetails(Number(item.id)).then((result) => {
+            if (!(result instanceof Response)) {
+                setOutfit(result)
             }
         })
     }

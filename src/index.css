@@ -1554,6 +1554,22 @@ form {
     padding: 0.25em;
 }
 
+.user-search form input {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--item-background);
+    height: 1.5em;
+    border-radius: 1em;
+    border-style: solid;
+    border-color: var(--select-element-hover);
+    border-width: 2px;
+    padding: 0.5em 1em;
+    color: var(--font-color);
+    font-size: 1.5em;
+    outline: none;
+    width: 223px;
+}
+
 .searchfilter-search-button {
     padding: 0;
     background-color: transparent;
@@ -2029,4 +2045,58 @@ textarea {
     height: auto;
     scrollbar-gutter: auto;
     min-height: 70px;
+}
+
+.user-search-list {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--container);
+    border-radius: 12px;
+    overflow: hidden;
+    justify-self: center;
+    min-width: 300px;
+    margin-top: 5px;
+    box-shadow: 0px 0px 10px;
+    z-index: 3;
+}
+
+.user-search-entry {
+    height: calc(4em + 12px);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 6px;
+    color: var(--font-color);
+}
+
+.user-search-entry:hover {
+    background-color: var(--font-color);
+    color: var(--button-background);
+}
+
+.user-search-entry img {
+    height: 100%;
+    aspect-ratio: 1;
+    background-color: var(--button-background);
+    border-radius: 10000px;
+}
+
+.user-search-entry div {
+    height: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(-45deg, var(--item-background), var(--loading-gradient-2), var(--item-background), var(--loading-gradient-2));
+	background-size: 400% 400%;
+	animation: loading-gradient 2s ease infinite;
+    border-radius: 10000px;
+}
+
+.user-search-entry span {
+    color: inherit;
+    font-size: 2em;
+    margin-left: 5px;
 }

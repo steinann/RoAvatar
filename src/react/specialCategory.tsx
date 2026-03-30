@@ -5,6 +5,7 @@ import LocalOutfitCategory from "./localOutfitCategory"
 import LookCategory from "./lookCategory"
 import ScaleCategory from "./scaleCategory"
 import HeadAdjustmentCategory from "./headAdjustmentCategory"
+import OutfitViewerCategory from "./outfitViewerCategory"
 
 export default function SpecialCategory({specialInfo, searchData, categoryType, setOutfit, animName, setAnimName, _setOutfit}: {specialInfo: SpecialInfo, searchData: Search_Payload, categoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, _setOutfit: (a: Outfit) => void}): React.JSX.Element {
     //Picks the category element to use based on type in SpecialInfo
@@ -21,6 +22,8 @@ export default function SpecialCategory({specialInfo, searchData, categoryType, 
             return <LookCategory searchData={searchData} setOutfit={setOutfit}/>
         case "HeadAdjustment":
             return <HeadAdjustmentCategory setOutfit={setOutfit}/>
+        case "OutfitViewer":
+            return <OutfitViewerCategory/>
         default:
             return <></>
     }
