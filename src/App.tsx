@@ -444,6 +444,12 @@ function App() {
                             }
 
                             setOutfit(newOutfit)
+
+                            for (const asset of newOutfit.assets) {
+                              if (asset.id === id && asset.assetType.name === "EmoteAnimation") {
+                                setCurrentAnimName(`emote.${id}`)
+                              }
+                            }
                           } else {
                             alert(`Failed to add asset with id ${id}`, 3000, false)
                           }

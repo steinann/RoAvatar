@@ -30,6 +30,7 @@ export default function OutfitViewerCategory(): React.JSX.Element {
         const currentLoadId = lastLoadId
         
         setIsLoading(true)
+        setFailedToLoad(false)
 
         API.Avatar.GetUserOutfits(userId).then((result) => {
             if (currentLoadId !== lastLoadId) return
@@ -66,24 +67,24 @@ export default function OutfitViewerCategory(): React.JSX.Element {
     return <div className="container">
         <UserSearch userId={userId} setUserId={setUserId}/>
         <div className="item-container">
-            {isLoading ? 
-            new Array(20).fill(0).map(() => {return <ItemCard/>})
-            :
-            outfits.map((userOutfit) => {
-                const itemInfo = new ItemInfo(userOutfit.isAvatar ? "Avatar" : "Outfit", "Outfit", userOutfit.id, userOutfit.name)
-                itemInfo.creatorId = userId
-
-                return <ItemCard
-                auth={auth}
-                itemInfo={itemInfo}
-                onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, outfitFuncContext.setAnimName, outfitFuncContext.setOutfit, outfitFuncContext.animName)}}
-                />
-            })
-            }
-
             {failedToLoad ? 
             <NothingLoaded loadedAll={true} itemCount={0} forceText="An error occured"/>
-            : null}
+            : <>
+                {isLoading ? 
+                new Array(20).fill(0).map(() => {return <ItemCard/>})
+                :
+                outfits.map((userOutfit) => {
+                    const itemInfo = new ItemInfo(userOutfit.isAvatar ? "Avatar" : "Outfit", "Outfit", userOutfit.id, userOutfit.name)
+                    itemInfo.creatorId = userId
+
+                    return <ItemCard
+                    auth={auth}
+                    itemInfo={itemInfo}
+                    onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, outfitFuncContext.setAnimName, outfitFuncContext.setOutfit, outfitFuncContext.animName)}}
+                    />
+                })
+                }
+            </>}
         </div>
     </div>
 }
