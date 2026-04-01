@@ -158,23 +158,16 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
                 newFramePos[1] += window.innerHeight - endHeight - 3
             }
         }
+
+        if (framePos[0] === newFramePos[0] && framePos[1] === newFramePos[1]) return
         setFramePos(newFramePos)
-    }, [button, buttonRect])
+    }, [button, buttonRect, framePos])
 
     useEffect(() => {
-        updateFramePos()
-    }, [assets, updateFramePos])
-
-    useEffect(() => {
-        const frame = frameRef.current
-
-        if (frame) {
-            const observer = new ResizeObserver(() => updateFramePos())
-            observer.observe(frame)
-
-            return () => {observer.disconnect()}
+        if (open) {
+            updateFramePos()
         }
-    }, [updateFramePos])
+    }, [assets, open, updateFramePos])
 
     return <div ref={ref}>
         <button ref={buttonRef} title="Contents" className="item-bundle-details itemcard-button" onClick={() => {

@@ -23,7 +23,9 @@ function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: st
             }
             currentRigType = newRigType
 
-            API.Asset.GetRBX(`../assets/Rig${currentRigType}.rbxm`, undefined).then(result => {
+            const rigURL = `roavatar://Rig${currentRigType}.rbxm`
+
+            API.Asset.GetRBX(rigURL, undefined).then(result => {
                 if (result instanceof RBX) {
                     const newRig = result.generateTree().GetChildren()[0]
 
@@ -306,6 +308,12 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                         RBXRenderer.addInstance(currentRig, auth)
                     }
                 }
+
+                /*const controls = RBXRenderer.getRendererControls()
+                if (controls) {
+                    controls.enabled = false
+                }
+                updateCameraForHeadshotCustomized(currentRig, 28.81402587890625, 0, 1)*/
             }
 
             //update renderer size
