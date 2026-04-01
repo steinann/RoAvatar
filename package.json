@@ -14,7 +14,7 @@
     "mathjs": "^15.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "roavatar-renderer": "^1.2.10",
+    "roavatar-renderer": "^1.2.12",
     "three": "^0.180.0",
     "vite-tsconfig-paths": "^5.1.4"
   },
