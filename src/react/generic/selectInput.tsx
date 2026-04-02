@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 
 //custom select input
-export default function SelectInput({value, setValue, alternatives}: {value: string, setValue: (a: string) => void, alternatives: string[]}): React.JSX.Element {
+export default function SelectInput({value, setValue, alternatives, isUp}: {value: string, setValue: (a: string) => void, alternatives: string[], isUp?: boolean}): React.JSX.Element {
     const [open, setOpen] = useState(false)
     
     const selectRef = useRef<HTMLButtonElement | null>(null)
@@ -25,7 +25,7 @@ export default function SelectInput({value, setValue, alternatives}: {value: str
     }}>
         <span>{value}</span>
         {open ? <span className="material-symbols-outlined">keyboard_arrow_up</span> : <span className="material-symbols-outlined">keyboard_arrow_down</span>}
-        <ul className={open ? "" : "icons-collapsed"}>
+        <ul className={open ? "" : "icons-collapsed"} style={isUp ? {bottom: "2.2em"} : undefined}>
             {alternatives.map((val) => {
                 return <button className="roboto-600" onClick={() => {
                     setValue(val)

@@ -33,12 +33,13 @@ function itemPassesFilter(item: ItemDetails_Result["data"][0], searchData: Searc
     )
 }
 
-let lastCategory = ""
-let lastSubCategory = ""
-let lastLoadId = 0
-let lastSearchData: Search_Payload | undefined = undefined
-let lastDetailsRateLimit = 0
 function useItems(auth: Authentication | undefined, category: string, subCategory: string, searchData: Search_Payload) {
+    const lastCategory = useRef("")
+    const lastSubCategory = useRef("")
+    const lastLoadId = useRef(0)
+    const lastSearchData = useRef<Search_Payload | undefined>(undefined)
+    const lastDetailsRateLimit = useRef(0)
+
     const [nextPageToken, setNextPageToken] = useState<string | null | undefined>("")
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [items, setItems] = useState<AvatarInventoryItem[]>([])
@@ -49,32 +50,32 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
         setItems([])
         setNextPageToken("")
         setIsLoading(false)
-        lastLoadId++
+        lastLoadId.current++
     }
 
     //refresh if searchData has changed
     useEffect(() => {
-        if (searchData.taxonomy !== lastSearchData?.taxonomy ||
-            searchData.salesTypeFilter !== lastSearchData.salesTypeFilter ||
-            searchData.categoryFilter !== lastSearchData.categoryFilter ||
-            searchData.sortType !== lastSearchData.sortType ||
-            searchData.keyword !== lastSearchData.keyword ||
-            searchData.topics?.length !== lastSearchData.topics?.length || //is this okay?
-            searchData.creatorName !== lastSearchData.creatorName ||
-            searchData.minPrice !== lastSearchData.minPrice ||
-            searchData.maxPrice !== lastSearchData.maxPrice ||
-            searchData.includeNotForSale !== lastSearchData.includeNotForSale ||
-            searchData.limit !== lastSearchData.limit
+        if (searchData.taxonomy !== lastSearchData?.current?.taxonomy ||
+            searchData.salesTypeFilter !== lastSearchData?.current?.salesTypeFilter ||
+            searchData.categoryFilter !== lastSearchData?.current?.categoryFilter ||
+            searchData.sortType !== lastSearchData?.current?.sortType ||
+            searchData.keyword !== lastSearchData?.current?.keyword ||
+            searchData.topics?.length !== lastSearchData?.current?.topics?.length || //is this okay?
+            searchData.creatorName !== lastSearchData?.current?.creatorName ||
+            searchData.minPrice !== lastSearchData?.current?.minPrice ||
+            searchData.maxPrice !== lastSearchData?.current?.maxPrice ||
+            searchData.includeNotForSale !== lastSearchData?.current?.includeNotForSale ||
+            searchData.limit !== lastSearchData?.current?.limit
         ) {
-            lastSearchData = searchData
+            lastSearchData.current = searchData
             refresh()
         }
     }, [searchData])
 
     useEffect(() => {
-        if (category !== lastCategory || subCategory !== lastSubCategory) {
-            lastCategory = category
-            lastSubCategory = subCategory
+        if (category !== lastCategory.current || subCategory !== lastSubCategory.current) {
+            lastCategory.current = category
+            lastSubCategory.current = subCategory
             refresh()
         }
     }, [category, subCategory])
@@ -90,7 +91,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
     const loadMore = (force: boolean = false) => {
         if (!auth || (isLoading && !force)) return
 
-        lastLoadId++
+        lastLoadId.current++
         const loadId = lastLoadId
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
@@ -99,7 +100,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                 API.Avatar.GetAvatarInventory(sortOption, nextPageToken, itemInfos).then(body => {
                     if (loadId !== lastLoadId) return
                     if (!(body instanceof Response)) {
-                        if (Date.now() / 1000 - lastDetailsRateLimit < 2) {
+                        if (Date.now() / 1000 - lastDetailsRateLimit.current < 2) {
                             //setIsLoading(false)
                             setTimeout(loadMore, 2000, true)
                             return
@@ -113,7 +114,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                             if (loadId !== lastLoadId) return
                             if (itemDetails instanceof Response) {
                                 console.warn("Failed to get itemDetails", itemDetails)
-                                lastDetailsRateLimit = Date.now() / 1000
+                                lastDetailsRateLimit.current = Date.now() / 1000
                                 setIsLoading(false)
                                 return
                             }
@@ -231,7 +232,7 @@ type AvatarInventoryItem = {
     acquisitionTime?: string
 }
 
-export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
+export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = [], showNames = true}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], showNames?: boolean}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
@@ -363,7 +364,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
         </> : null}
         {
             itemInfos.map((item) => (
-                <ItemCard key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(Number(item.id)) || wornItems.includes(Number(item.id)) : false} onClick={(item) => {
+                <ItemCard key={i++} auth={auth} itemInfo={item} refresh={refresh} canEditOutfit={isOutfits} isWorn={item.itemType === "Asset" ? outfit.containsAsset(Number(item.id)) || wornItems.includes(Number(item.id)) : false} includeName={showNames} onClick={(item) => {
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {

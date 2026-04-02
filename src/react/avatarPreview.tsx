@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
-import { OutfitContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3 } from 'roavatar-renderer';
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame } from 'roavatar-renderer';
+import { getCameraData } from './generic/cameraData';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -12,7 +13,34 @@ let lastOutfit: Outfit | undefined = undefined
 let lastFrameTime = Date.now() / 1000
 
 let currentlyChangingRig = false
-function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: string | undefined) => void) {
+
+function updateAnim(animName: string, currentRig: Instance, auth?: Authentication) {
+    const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
+    if (humanoid) {
+        const animator = humanoid.FindFirstChildOfClass("Animator")
+        if (animator) {
+            const animatorW = new AnimatorWrapper(animator)
+
+            //main animation
+            const successfullyPlayed = animatorW.playAnimation(animName)
+            if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
+                const emoteId = BigInt(animName.split(".")[1])
+                animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
+                    animatorW.playAnimation(animName)
+                })
+            }
+
+            //mood animation
+            /*if (!animName.startsWith("emote.")) {
+                animatorW.playAnimation("mood", "mood")
+            } else {
+                animatorW.stopMoodAnimation()
+            }*/
+        }
+    }
+}
+
+function setRigTo(animName: string, newRigType: AvatarType, auth: Authentication, setError: (a: string | undefined) => void) {
     return new Promise<undefined>((resolve) => {
         if (!currentlyChangingRig) {
             currentlyChangingRig = true
@@ -31,6 +59,9 @@ function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: st
 
                     currentRig = newRig
                     RBXRenderer.addInstance(currentRig, auth)
+
+                    updateAnim(animName, currentRig, auth)
+
                     //console.log("new rig", currentRig)
 
                     setError(undefined)
@@ -47,7 +78,7 @@ function setRigTo(newRigType: AvatarType, auth: Authentication, setError: (a: st
 
 let currentlyUpdatingPreview = false
 let failedLastDescription = false
-function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: string | undefined) => void) {
+function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication, setError: (a: string | undefined) => void) {
     if (!currentlyUpdatingPreview) {
         currentlyUpdatingPreview = true
 
@@ -72,7 +103,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
 
         const promises: Promise<undefined>[] = []
         if (newRigType !== currentRigType || !currentRig) {
-            promises.push(setRigTo(newRigType, auth, setError))
+            promises.push(setRigTo(currentAnim, newRigType, auth, setError))
         }
 
         Promise.all(promises).then(() => {
@@ -99,7 +130,7 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
                         if (result instanceof Instance) {
                             failedLastDescription = false
                             if (outfit !== lastOutfit && lastOutfit) {
-                                updatePreview(lastOutfit, auth, setError)
+                                updatePreview(currentAnim, lastOutfit, auth, setError)
                             }
                             currentlyUpdatingPreview = false
                             setError(undefined)
@@ -122,9 +153,13 @@ function updatePreview(outfit: Outfit, auth: Authentication, setError: (a: strin
 
 let animationInterval: number | undefined = undefined
 
-export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, animName }: React.PropsWithChildren & { setSaveAlwaysOn: (a: boolean) => void, setOutfit: (a: Outfit) => void, animName: string}): React.JSX.Element {
+export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, animName }: React.PropsWithChildren & { setSaveAlwaysOn: (a: boolean) => void, setOutfit: (a: Outfit) => void, animName: string }): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
+    const outfitFunc = useContext(OutfitFuncContext)
+
+    const animLock = outfitFunc.animLock
+
     const containerRef = useCallback(mountElement, [])
 
     const [cameraLocked, setCameraLocked] = useState(true)
@@ -219,10 +254,10 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 })
             } else {
                 lastOutfit = outfit
-                updatePreview(outfit, auth, setError)
+                updatePreview(animName, outfit, auth, setError)
             }
         }
-    }, [auth, outfit, setOutfit, setSaveAlwaysOn])
+    }, [auth, outfit, setOutfit, setSaveAlwaysOn, animName])
 
     //load extra scene
     /*useEffect(() => {
@@ -239,29 +274,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     //play/load animations
     useEffect(() => {
         if (currentRig) {
-            const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
-            if (humanoid) {
-                const animator = humanoid.FindFirstChildOfClass("Animator")
-                if (animator) {
-                    const animatorW = new AnimatorWrapper(animator)
-
-                    //main animation
-                    const successfullyPlayed = animatorW.playAnimation(animName)
-                    if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
-                        const emoteId = BigInt(animName.split(".")[1])
-                        animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
-                            animatorW.playAnimation(animName)
-                        })
-                    }
-
-                    //mood animation
-                    /*if (!animName.startsWith("emote.")) {
-                        animatorW.playAnimation("mood", "mood")
-                    } else {
-                        animatorW.stopMoodAnimation()
-                    }*/
-                }
-            }
+            updateAnim(animName, currentRig, auth)
         }
     }, [auth, animName, outfit])
 
@@ -301,7 +314,19 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                         lastFrameTime = Date.now() / 1000
 
                         const animatorW = new AnimatorWrapper(animator)
-                        animatorW.renderAnimation(deltaTime)
+
+                        //const currentTrack = animatorW.getCurrentAnimationTrack()
+
+                        if (!animLock.locked) {
+                            animatorW.renderAnimation(deltaTime)
+                        } else {
+                            animatorW.renderAnimation(deltaTime,
+                                animLock.lockType === "time" ? animLock.value : undefined, 
+                                animLock.lockType === "keyframe" ? animLock.value : undefined
+                            )
+                            //const time = animLock.lockType === "time" ? animLock.value : currentTrack.getKeyframeTime(animLock.value)
+                            //currentTrack.setTime(time)
+                        }
 
                         currentRig.preRender()
                         
@@ -309,11 +334,35 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     }
                 }
 
-                /*const controls = RBXRenderer.getRendererControls()
+                //update camera
+                const cameraData = getCameraData()
+                const currentTime = Date.now() / 1000
+                const transitionTime = currentTime - cameraData.transitionStart
+                const isTransition = transitionTime < cameraData.transitionTime
+
+                let targetCF = new CFrame()
+
+                const controls = RBXRenderer.getRendererControls()
                 if (controls) {
-                    controls.enabled = false
+                    controls.update(0)
+                    targetCF = RBXRenderer.getCameraCFrame()
+
+                    controls.enabled = cameraData.type === "Editor" && !isTransition
                 }
-                updateCameraForHeadshotCustomized(currentRig, 28.81402587890625, 0, 1)*/
+
+                if (cameraData.type === "AvatarHeadshot") {
+                    targetCF = getCameraCFrameForHeadshotCustomized(currentRig, cameraData.thumbnailFov, cameraData.yRot, cameraData.distanceScale) || targetCF
+                }
+
+                if (isTransition) {
+                    const newCF = lerpCFrame(cameraData.previousCF, targetCF, transitionTime / cameraData.transitionTime)
+                    const newFov = lerp(cameraData.previousFov, cameraData.fov, transitionTime / cameraData.transitionTime)
+                    RBXRenderer.setCameraCFrame(newCF)
+                    RBXRenderer.setCameraFov(newFov)
+                } else if (cameraData.type !== "Editor") {
+                    RBXRenderer.setCameraCFrame(targetCF)
+                    RBXRenderer.setCameraFov(cameraData.fov)
+                }
             }
 
             //update renderer size
@@ -322,7 +371,14 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 RBXRenderer.setRendererSize(container.clientWidth, container.clientHeight)
             }
         }, 1000 / 60)
-    }, [auth, cameraLocked])
+
+        return () => {
+            if (animationInterval) {
+                clearInterval(animationInterval)
+                animationInterval = undefined
+            }
+        }
+    }, [auth, cameraLocked, animLock])
 
     let previewInfoClass = "none"
     let previewInfoMessage = ""

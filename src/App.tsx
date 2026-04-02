@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { AuthContext } from './react/context/auth-context'
-import { OutfitContext, OutfitFuncContext } from './react/context/outfit-context'
+import { AnimLock, OutfitContext, OutfitFuncContext } from './react/context/outfit-context'
 import AvatarPreview from './react/avatarPreview'
 import BarCategory from './react/barCategory'
 import ItemCategory from './react/itemCategory'
@@ -9,7 +9,7 @@ import SaveButton from './react/saveButton'
 import UndoRedo from './react/undoRedo'
 import SpecialCategory from './react/specialCategory'
 import ItemCard from './react/itemCard'
-import AvatarAdjustment from './react/avatarAdjustment'
+import { AvatarAdjustment } from './react/avatarAdjustment'
 import MarketplaceCategory from './react/marketplaceCategory'
 import RadialButton from './react/generic/radialButton'
 import SearchFilter from './react/searchFilter'
@@ -34,6 +34,8 @@ function App() {
   const [navigationMenuItems, setNavigationMenuItems] = useState<NavigationMenuItems | undefined>(undefined)
 
   const [currentAnimName, _setCurrentAnimName] = useState<string>("idle")
+  const [canSetAnimName, setCanSetAnimName] = useState<boolean>(true)
+  const [animLock, setAnimLock] = useState<AnimLock>(new AnimLock())
 
   const [canUndo, setCanUndo] = useState<boolean>(false)
   const [canRedo, setCanRedo] = useState<boolean>(false)
@@ -57,6 +59,7 @@ function App() {
   const [alertText, _setAlertText] = useState<string>("")
   const [alertEnabled, setAlertEnabled] = useState<boolean>(false)
   const [alertIsWarning, setAlertIsWarning] = useState<boolean>(false)
+  const [alertIsSuccess, setAlertIsSuccess] = useState<boolean>(false)
 
   const [addAssetOpen, setAddAssetOpen] = useState<boolean>(false)
 
@@ -65,11 +68,12 @@ function App() {
   const addAssetDialogRef = useRef<HTMLDialogElement>(null)
   const addAssetInputRef = useRef<HTMLInputElement>(null)
 
-  function alert(text: string, duration: number, isWarning: boolean) {
+  function alert(text: string, duration: number, isWarning: boolean, isSuccess?: boolean) {
     console.warn("Alert: ", text)
     _setAlertText(text)
     setAlertEnabled(true)
     setAlertIsWarning(isWarning)
+    setAlertIsSuccess(!!isSuccess)
 
     clearTimeout(lastAlertTimeout)
     lastAlertTimeout = setTimeout(() => {
@@ -135,7 +139,9 @@ function App() {
 
   window.setOutfit = setOutfit
 
-  function setCurrentAnimName(name: string) {
+  function setCurrentAnimName(name: string, force?: boolean) {
+    if (!canSetAnimName && !force) return
+
     //switch to compatible animation if avatar is r6
     if (outfit.playerAvatarType === AvatarType.R6 && (name === "swim" || name === "run")) {
       name = "walk"
@@ -403,9 +409,9 @@ function App() {
     <AlertContext value={alert}>
       <AuthContext value={auth}>
         <OutfitContext value={outfit}>
-          <OutfitFuncContext value={{setOutfit: setOutfit, setAnimName: setCurrentAnimName, animName: currentAnimName}}>
+          <OutfitFuncContext value={{setOutfit, _setOutfit, setAnimName: setCurrentAnimName, animName: currentAnimName, setCanSetAnimName, animLock, setAnimLock}}>
             <div className='main'>
-              <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}`} onMouseEnter={stopAlert}>
+              <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}${alertIsSuccess ? " successAlert" : ""}`} onMouseEnter={stopAlert}>
                 {alertText}
               </div>
 
@@ -482,7 +488,7 @@ function App() {
 
                 {/*avatar preview*/}
                 <AvatarPreview setSaveAlwaysOn={setSaveAlwaysOn} setOutfit={setOutfit} animName={currentAnimName}>
-                  <AvatarAdjustment setOutfit={setOutfit} _setOutfit={_setOutfit}/>
+                  <AvatarAdjustment/>
                 </AvatarPreview>
 
                 {/*save and undo*/}

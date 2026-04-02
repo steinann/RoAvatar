@@ -66,7 +66,7 @@ export default function OutfitViewerCategory(): React.JSX.Element {
 
     return <div className="container">
         <UserSearch userId={userId} setUserId={setUserId}/>
-        <div className="item-container">
+        <div className="item-container dark-scrollbar">
             {failedToLoad ? 
             <NothingLoaded loadedAll={true} itemCount={0} forceText="An error occured"/>
             : <>
