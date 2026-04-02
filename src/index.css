@@ -2203,3 +2203,19 @@ textarea {
         margin: 0;
     }
 }
+
+@property --mask-stop {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 100%;
+}
+
+.avatar-preview > :first-child {
+    mask-image: radial-gradient(circle, black 70%, rgba(0, 0, 0, var(--mask-stop)) 50%);
+    transition: --mask-stop 0.15s;
+    --mask-stop: 100%;
+}
+
+.avatar-preview.pfp-frame > :first-child {
+    --mask-stop: 30%;
+}

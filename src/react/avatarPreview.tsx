@@ -166,6 +166,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [error, _setError] = useState<string | undefined>(undefined)
     const [warning, _setWarning] = useState<string | undefined>(undefined)
     const [canFocus, setCanFocus] = useState<boolean>(true)
+    const [isPfp, setIsPfp] = useState<boolean>(false)
     //const [loadingConnection, setLoadingConnection] = useState<Connection | undefined>(undefined)
     //const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -368,6 +369,11 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 if (canFocus !== cameraData.canFocus) {
                     setCanFocus(cameraData.canFocus)
                 }
+
+                const newIsPfp = cameraData.type === "AvatarHeadshot"
+                if (isPfp !== newIsPfp) {
+                    setIsPfp(newIsPfp)
+                }
             }
 
             //update renderer size
@@ -383,7 +389,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 animationInterval = undefined
             }
         }
-    }, [auth, cameraLocked, animLock, canFocus, setCanFocus])
+    }, [auth, cameraLocked, animLock, canFocus, setCanFocus, isPfp, setIsPfp])
 
     let previewInfoClass = "none"
     let previewInfoMessage = ""
@@ -396,7 +402,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         previewInfoMessage = error
     }
 
-    return (<div id="avatar-preview" className="avatar-preview" ref={containerRef} onMouseDown={(e) => {
+    return (<div id="avatar-preview" className={`avatar-preview${isPfp ? " pfp-frame" : ""}`} ref={containerRef} onMouseDown={(e) => {
         if (e.buttons == 2 && (e.target as HTMLCanvasElement).id === "OutfitInfo-outfit-image-3d") {
             setCameraLocked(false)
         }

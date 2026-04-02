@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react"
+import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext } from "./context/outfit-context"
 import ItemCard from "./itemCard"
@@ -92,13 +92,13 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
         if (!auth || (isLoading && !force)) return
 
         lastLoadId.current++
-        const loadId = lastLoadId
+        const loadId = lastLoadId.current
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
             if (sortOption !== "inventory") {
                 API.Avatar.GetAvatarInventory(sortOption, nextPageToken, itemInfos).then(body => {
-                    if (loadId !== lastLoadId) return
+                    if (loadId !== lastLoadId.current) return
                     if (!(body instanceof Response)) {
                         if (Date.now() / 1000 - lastDetailsRateLimit.current < 2) {
                             //setIsLoading(false)
@@ -111,7 +111,7 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                             return {itemType: a.itemCategory.itemType === 1 ? "Asset" : "Bundle", id: a.itemId}
                         }), searchData).then((itemDetails) => {
                             //prevent too much spam
-                            if (loadId !== lastLoadId) return
+                            if (loadId !== lastLoadId.current) return
                             if (itemDetails instanceof Response) {
                                 console.warn("Failed to get itemDetails", itemDetails)
                                 lastDetailsRateLimit.current = Date.now() / 1000
@@ -175,10 +175,10 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                     }
 
                     API.Inventory.GetInventory(userInfo.id, itemInfos[0].subType, nextPageToken).then(response => {
-                        if (loadId !== lastLoadId) return
+                        if (loadId !== lastLoadId.current) return
                         if (response.status === 200) {
                             response.json().then((body: Inventory_Result) => {
-                                if (loadId !== lastLoadId) return
+                                if (loadId !== lastLoadId.current) return
 
                                 const pageToken = body.nextPageCursor
                                 if (pageToken && pageToken.length > 0) {
@@ -199,18 +199,18 @@ function useItems(auth: Authentication | undefined, category: string, subCategor
                                 }
                                 setItems(prev => [...prev, ...newItems])
                             }).finally(() => {
-                                if (loadId !== lastLoadId) return
+                                if (loadId !== lastLoadId.current) return
                                 setIsLoading(false)
                             })
                         } else {
                             setIsLoading(false)
                         }
                     }).finally(() => {
-                        if (loadId !== lastLoadId) return
+                        if (loadId !== lastLoadId.current) return
                         setIsLoading(false)
                     })
                 }).finally(() => {
-                    if (loadId !== lastLoadId) return
+                    if (loadId !== lastLoadId.current) return
                     setIsLoading(false)
                 })
             }
@@ -261,6 +261,16 @@ export default function ItemCategory({children, searchData, categoryType, subCat
         }
     }, [categoryType, subCategoryType])
 
+    //check if it should load more on scroll
+    const onScroll = useCallback(() => {
+        if (scrollDivRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
+            if (scrollTop + clientHeight >= scrollHeight - 200) {
+                loadMore()
+            }
+        }
+    }, [loadMore])
+
     //load more if nothing has been loaded yet
     useEffect(() => {
         if (!hasLoadedAll && items.length <= 0) {
@@ -269,17 +279,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
             //in case the amount of items isnt enough to add a scrollbar but there is still another page
             onScroll()
         }
-    })
-
-    //check if it should load more on scroll
-    function onScroll() {
-        if (scrollDivRef.current) {
-            const { scrollTop, scrollHeight, clientHeight } = scrollDivRef.current;
-            if (scrollTop + clientHeight >= scrollHeight - 200) {
-                loadMore()
-            }
-        }
-    }
+    }, [hasLoadedAll, items.length, loadMore, onScroll])
 
     //create item infos based on response
     const itemInfos: ItemInfo[] = []
