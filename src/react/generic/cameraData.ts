@@ -32,9 +32,7 @@ export class CameraData {
 
     transition(type: CameraDataType) {
         this.type = type
-        if (type !== "Editor") {
-            this.canFocus = false
-        }
+        this.canFocus = type === "Editor"
         this.transitionStart = Date.now() / 1000
         this.updatePreviousCF()
         this.previousFov = this.fov

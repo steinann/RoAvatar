@@ -165,6 +165,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [cameraLocked, setCameraLocked] = useState(true)
     const [error, _setError] = useState<string | undefined>(undefined)
     const [warning, _setWarning] = useState<string | undefined>(undefined)
+    const [canFocus, setCanFocus] = useState<boolean>(true)
     //const [loadingConnection, setLoadingConnection] = useState<Connection | undefined>(undefined)
     //const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -363,6 +364,10 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     RBXRenderer.setCameraCFrame(targetCF)
                     RBXRenderer.setCameraFov(cameraData.fov)
                 }
+
+                if (canFocus !== cameraData.canFocus) {
+                    setCanFocus(cameraData.canFocus)
+                }
             }
 
             //update renderer size
@@ -378,7 +383,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 animationInterval = undefined
             }
         }
-    }, [auth, cameraLocked, animLock])
+    }, [auth, cameraLocked, animLock, canFocus, setCanFocus])
 
     let previewInfoClass = "none"
     let previewInfoMessage = ""
@@ -397,12 +402,12 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
     }}>
         {/*Recenter camera button*/}
-        <button className={`avatar-preview-focus icon-button${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
+        {canFocus ? <button className={`avatar-preview-focus icon-button${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
             e.preventDefault()
             setCameraLocked(true)
         }}>
             <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
-        </button>
+        </button> : null}
         {/*Loading icon*/}
         {/*<span className='loader' style={{
             opacity: isLoading ? 1 : 0,
