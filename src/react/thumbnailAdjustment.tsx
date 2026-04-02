@@ -101,7 +101,7 @@ function AdjustmentBottom({thumbnailCustomization, setIsAdvanced, isExit, select
                 }
 
                 //fullbody
-                if (selectedType === "Both" || selectedType === "Head") {
+                if (selectedType === "Both" || selectedType === "Fullbody") {
                     promises.push(new Promise((resolve) => {
                         API.Avatar.ResetThumbnailCustomization(auth, ThumbnailCustomizationType.Avatar).then((response) => {
                             resolve(response)
