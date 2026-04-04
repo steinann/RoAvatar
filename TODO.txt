@@ -5,7 +5,7 @@ Meaning of tags in code:
 
 ISSUES (Relating to renderer inaccuracy):
     -SKELETON: This is probably the same issues as above but some dynamic heads are incorrectly animated, see asset 103620786273574
-    -LC: Target cage meshes may not be scaled correctly, see asset 132695249271060
+    -SKELETON: Wrong for accessories on dymaic heads
     -LC: Layered clothing ignores outer cage during deformation, its imporant somehow but not sure what it does (i think anything outside shouldnt be deformed? but that might give weird results and doesnt seem right), also the deformation should sample BOTH the inner and outer cage! (rip performance)
     -LC: HSR rays are not rotated
     -LC: AutoSkin ignores vertex groups, https://create.roblox.com/docs/art/accessories/automatic-skinning-transfer for more info
@@ -24,6 +24,7 @@ ISSUES (Relating to renderer inaccuracy):
     -MATERIALDESC: face appears on certain dynamic head in r6: https://www.roblox.com/catalog/115499438051492/Friendly-Grin-Head
     -MATERIALDESC: This head should appear transparent https://www.roblox.com/bundles/7396/Glass-Head (oh no its gone)
     -MAKEUP: collision detection is kinda bad
+    -MAKEUP: Transparency is wrong when multiple layers are applied
 
 ISSUES (General):
     -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
