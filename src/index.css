@@ -2112,8 +2112,7 @@ textarea {
 
     background-color: var(--container);
     width: 420px;
-    height: -webkit-fill-available;
-    max-height: 0px;
+    height: 0;
     border-radius: 12px;
 
     display: none;
@@ -2126,7 +2125,7 @@ textarea {
 
 .thumbnail-adjustment.open {
     display: flex;
-    max-height: -webkit-fill-available;
+    height: -webkit-fill-available;
 }
 
 .thumbnail-customization-slider {
@@ -2218,4 +2217,17 @@ textarea {
 
 .avatar-preview.pfp-frame > :first-child {
     --mask-stop: 30%;
+}
+
+.react-tooltip {
+    border-radius: 12px !important;
+
+    z-index: 100 !important;
+
+    font-family: "Roboto", sans-serif !important;
+    font-optical-sizing: auto !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+    font-variation-settings:
+        "wdth" 100 !important;
 }

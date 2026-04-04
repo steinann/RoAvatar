@@ -170,7 +170,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
     }, [assets, open, updateFramePos])
 
     return <div ref={ref}>
-        <button ref={buttonRef} title="Contents" className="item-bundle-details itemcard-button" onClick={() => {
+        <button ref={buttonRef} data-tooltip-id="itemcard-bundledetails" data-tooltip-content="Contents" className="item-bundle-details itemcard-button" onClick={() => {
             if (!open) {
                 setOpen(true)
                 updateFramePos()

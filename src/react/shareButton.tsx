@@ -3,6 +3,7 @@ import { OutfitContext } from "./context/outfit-context"
 import RadialButton from "./generic/radialButton"
 import Icon from "./generic/icon"
 import { arrayBufferToBase64 } from "roavatar-renderer"
+import { Tooltip } from "react-tooltip"
 
 export default function ShareButton(): React.JSX.Element {
     const outfit = useContext(OutfitContext)
@@ -24,9 +25,10 @@ export default function ShareButton(): React.JSX.Element {
 
     return <>
         {/*Share button*/}
-        <RadialButton className="left-top-button icon-button" title="Share" onClick={() => {setShareOpen(true)}}>
+        <RadialButton className="left-top-button icon-button" data-tooltip-content="Share Link" data-tooltip-id="bottom-share-button"  onClick={() => {setShareOpen(true)}}>
             <Icon>share</Icon>
         </RadialButton>
+        <Tooltip id="bottom-share-button"/>
 
         {/*Share menu*/}
         <dialog style={shareOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={shareDialogRef} onCancel={() => {setShareOpen(false)}}>

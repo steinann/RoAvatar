@@ -144,7 +144,8 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
                                 setHasPremium(false)
                             }
                         } else {
-                            console.warn("Failed to get subscriptionResult", subscriptionResult)
+                            setHasPremium(false)
+                            //console.warn("Failed to get subscriptionResult", subscriptionResult)
                         }
                     })
                 }

@@ -3,16 +3,23 @@ import { AccessoryAdjustment, type AdjustType } from "./accessoryAdjustment";
 import OrderAdjustment from "./orderAdjustment";
 import Icon from "./generic/icon";
 import ThumbnailAdjustment from "./thumbnailAdjustment";
+import { cleanString } from "roavatar-renderer";
+import { Tooltip } from "react-tooltip";
 
 type ButtonType = "adjust" | "order" | "thumbnail"
 
 function MenuIcon({title, open, buttonOpen, type, icon, toggleButton}: {title: string, open: boolean, buttonOpen: boolean, type: ButtonType, icon: string, toggleButton: (a: ButtonType) => void}): React.JSX.Element {
-    return <button
-        title={title}
-        className={`menu-icon menu-adjust${open ? " menu-icon-active" : ""}${buttonOpen && !open ? " menu-icon-inactive":""}`}
-        onClick={() => {toggleButton(type)}}>
-        <Icon>{icon}</Icon>
-    </button>
+    return <>
+        <button
+            /*title={title}*/
+            data-tooltip-id={"adjust-" + cleanString(title)}
+            data-tooltip-content={title}
+            className={`menu-icon menu-adjust${open ? " menu-icon-active" : ""}${buttonOpen && !open ? " menu-icon-inactive":""}`}
+            onClick={() => {toggleButton(type)}}>
+            <Icon>{icon}</Icon>
+        </button>
+        <Tooltip id={"adjust-" + cleanString(title)}/>
+    </>
 }
 
 export function AvatarAdjustment(): React.JSX.Element {
@@ -58,7 +65,13 @@ export function AvatarAdjustment(): React.JSX.Element {
         <ul ref={menuRef} className='menu-icons'>
             {/*Hamburger menu*/}
             <ul className='inner-menu-icons first-menu-icons'>
-                <button title={open ? "Close Menu" : "Open Menu"} className={`menu-icon menu-open${buttonOpen ? " menu-icon-inactive":""}`} onClick={() => {setOpen(!open)}}><span className='material-symbols-outlined'>{open ? "close" : "menu"}</span></button>
+                <button data-tooltip-id={"adjust-menu"}
+                    data-tooltip-content={open ? "Close Menu" : "Open Menu"}
+                    className={`menu-icon menu-open${buttonOpen ? " menu-icon-inactive":""}`}
+                    onClick={() => {setOpen(!open)}}>
+                    <Icon>{open ? "close" : "menu"}</Icon>
+                </button>
+                <Tooltip id="adjust-menu"/>
                 <ul className={`small-menu-icons${open ? "" : " icons-collapsed"}`}>
                     <MenuIcon title="Accessory Adjustment" type="adjust" icon="eyeglasses_2" open={adjustOpen} buttonOpen={buttonOpen} toggleButton={toggleButton}/>
                     <MenuIcon title="Layered Clothing Order" type="order" icon="apparel" open={orderOpen} buttonOpen={buttonOpen} toggleButton={toggleButton}/>

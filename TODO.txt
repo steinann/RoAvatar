@@ -31,16 +31,13 @@ ISSUES (General):
 FEATURES:
     HIGH PRIORITY:
         -Remember unsaved outfit
-        -Thumbnail customization
         -Lines and such when adjusting accessory
         -Better alert and warnings system
         -Reset to currently wearing
     MEDIUM PRIORITY:
-        -Show studio importer plugin somewhere in the extension
         -Autosave setting
         -Layered clothing quality setting
         -Snapping for adjustment sliders and numbers
-        -Custom tooltip
         -Highlight searched text in item name
     LOW PRIORITY:
         -Testing out facial animations using camera

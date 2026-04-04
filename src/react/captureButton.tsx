@@ -4,6 +4,7 @@ import RadialButton from "./generic/radialButton"
 import Icon from "./generic/icon"
 import { API, type Outfit } from "roavatar-renderer"
 import { AuthContext } from "./context/auth-context"
+import { Tooltip } from "react-tooltip"
 
 function downloadImage(imageUrl: string, filename: string) {
   const link = document.createElement("a")
@@ -56,9 +57,10 @@ export default function CaptureButton(): React.JSX.Element {
 
     return <>
         {/*Share button*/}
-        <RadialButton className="left-top-button icon-button" title="Screenshot" onClick={() => {setCaptureOpen(true)}}>
+        <RadialButton className="left-top-button icon-button" data-tooltip-content="Screenshot" data-tooltip-id="bottom-capture-button" onClick={() => {setCaptureOpen(true)}}>
             <Icon>photo_camera</Icon>
         </RadialButton>
+        <Tooltip id="bottom-capture-button"/>
 
         {/*Share menu*/}
         <dialog style={captureOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={captureDialogRef} onCancel={() => {setCaptureOpen(false)}}>

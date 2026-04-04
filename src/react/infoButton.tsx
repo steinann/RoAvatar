@@ -3,6 +3,7 @@ import RadialButton from "./generic/radialButton"
 import Icon from "./generic/icon"
 import { AlertContext } from "./context/alert-context"
 import { RoAvatarData, RoAvatarDataError, API, versionToNumber } from "roavatar-renderer"
+import { Tooltip } from "react-tooltip"
 
 export default function InfoButton(): React.JSX.Element {
     const alert = useContext(AlertContext)
@@ -82,10 +83,11 @@ export default function InfoButton(): React.JSX.Element {
 
     return <>
         {/*Info button*/}
-        <RadialButton className="left-top-button icon-button" title="Info" onClick={() => {setInfoOpen(true)}}>
+        <RadialButton className="left-top-button icon-button" data-tooltip-content="Version Info" data-tooltip-id="bottom-info-button"  onClick={() => {setInfoOpen(true)}}>
             {outdatedType === "error" ? <div className="left-top-button-error"></div> : null}
             <Icon style={{zIndex: 1}}>info_i</Icon>
         </RadialButton>
+        <Tooltip id="bottom-info-button"/>
 
         {/*Share menu*/}
         <dialog style={infoOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={infoDialogRef} onCancel={() => {setInfoOpen(false)}}>

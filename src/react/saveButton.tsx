@@ -4,6 +4,7 @@ import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
 import { AlertContext } from "./context/alert-context"
 import { API } from "roavatar-renderer"
+import { Tooltip } from "react-tooltip"
 
 let lastHistoryIndex: number | undefined = undefined
 
@@ -38,7 +39,8 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
     const buttonEnabled = (lastSaveIndex !== historyIndex || (forceOn && !justSaved)) && !hasIssue
 
     //TODO: compare the current outfit with the last saved one
-    return <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
+    return <>
+    <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
         if (auth && buttonEnabled) {
             //if you redraw a thumbnail right before updating the avatar the thumbnail might end up becoming the old avatar instead of the new one (kinda cool), happens more frequently if the old one takes long to render
             //API.Avatar.RedrawThumbnail(auth)
@@ -59,6 +61,13 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
         <span className="save-button-text">
             Save
         </span>
-        {hasIssue ? <span style={{position: "absolute", right: "15px"}} className="material-symbols-outlined" title={validationIssues[0].text}>error</span> : null}
+        {hasIssue ? <span
+        style={{position: "absolute", right: "15px"}}
+        className="material-symbols-outlined"
+        data-tooltip-content={validationIssues[0].text}
+        data-tooltip-id="save-button-error"
+        >error</span> : null}
     </RadialButton>
+    <Tooltip id="save-button-error"/>
+    </>
 }

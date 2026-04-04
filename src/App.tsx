@@ -21,6 +21,8 @@ import { AlertContext } from './react/context/alert-context'
 import InfoButton from './react/infoButton'
 import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer, SortDivision } from 'roavatar-renderer'
 import CaptureButton from './react/captureButton'
+import { Tooltip } from 'react-tooltip'
+import PluginButton from './react/pluginButton'
 
 declare const browser: typeof chrome;
 
@@ -525,6 +527,7 @@ function App() {
                   <ShareButton/>
                   <TryInGameButton/>
                   <InfoButton/>
+                  <PluginButton/>
                 </div>
               </div>
 
@@ -557,6 +560,8 @@ function App() {
                 </> : null}
               </div>
             </div>
+            <Tooltip id="itemcard-edit"/>
+            <Tooltip id="itemcard-bundledetails"/>
           </OutfitFuncContext>
         </OutfitContext>
       </AuthContext>

@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 
 //fancy button that has a circle come from the mouse on click
-export default function RadialButton({ children, ref, title, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave, shouldPreventEffect = () => {return false} }: React.PropsWithChildren & {ref?: React.RefObject<HTMLButtonElement | null>, title?: string, className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void, shouldPreventEffect?: (e: React.MouseEvent<HTMLButtonElement>) => boolean}): React.JSX.Element {
+export default function RadialButton({ children, ref, title, className = "", circleClassName = "", onClick, effectDisabled = false, style = {}, onMouseEnter, onMouseLeave, shouldPreventEffect = () => {return false}, ...props }: React.PropsWithChildren & {ref?: React.RefObject<HTMLButtonElement | null>, title?: string, className?: string, circleClassName?: string, onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, effectDisabled?: boolean, style?: React.CSSProperties, onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void, shouldPreventEffect?: (e: React.MouseEvent<HTMLButtonElement>) => boolean}): React.JSX.Element {
     const circleRef = useRef(null);
     const buttonRef = useRef(null);
 
@@ -33,7 +33,7 @@ export default function RadialButton({ children, ref, title, className = "", cir
 
     return (
         <>
-            <button ref={ref || buttonRef} title={title} style={style} className={`radialButton ${className}`} onMouseDown={selfHandleOnClick} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+            <button ref={ref || buttonRef} title={title} style={style} className={`radialButton ${className}`} onMouseDown={selfHandleOnClick} onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} {...props}>
                 <div ref={circleRef} className={`radialButton-circle ${circleClassName}`}></div>
                 {children}
             </button>

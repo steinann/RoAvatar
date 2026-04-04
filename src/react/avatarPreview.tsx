@@ -4,6 +4,7 @@ import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame } from 'roavatar-renderer';
 import { getCameraData } from './generic/cameraData';
+import { Tooltip } from 'react-tooltip';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -408,12 +409,18 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
     }}>
         {/*Recenter camera button*/}
-        {canFocus ? <button className={`avatar-preview-focus icon-button${cameraLocked ? " focus-disabled" : ""}`} onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
+        {canFocus ? <button
+        className={`avatar-preview-focus icon-button${cameraLocked ? " focus-disabled" : ""}`}
+        data-tooltip-id="avatarpreview-recenter"
+        data-tooltip-content="Recenter Camera"
+        data-tooltip-place='bottom'
+        onContextMenu={(e) => {e.preventDefault()}} onClick={(e) => {
             e.preventDefault()
             setCameraLocked(true)
         }}>
-            <span title="Recenter" className="material-symbols-outlined">center_focus_weak</span>
+            <span className="material-symbols-outlined">center_focus_weak</span>
         </button> : null}
+        {canFocus && !cameraLocked ? <Tooltip id="avatarpreview-recenter"/> : null}
         {/*Loading icon*/}
         {/*<span className='loader' style={{
             opacity: isLoading ? 1 : 0,

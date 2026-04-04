@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import ToggleButton from "./generic/toggleButton"
 import RadialButton from "./generic/radialButton";
 import Icon from "./generic/icon";
+import { Tooltip } from "react-tooltip";
 
 declare const browser: typeof chrome;
 
@@ -48,9 +49,10 @@ export default function SettingsButton(): React.JSX.Element {
 
     return <>
         {/*Settings button*/}
-        <RadialButton className="left-top-button icon-button" title="Settings" onClick={() => {setSettingsOpen(true)}}>
+        <RadialButton className="left-top-button icon-button" data-tooltip-content="Settings" data-tooltip-id="bottom-settings-button" onClick={() => {setSettingsOpen(true)}}>
             <Icon>settings</Icon>
         </RadialButton>
+        <Tooltip id="bottom-settings-button"/>
 
         {/*Settings menu*/}
         <dialog style={settingsOpen ? {opacity: 1} : {display: "none", opacity: 0}} ref={settingsDialogRef} onCancel={() => {setSettingsOpen(false)}}>
