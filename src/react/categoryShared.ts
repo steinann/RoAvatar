@@ -62,7 +62,7 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                 }
             }
         })
-    } else if (item.itemType === "Outfit" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack")) { //if partial outfit
+    } else if (item.itemType === "Outfit" && (item.type === "DynamicHead" || item.type === "Shoes" || item.type === "AnimationPack" || item.type === "MakeupLook")) { //if partial outfit
         const newOutfit = outfit.clone()
 
         const toRemove = ToRemoveBeforeBundleType[item.type]
