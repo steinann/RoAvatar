@@ -24,7 +24,7 @@ ISSUES (Relating to renderer inaccuracy):
     -MATERIALDESC: face appears on certain dynamic head in r6: https://www.roblox.com/catalog/115499438051492/Friendly-Grin-Head
     -MATERIALDESC: This head should appear transparent https://www.roblox.com/bundles/7396/Glass-Head (oh no its gone)
     -MAKEUP: collision detection is kinda bad
-    -MAKEUP: Transparency is wrong when multiple layers are applied
+    -MAKEUP: Vertex should have transparent alpha in vertex color when inheriting uv from edge
 
 ISSUES (General):
     -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
