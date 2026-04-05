@@ -80,9 +80,10 @@ export function AvatarAdjustment(): React.JSX.Element {
             </ul>
             {/*Accessory adjustment buttons*/}
             <ul className={`inner-menu-icons adjust-menu-icons${adjustOpen ? "" : " icons-collapsed"}`}>
-                <button title="Move" className={`menu-icon menu-adjust-move${adjustType === "position" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("position")}}><Icon>drag_pan</Icon></button>
-                <button title="Rotate" className={`menu-icon menu-adjust-rotate${adjustType === "rotation" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("rotation")}}><Icon>autorenew</Icon></button>
-                <button title="Scale" className={`menu-icon menu-adjust-scale${adjustType === "scale" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("scale")}}><Icon>expand_content</Icon></button>
+                <button data-tooltip-place='right' data-tooltip-id="accessory-adjustment-tooltip" data-tooltip-content="Move" className={`menu-icon menu-adjust-move${adjustType === "position" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("position")}}><Icon>drag_pan</Icon></button>
+                <button data-tooltip-place='right' data-tooltip-id="accessory-adjustment-tooltip" data-tooltip-content="Rotate" className={`menu-icon menu-adjust-rotate${adjustType === "rotation" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("rotation")}}><Icon>autorenew</Icon></button>
+                <button data-tooltip-place='right' data-tooltip-id="accessory-adjustment-tooltip" data-tooltip-content="Scale" className={`menu-icon menu-adjust-scale${adjustType === "scale" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("scale")}}><Icon>expand_content</Icon></button>
+                <Tooltip id="accessory-adjustment-tooltip"/>
             </ul>
         </ul>
 
