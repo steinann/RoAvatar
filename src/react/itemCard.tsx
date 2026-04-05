@@ -316,7 +316,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     <button className="arrow-down" onClick={() => {if (onArrowClick) {onArrowClick(itemInfo, false)}}}><span className="material-symbols-outlined">arrow_downward</span></button>
                 </div> : null}
                 {/*Edit outfit button*/
-                canEditOutfit ? <button className="edit-outfit itemcard-button" data-tooltip-id="itemcard-edit" data-tooltip-content="Edit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
+                canEditOutfit ? <button className="edit-outfit itemcard-button" title="" data-tooltip-id="itemcard-edit" data-tooltip-content="Edit" ref={editRef} onClick={()=>{setEditOpen(true)}}><span className="material-symbols-outlined">settings</span></button> : null}
                 {/*Bundle details button*/}
                 {["Outfit", "Bundle", "Look", "Avatar"].includes(itemInfo.itemType) || itemInfo.type === "LocalOutfit" ? <ItemCardBundleDetails
                     itemInfo={itemInfo}

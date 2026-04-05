@@ -19,6 +19,23 @@ var observer = new MutationObserver(function (mutations) {
         iframe.style.borderStyle = "hidden"
         iframe.style.height = "90vh"
         iframe.style.userSelect = "none"
+        iframe.style.marginTop = "20px"
+
+        const marginLeftMediaQuery = window.matchMedia("(max-width: 1700px) and (min-width: 1140px)")
+        
+        function onMarginLeftMediaChange() {
+            if (marginLeftMediaQuery.matches) {
+                iframe.style.marginLeft = "20px"
+            } else {
+                iframe.style.marginLeft = "0"
+            }
+
+            console.log("it changes", marginLeftMediaQuery.matches)
+        }
+
+        marginLeftMediaQuery.addEventListener("change", onMarginLeftMediaChange)
+
+        onMarginLeftMediaChange()
         
         contentElement.appendChild(iframe)
         contentElement.style.paddingTop = "0"
