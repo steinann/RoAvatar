@@ -25,6 +25,8 @@ ISSUES (Relating to renderer inaccuracy):
     -MATERIALDESC: This head should appear transparent https://www.roblox.com/bundles/7396/Glass-Head (oh no its gone)
     -MAKEUP: collision detection is kinda bad
     -MAKEUP: Vertex should have transparent alpha in vertex color when inheriting uv from edge
+    -EMITTER: Sparkles are not offset properly
+    -HUMANOIDDESC: Dynamic heads dont contain a "face" decal and thats how we should determine wherether there should be one (allegedely)
 
 ISSUES (General):
     -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
