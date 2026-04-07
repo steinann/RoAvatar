@@ -423,16 +423,11 @@ export default function ThumbnailAdjustment({isOpen}: {isOpen: boolean}): React.
         const avatarPreview = document.getElementById("avatar-preview")
         const avatarPreviewBottom = avatarPreview?.getBoundingClientRect().bottom
 
-        console.log("TOP UPDATE")
         if (avatarPreviewBottom) {
             const newTop = avatarPreviewBottom
             if (newTop !== top) {
                 setTop(newTop)
-            } else {
-                console.log("nvm top is already", avatarPreviewBottom)
             }
-        } else {
-            console.log("nvm no bottom", avatarPreviewBottom)
         }
     }, [setTop, top, avatarPreviewBottom, isOpen])
 
