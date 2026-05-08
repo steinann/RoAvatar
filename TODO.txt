@@ -27,6 +27,7 @@ ISSUES (Relating to renderer inaccuracy):
     -MAKEUP: Vertex should have transparent alpha in vertex color when inheriting uv from edge
     -EMITTER: Sparkles are not offset properly
     -HUMANOIDDESC: Dynamic heads dont contain a "face" decal and thats how we should determine wherether there should be one (allegedely)
+    -OPTIMIZATION: HSR uses all faces (all lods) instead of just highest
 
 ISSUES (General):
     -ObjectDesc's fully regenerate instead of only regenerating the part that requires regeneration
