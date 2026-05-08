@@ -642,7 +642,7 @@ body {
     margin-right: 3px;
 }
 
-@media screen and (max-height: 670px) {
+@media screen and (max-height: 700px) {
     .worn-list-item .item-image {
         height: 100%;
         width: auto;
