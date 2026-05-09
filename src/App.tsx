@@ -517,13 +517,13 @@ function App() {
 
                 {/*extra buttons*/}
                 <div className='main-left-top'>
-                  <CaptureButton/>
                   <SettingsButton/>
-                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make RoAvatar your default editor in settings"} setActive={(shouldActive: boolean) => {
+                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make the old avatar editor the default in settings"} setActive={(shouldActive: boolean) => {
                     (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
                       setShowDefaultEditorTip(shouldActive);
                     })
                   }}/>
+                  <CaptureButton/>
                   <ShareButton/>
                   <TryInGameButton/>
                   <InfoButton/>

@@ -95,7 +95,7 @@ observer.observe(document, {
 });
 
 (chrome || browser).storage.local.get(["s-default"]).then((result => {
-    if (result["s-default"]) {
+    if (result["s-default"] !== false) {
         const aElement = document.createElement("a")
         aElement.href = "https://www.roblox.com/my/avatar-plus"
         aElement.click()

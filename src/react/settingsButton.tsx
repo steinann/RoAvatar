@@ -66,7 +66,7 @@ export default function SettingsButton(): React.JSX.Element {
             
             {/*Actual settings*/}
             <div className="dialog-line"></div>
-            <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={false}/>
+            <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={true}/>
         </dialog>
     </>
 }
