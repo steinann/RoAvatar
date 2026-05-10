@@ -12,12 +12,12 @@
     "content_scripts": [
         {
             "js": ["inject.js"],
-            "matches": ["https://*.roblox.com/my/avatar-plus*"],
+            "matches": ["https://*.roblox.com/my/avatar-plus*","https://*.roblox.com/*/my/avatar-plus*"],
             "run_at": "document_start"
         },
         {
             "js": ["editor-inject.js"],
-            "matches": ["https://*.roblox.com/my/avatar*"],
+            "matches": ["https://*.roblox.com/my/avatar*", "https://*.roblox.com/*/my/avatar*"],
             "run_at": "document_start"
         }
     ],

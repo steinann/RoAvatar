@@ -15,7 +15,7 @@ var observer = new MutationObserver(function (mutations) {
             const aElement = document.createElement("a")
             aElement.innerText = "Visit RoAvatar"
             aElement.style.textDecoration = "underline"
-            aElement.href = "https://www.roblox.com/my/avatar-plus"
+            aElement.href = window.location.href.replace("avatar", "avatar-plus")
 
             avatarEditorHeader.insertBefore(aElement, catalogHeader)
             avatarEditorHeader.style.position = "relative";
@@ -97,7 +97,7 @@ observer.observe(document, {
 (chrome || browser).storage.local.get(["s-default"]).then((result => {
     if (result["s-default"] !== false) {
         const aElement = document.createElement("a")
-        aElement.href = "https://www.roblox.com/my/avatar-plus"
+        aElement.href = window.location.href.replace("avatar", "avatar-plus")
         aElement.click()
     }
 }))
