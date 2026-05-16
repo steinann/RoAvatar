@@ -2,9 +2,13 @@ import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
-import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber } from "roavatar-renderer";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber, RBXRenderer, OutfitRenderer, RBXRendererScene } from "roavatar-renderer";
 import Icon from "./generic/icon";
 import ItemCardBundleDetails from "./itemCardBundleDetails";
+import { CONFIG } from "./generic/config";
+
+let itemScene: undefined | RBXRendererScene = undefined
+let itemOutfitRenderer: undefined | OutfitRenderer = undefined
 
 export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
@@ -34,7 +38,39 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
     
     const [imageUrl, setImageUrl] = useState<string | undefined>("loading")
 
-    const [mouseOver, setMouseOver] = useState(false)
+    const [mouseOver, _setMouseOver] = useState(false)
+    function setMouseOver(newMouseOver: boolean) {
+        _setMouseOver(newMouseOver)
+
+        if (!itemInfo || !itemInfo.id || !auth || !CONFIG.MULTI_VIEWPORT) return
+
+        if (newMouseOver) {
+            if (!itemScene || !itemOutfitRenderer) {
+                itemScene = RBXRenderer.addScene()
+                itemScene.noRect()
+
+                RBXRenderer.setupScene("WellLit", RBXRenderer.backgroundColorHex, itemScene)
+                RBXRenderer.setupControls(itemScene)
+
+                itemOutfitRenderer = new OutfitRenderer(new Authentication(), new Outfit(), itemScene)
+                itemOutfitRenderer.startAnimating()
+                itemOutfitRenderer.setMainAnimation("idle")
+            }
+
+            const newOutfit = outfit.clone()
+            newOutfit.addAssetId(Number(itemInfo.id), auth).then(() => {
+                const bounds = cardRef.current?.getBoundingClientRect()
+                
+                if (bounds && itemOutfitRenderer && itemScene) {
+                    itemOutfitRenderer.setOutfit(newOutfit)
+                    itemScene.setRect(bounds)
+                }
+                
+            })
+        } else if (itemScene) {
+            itemScene.noRect()
+        }
+    }
 
     const [editOpen, setEditOpen] = useState(false)
     const [updateOpen, setUpdateOpen] = useState(false)

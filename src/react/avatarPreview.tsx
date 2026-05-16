@@ -5,6 +5,7 @@ import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame } from 'roavatar-renderer';
 import { getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
+import { CONFIG } from './generic/config';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -153,6 +154,12 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
 }
 
 let animationInterval: number | undefined = undefined
+
+let mousePos: [number, number] = [0,0]
+
+function updateMousePos(e: MouseEvent) {
+    mousePos = [e.clientX, e.clientY]
+}
 
 export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, animName }: React.PropsWithChildren & { setSaveAlwaysOn: (a: boolean) => void, setOutfit: (a: Outfit) => void, animName: string }): React.JSX.Element {
     const auth = useContext(AuthContext)
@@ -377,10 +384,24 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 }
             }
 
-            //update renderer size
+            //update renderer size and interaction
             const container = document.getElementById("avatar-preview")
             if (container) {
-                RBXRenderer.setRendererSize(container.clientWidth, container.clientHeight)
+                if (!CONFIG.MULTI_VIEWPORT) {
+                    RBXRenderer.setRendererSize(container.clientWidth, container.clientHeight)
+                } else {
+                    RBXRenderer.setRendererSize(document.body.clientWidth, document.body.clientHeight)
+
+                    const bounds = container.getBoundingClientRect()
+                    RBXRenderer.firstScene.viewport = [bounds.left, document.body.clientHeight - bounds.bottom, container.clientWidth, container.clientHeight]
+                    RBXRenderer.firstScene.scissor = RBXRenderer.firstScene.viewport
+
+                    if (mousePos[0] > bounds.left && mousePos[0] < bounds.right && mousePos[1] > bounds.top && mousePos[1] < bounds.bottom) {
+                        container.style.pointerEvents = "unset"
+                    } else {
+                        container.style.pointerEvents = "none"
+                    }
+                }
             }
         }, 1000 / 60)
 
@@ -391,6 +412,14 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             }
         }
     }, [auth, cameraLocked, animLock, canFocus, setCanFocus, isPfp, setIsPfp])
+
+    useEffect(() => {
+        document.body.addEventListener("mousemove", updateMousePos)
+
+        return () => {
+            document.body.removeEventListener("mousemove", updateMousePos)
+        }
+    })
 
     let previewInfoClass = "none"
     let previewInfoMessage = ""

@@ -29,8 +29,6 @@ var observer = new MutationObserver(function (mutations) {
             } else {
                 iframe.style.marginLeft = "0"
             }
-
-            console.log("it changes", marginLeftMediaQuery.matches)
         }
 
         marginLeftMediaQuery.addEventListener("change", onMarginLeftMediaChange)
