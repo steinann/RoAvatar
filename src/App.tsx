@@ -147,8 +147,6 @@ function App() {
     //switch to compatible animation if avatar is r6
     if (outfit.playerAvatarType === AvatarType.R6 && (name === "swim" || name === "run")) {
       name = "walk"
-    } else if (outfit.playerAvatarType === AvatarType.R6 && name === "jump") {
-      name = "fall"
     } else if (outfit.playerAvatarType === AvatarType.R6 && name.startsWith("emote.")) {
       const emoteId = Number(name.split(".")[1])
       const danceName = `dance${emoteId % 3 + 1}`
