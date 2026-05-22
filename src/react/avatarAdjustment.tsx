@@ -5,6 +5,7 @@ import Icon from "./generic/icon";
 import ThumbnailAdjustment from "./thumbnailAdjustment";
 import { cleanString } from "roavatar-renderer";
 import { Tooltip } from "react-tooltip";
+import { getCameraData, setCameraData } from "./generic/cameraData";
 
 type ButtonType = "adjust" | "order" | "thumbnail"
 
@@ -39,6 +40,20 @@ export function AvatarAdjustment(): React.JSX.Element {
             setCurrentButton(type)
         }
     }
+
+    //update adjustment type
+    useEffect(() => {
+        const newCameraData = getCameraData().clone()
+        newCameraData.adjustmentType = adjustType
+        setCameraData(newCameraData)
+    }, [adjustType])
+
+    //update adjustment open
+    useEffect(() => {
+        const newCameraData = getCameraData().clone()
+        newCameraData.adjustmentOpen = buttonOpen && currentButton === "adjust"
+        setCameraData(newCameraData)
+    }, [buttonOpen, currentButton])
 
     //close when click outside preview
     useEffect(() => {

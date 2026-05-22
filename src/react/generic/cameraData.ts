@@ -1,4 +1,5 @@
 import { CFrame, deg, RBXRenderer, Event } from "roavatar-renderer"
+import type { AdjustType } from "../accessoryAdjustment"
 
 export type CameraDataType = "Editor" | "AvatarHeadshot"
 export class CameraData {
@@ -16,6 +17,11 @@ export class CameraData {
     thumbnailFov: number = 28.81402587890625
     yRot: number = 0
     distanceScale: number = 1
+
+    //accessory adjustment
+    adjustmentType: AdjustType = "position"
+    adjustmentId: bigint = -1n
+    adjustmentOpen: boolean = false
 
     updatePreviousCF() {
         const camera = RBXRenderer.getRendererCamera()
@@ -58,6 +64,10 @@ export class CameraData {
         copy.thumbnailFov = this.thumbnailFov
         copy.yRot = this.yRot
         copy.distanceScale = this.distanceScale
+
+        copy.adjustmentType = this.adjustmentType
+        copy.adjustmentId = this.adjustmentId
+        copy.adjustmentOpen = this.adjustmentOpen
 
         return copy
     }

@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame } from 'roavatar-renderer';
-import { getCameraData } from './generic/cameraData';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame, FindFirstMatchingAttachment, AttachmentWrapper } from 'roavatar-renderer';
+import { CameraData, getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
+import { getRotationLines, getPositionLines, getScaleLines } from './generic/adjustmentGeometry';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -31,13 +32,6 @@ function updateAnim(animName: string, currentRig: Instance, auth?: Authenticatio
                     animatorW.playAnimation(animName)
                 })
             }
-
-            //mood animation
-            /*if (!animName.startsWith("emote.")) {
-                animatorW.playAnimation("mood", "mood")
-            } else {
-                animatorW.stopMoodAnimation()
-            }*/
         }
     }
 }
@@ -153,6 +147,85 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
     }
 }
 
+function findAccessoryInRig(rig: Instance, id: bigint) {
+    const humanoid = rig.FindFirstChildOfClass("Humanoid")
+    if (!humanoid) return
+    const humanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
+    if (!humanoidDescription) return
+    const hdw = new HumanoidDescriptionWrapper(humanoidDescription)
+    const accessoryDescription = hdw.getAccessoryDescriptionWithId(id)
+    if (!accessoryDescription) return
+    const accessoryInstance = accessoryDescription.Prop("Instance") as Instance | undefined
+    return accessoryInstance
+}
+
+function renderLines(lines: THREE.Object3D[], shouldShow: boolean, linesCF?: CFrame, linesSize?: number) {
+    for (const line of lines) {
+        if (shouldShow && linesCF) { //add to scene
+            if (!line.parent) RBXRenderer.scene.add(line)
+            //update cf
+            const pos = new THREE.Vector3()
+            const quat = new THREE.Quaternion()
+            const scale = new THREE.Vector3()
+
+            const lineMatrix = linesCF.getTHREEMatrix()
+            lineMatrix.decompose(pos, quat, scale)
+
+            line.position.set(...pos.toArray())
+            line.quaternion.set(...quat.toArray())
+            if (linesSize) line.scale.set(linesSize, linesSize, linesSize)
+        } else { //remove from scene
+            if (line.parent) RBXRenderer.scene.remove(line)
+        }
+    }
+}
+
+function renderExtraDetails(cameraData: CameraData) {
+    let linesCF = undefined
+    let linesSize = 1
+
+    //adjustment details
+    if (currentRig && cameraData.adjustmentId > 0n && cameraData.adjustmentOpen) {
+        const accessory = findAccessoryInRig(currentRig, cameraData.adjustmentId)
+        const handle = accessory?.FindFirstChild("Handle")
+        if (handle && handle.className.includes("Part")) {
+            //use handle position
+            const handleCF = handle.Prop("CFrame") as CFrame
+            linesCF = handleCF.clone()
+            linesCF.Orientation = [0,0,0]
+            
+            const handleSize = handle.Prop("Size") as Vector3
+            linesSize = Math.max(1, (handleSize.X + handleSize.Y + handleSize.Z) / 3)
+
+            //use attachment original orientation
+            let attachmentToUse = undefined
+
+            for (const attachment of handle.GetChildren()) {
+                if (attachment.className === "Attachment") {
+                    const matchingAttachment = FindFirstMatchingAttachment(attachment.Prop("Name") as string, currentRig)
+                    if (matchingAttachment) {
+                        attachmentToUse = matchingAttachment
+                        break
+                    }
+                }
+            }
+
+            if (attachmentToUse) {
+                const attachmentToUseW = new AttachmentWrapper(attachmentToUse)
+                linesCF.Orientation = attachmentToUseW.getWorldCFrame().Orientation
+            }
+        }
+    }
+
+    const positionLines = getPositionLines()
+    const rotationLines = getRotationLines()
+    const scaleLines = getScaleLines()
+
+    renderLines(positionLines, cameraData.adjustmentType === "position", linesCF, linesSize)
+    renderLines(rotationLines, cameraData.adjustmentType === "rotation", linesCF, linesSize)
+    renderLines(scaleLines, cameraData.adjustmentType === "scale", linesCF, linesSize)
+}
+
 let animationInterval: number | undefined = undefined
 
 let mousePos: [number, number] = [0,0]
@@ -175,8 +248,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [warning, _setWarning] = useState<string | undefined>(undefined)
     const [canFocus, setCanFocus] = useState<boolean>(true)
     const [isPfp, setIsPfp] = useState<boolean>(false)
-    //const [loadingConnection, setLoadingConnection] = useState<Connection | undefined>(undefined)
-    //const [isLoading, setIsLoading] = useState<boolean>(false)
 
     function setError(error: string | undefined) {
         if (error) {
@@ -191,15 +262,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
         _setWarning(warning)
     }
-
-    //create loading connection
-    /*useEffect(() => {
-        if (!loadingConnection) {
-            setLoadingConnection(API.Events.OnLoadingAssets.Connect((newIsLoading) => {
-                setIsLoading(newIsLoading as boolean)
-            }))
-        }
-    }, [loadingConnection])*/
 
     //set warning based on outfit
     useEffect(() => {
@@ -268,18 +330,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             }
         }
     }, [auth, outfit, setOutfit, setSaveAlwaysOn, animName])
-
-    //load extra scene
-    /*useEffect(() => {
-        if (auth) {
-            API.Asset.GetRBX("../assets/Mesh Deformation Test.rbxl").then(result => {
-                if (result instanceof RBX) {
-                    const root = result.generateTree()
-                    addInstance(root, auth)
-                }
-            })
-        }
-    }, [auth])*/
 
     //play/load animations
     useEffect(() => {
@@ -384,6 +434,9 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 }
             }
 
+            //add extra details
+            renderExtraDetails(getCameraData())
+
             //update renderer size and interaction
             const container = document.getElementById("avatar-preview")
             if (container) {
@@ -450,17 +503,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             <span className="material-symbols-outlined">center_focus_weak</span>
         </button> : null}
         {canFocus && !cameraLocked ? <Tooltip id="avatarpreview-recenter"/> : null}
-        {/*Loading icon*/}
-        {/*<span className='loader' style={{
-            opacity: isLoading ? 1 : 0,
-            position: "absolute",
-            bottom: "12px",
-            right: "12px",
-            width: "24px",
-            height: "24px",
-            transition: "0.1s",
-            }}></span>*/}
-
         {/*Error/warning text*/}
         <div className={`preview-info ${previewInfoClass}`}>
             <div className="preview-info-icon">

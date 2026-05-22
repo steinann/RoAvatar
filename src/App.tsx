@@ -579,12 +579,14 @@ declare global {
         renderOutfit: (outfit: Outfit) => Promise<string | undefined>;
         createLook: typeof API.Looks.CreateLook;
         exportScene: typeof RBXRenderer.exportScene;
+        RBXRenderer: typeof RBXRenderer;
     }
 }
 
 window.arrayBufferToBase64 = arrayBufferToBase64
 window.base64ToArrayBuffer = base64ToArrayBuffer
 window.exportScene = RBXRenderer.exportScene
+window.RBXRenderer = RBXRenderer
 
 export default App
 

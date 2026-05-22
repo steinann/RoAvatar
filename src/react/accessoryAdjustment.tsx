@@ -1,9 +1,10 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import AccessoryList from "./accessoryList";
 import { AuthContext } from "./context/auth-context";
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import { accessoryRefinementLowerBounds, accessoryRefinementTypes, accessoryRefinementUpperBounds, Asset, AssetMeta, mapNum } from "roavatar-renderer";
 import SliderInput from "./generic/sliderInput";
+import { getCameraData, setCameraData } from "./generic/cameraData";
 
 type Axis = "x" | "y" | "z"
 export type AdjustType = "position" | "rotation" | "scale"
@@ -31,8 +32,12 @@ function AdjustInput({asset, axis, type, allAxis = false}: {asset: Asset, axis: 
     const lowerBound = accessoryRefinementLowerBounds[asset.assetType.name][type][axis + capitalizeFirstLetter(type)]
     const upperBound = accessoryRefinementUpperBounds[asset.assetType.name][type][axis + capitalizeFirstLetter(type)]
     
+    //invert axis for x and z at position
+    const lv = axis === "y" || type !== "position" ? 0 : 1
+    const uv = axis === "y" || type !== "position" ? 1 : 0
+
     return <SliderInput value={
-        mapNum(rawValue, lowerBound, upperBound, 0, 1)
+        mapNum(rawValue, lowerBound, upperBound, lv, uv)
     } setValue={(value: number, mouseUp: boolean) => {
         const newOutfit = outfit.clone()
         let newAsset = undefined
@@ -54,7 +59,7 @@ function AdjustInput({asset, axis, type, allAxis = false}: {asset: Asset, axis: 
                 newAsset.meta[type] = {"X": 0, "Y": 0, "Z": 0}
             }
         }
-        newAsset.meta[type][axis.toUpperCase() as "X" | "Y" | "Z"] = mapNum(value, 0, 1, lowerBound, upperBound)
+        newAsset.meta[type][axis.toUpperCase() as "X" | "Y" | "Z"] = mapNum(value, lv, uv, lowerBound, upperBound)
 
         if (allAxis) {
             newAsset.meta[type]["Y"] = newAsset.meta[type]["X"]
@@ -75,6 +80,13 @@ export function AccessoryAdjustment({isOpen, adjustType}: {isOpen: boolean, adju
     const outfitFunc = useContext(OutfitFuncContext)
 
     const [adjustAssetId, setAdjustAssetId] = useState<number>(0)
+
+    //update camera data adjust id
+    useEffect(() => {
+        const newCameraData = getCameraData().clone()
+        newCameraData.adjustmentId = BigInt(adjustAssetId)
+        setCameraData(newCameraData)
+    }, [isOpen, adjustAssetId])
 
     if (!auth) return <></>
 
