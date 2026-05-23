@@ -48,6 +48,7 @@ export default function OrderAdjustment({isOpen}: {isOpen: boolean}): React.JSX.
                         if (previousAsset && selfAsset) {
                             previousAsset.setOrder(selfOrder)
                             selfAsset.setOrder(previousOrder)
+                            newOutfit.fixOrders()
                             outfitFunc.setOutfit(newOutfit)
                         }
                     }
