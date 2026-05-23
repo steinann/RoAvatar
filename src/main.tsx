@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { API, Authentication, exposeAPI, exposeMesh, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
+import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
 
 const darkTheme = document.getElementById("style-dark-theme")
@@ -10,6 +10,12 @@ const lightTheme = document.getElementById("style-light-theme")
 
 const urlParams = new URLSearchParams(window.location.search)
 const theme = urlParams.get("theme")
+const bodyBackgroundBase64 = urlParams.get("body")
+
+if (bodyBackgroundBase64) {
+  const bodyBackground = atob(bodyBackgroundBase64)
+  document.body.style.backgroundColor = bodyBackground
+}
 
 if (theme === "light") {
   darkTheme?.remove()
@@ -31,6 +37,7 @@ FLAGS.ONLINE_ASSETS = false
 FLAGS.USE_WORKERS = true
 exposeAPI()
 exposeMesh()
+exposeFLAGS()
 //FLAGS.SHOW_CAGE = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
