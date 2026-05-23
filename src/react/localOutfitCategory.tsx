@@ -5,7 +5,7 @@ import RadialButton from "./generic/radialButton";
 import { OutfitContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
-import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, imageUrlToDataUrl, download } from "roavatar-renderer";
+import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, download, generateOutfitThumbnail } from "roavatar-renderer";
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
@@ -194,7 +194,11 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                             setIsSaving(true)
 
                             new Promise((resolve) => {
-                                API.Thumbnails.RenderOutfit(auth, outfit).then((imageUrl) => {
+                                generateOutfitThumbnail(auth, outfit, [150,150], "webp", 0.6).then((result) => {
+                                    localOutfit.image = result as string
+                                    resolve(result as string)
+                                })
+                                /*API.Thumbnails.RenderOutfit(auth, outfit).then((imageUrl) => {
                                     if (imageUrl) {
                                         imageUrlToDataUrl(imageUrl).then((result) => {
                                             localOutfit.image = result
@@ -207,7 +211,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                                     }
                                 }).catch(() => {
                                     resolve(undefined)
-                                })
+                                })*/
                             }).then(() => {
                                 API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
                                 chrome.storage.local.getBytesInUse(null).then((bytes) => {
@@ -254,7 +258,11 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                     setIsSaving(true)
 
                     new Promise((resolve) => {
-                        API.Thumbnails.RenderOutfit(auth, outfit).then((imageUrl) => {
+                        generateOutfitThumbnail(auth, outfit, [150,150], "webp", 0.6).then((result) => {
+                            localOutfit.image = result as string
+                            resolve(result as string)
+                        })
+                        /*API.Thumbnails.RenderOutfit(auth, outfit).then((imageUrl) => {
                             if (imageUrl) {
                                 imageUrlToDataUrl(imageUrl).then((result) => {
                                     localOutfit.image = result
@@ -267,7 +275,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                             }
                         }).catch(() => {
                             resolve(undefined)
-                        })
+                        })*/
                     }).then(() => {
                         API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
                         refresh()

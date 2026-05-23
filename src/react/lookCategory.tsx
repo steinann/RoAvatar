@@ -144,8 +144,15 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
                                 setHasPremium(false)
                             }
                         } else {
-                            setHasPremium(false)
+                            //setHasPremium(false)
                             //console.warn("Failed to get subscriptionResult", subscriptionResult)
+                            API.Subscriptions.HasPlus().then((result) => {
+                                if (result === true) {
+                                    setHasPremium(true)
+                                } else {
+                                    setHasPremium(false)
+                                }
+                            })
                         }
                     })
                 }
@@ -260,7 +267,7 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
             ))
         }
         <NothingLoaded loadedAll={hasLoadedAll} itemCount={itemInfos.length} keyword={searchData.keyword} searchData={searchData} forceText={
-            hasPremium === false ? "Roblox only allows Premium 1000+ users to publish outfits" : undefined
+            hasPremium === false ? "Roblox only allows Plus and Premium 1000+ users to publish outfits" : undefined
         }/>
         </>
     } else if (!hasLoadedAll) { //fake items while loading

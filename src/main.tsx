@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
+import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
 
 const darkTheme = document.getElementById("style-dark-theme")
@@ -38,6 +38,7 @@ FLAGS.USE_WORKERS = true
 exposeAPI()
 exposeMesh()
 exposeFLAGS()
+exposeThumbnailGenerator()
 //FLAGS.SHOW_CAGE = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
