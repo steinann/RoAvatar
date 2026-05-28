@@ -156,6 +156,8 @@ function App() {
     _setCurrentAnimName(name)
   }
 
+  (window as any).setCurrentAnimName = setCurrentAnimName
+
   function setCategorySource(newCategorySource: string) {
     _setCategorySource(newCategorySource)
     if (newCategorySource === "Inventory") {

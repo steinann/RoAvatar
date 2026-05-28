@@ -31,6 +31,11 @@ function updateAnim(animName: string, currentRig: Instance, auth?: Authenticatio
                 animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
                     animatorW.playAnimation(animName)
                 })
+            } else if (!successfullyPlayed && animName.startsWith("id.") && auth) {
+                const animId = BigInt(animName.split(".")[1])
+                animatorW.loadAnimation(animId, true).then(() => {
+                    animatorW.playAnimation(animName)
+                })
             }
         }
     }
