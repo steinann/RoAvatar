@@ -96,7 +96,7 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
                 }
             })
 
-            return
+            //return
         }
 
         //update rig
@@ -397,6 +397,10 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                         
                         RBXRenderer.addInstance(currentRig, auth)
                     }
+                } else if (FLAGS.LOAD_TEST_PLACE) {
+                    currentRig.preRender()
+                        
+                    RBXRenderer.addInstance(currentRig, auth)
                 }
 
                 //update camera
