@@ -231,6 +231,59 @@ function renderExtraDetails(cameraData: CameraData) {
     renderLines(scaleLines, cameraData.adjustmentType === "scale", linesCF, linesSize)
 }
 
+const gravity = 196.2
+const jumpPower = 50
+let addedHeight = -0.1
+let heightPower = 0
+let jumpTime = 0
+
+function jump() {
+    if (addedHeight < 0) {
+        addedHeight = 0
+        heightPower = jumpPower
+        jumpTime = 0
+
+        if (currentRig) {
+            updateAnim("jump", currentRig, undefined)
+        }
+    }
+}
+
+function tickJump(delta: number) {
+    let heightAddedThisTick = 0
+    if (addedHeight >= 0) {
+        heightAddedThisTick = heightPower * delta
+        heightPower -= gravity * delta
+        jumpTime += delta
+
+        addedHeight += heightAddedThisTick
+        
+        if (addedHeight < 0) {
+            heightAddedThisTick += -addedHeight
+        }
+
+        if (currentRig) {
+            if (addedHeight < 0) {
+                updateAnim("idle", currentRig, undefined)
+            } else {
+                if (heightAddedThisTick > 0 && jumpTime <= 0.31) {
+                    updateAnim("jump", currentRig, undefined)
+                } else {
+                    updateAnim("fall", currentRig, undefined)
+                }
+            }
+        }
+    }
+    if (currentRig && heightAddedThisTick !== 0) {
+        const hrp = currentRig.FindFirstChild("HumanoidRootPart")
+        if (hrp) {
+            const ogCF = (hrp.Prop("CFrame") as CFrame).clone()
+            ogCF.Position[1] += heightAddedThisTick
+            hrp.setProperty("CFrame", ogCF)
+        }
+    }
+}
+
 let animationInterval: number | undefined = undefined
 
 let mousePos: [number, number] = [0,0]
@@ -377,6 +430,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     if (animator) {
                         const deltaTime = Date.now() / 1000 - lastFrameTime
                         lastFrameTime = Date.now() / 1000
+
+                        tickJump(deltaTime)
 
                         const animatorW = new AnimatorWrapper(animator)
 
@@ -525,3 +580,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         {children}
     </div>)
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).jump = jump
