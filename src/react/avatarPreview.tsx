@@ -17,6 +17,12 @@ let lastFrameTime = Date.now() / 1000
 
 let currentlyChangingRig = false
 
+const gravity = 196.2
+const jumpPower = 50
+let addedHeight = -0.1
+let heightPower = 0
+let jumpTime = 0
+
 function updateAnim(animName: string, currentRig: Instance, auth?: Authentication) {
     const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
     if (humanoid) {
@@ -42,6 +48,10 @@ function updateAnim(animName: string, currentRig: Instance, auth?: Authenticatio
 }
 
 function setRigTo(animName: string, newRigType: AvatarType, auth: Authentication, setError: (a: string | undefined) => void) {
+    addedHeight = -0.1
+    heightPower = 0
+    jumpTime = 0
+
     return new Promise<undefined>((resolve) => {
         if (!currentlyChangingRig) {
             currentlyChangingRig = true
@@ -230,12 +240,6 @@ function renderExtraDetails(cameraData: CameraData) {
     renderLines(rotationLines, cameraData.adjustmentType === "rotation", linesCF, linesSize)
     renderLines(scaleLines, cameraData.adjustmentType === "scale", linesCF, linesSize)
 }
-
-const gravity = 196.2
-const jumpPower = 50
-let addedHeight = -0.1
-let heightPower = 0
-let jumpTime = 0
 
 function jump() {
     if (addedHeight < 0) {
