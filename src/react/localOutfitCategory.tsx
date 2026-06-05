@@ -184,7 +184,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                             toSaveOutfit.name = "Untitled Avatar"
                         }
 
-                        if (hasLoadedAll && items.length < 250) {
+                        if (hasLoadedAll && items.length < 1000) {
                             const localOutfit = new LocalOutfit(toSaveOutfit)
                             localOutfit.date = Date.now()
                             localOutfit.name = toSaveOutfit.name
