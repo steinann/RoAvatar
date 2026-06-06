@@ -281,6 +281,8 @@ export default function ItemCategory({children, searchData, categoryType, subCat
         }
     }, [hasLoadedAll, items.length, loadMore, onScroll])
 
+    const isOutfits = categoryType === "Avatars" && subCategoryType === "Creations"
+
     //create item infos based on response
     const itemInfos: ItemInfo[] = []
     for (const item of items) {
@@ -305,7 +307,11 @@ export default function ItemCategory({children, searchData, categoryType, subCat
         if (item.expirationTime) {
             itemInfo.expirationTime = new Date(item.expirationTime)
         }
-
+        if (isOutfits) {
+            API.Users.GetUserInfo().then((userInfo) => {
+                itemInfo.creatorId = userInfo?.id
+            })
+        }
 
         itemInfos.push(itemInfo)
     }
@@ -315,8 +321,6 @@ export default function ItemCategory({children, searchData, categoryType, subCat
 
     //create item cards
     let itemComponents = null
-
-    const isOutfits = categoryType === "Avatars" && subCategoryType === "Creations"
 
     if (auth && itemInfos.length > 0 || hasLoadedAll && auth) {
         let i = 0;
