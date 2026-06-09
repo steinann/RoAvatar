@@ -372,7 +372,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName)
+                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName, auth)
                     }
                 }}/>
             ))

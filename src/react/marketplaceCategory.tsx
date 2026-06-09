@@ -47,74 +47,141 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
 
         if (nextPageToken !== null && nextPageToken !== undefined) {
             setIsLoading(true)
-            API.Catalog.Search(searchData, nextPageToken).then(response => {
-                if (loadId !== lastLoadId) return
-                if (!(response instanceof Response)) {
+            if (searchData.taxonomy !== "avatarTab") {
+                API.Catalog.Search(searchData, nextPageToken).then(response => {
                     if (loadId !== lastLoadId) return
-                    //update page token
-                    const pageToken = response.nextPageCursor
-                    if (pageToken && pageToken.length > 0) {
-                        setNextPageToken(pageToken)
-                    } else {
-                        setNextPageToken(null)
-                    }
-
-                    //add all new items to the items list
-                    const newItems: AvatarInventoryItem[] = []
-                    for (const item of response.data) {
-                        //price
-                        let isOffsale = false
-                        let itemPrice = undefined
-                        if (!item.isOffSale && !item.hasResellers) {
-                            itemPrice = item.price
-                        } else if (item.hasResellers) {
-                            itemPrice = item.lowestPrice
+                    if (!(response instanceof Response)) {
+                        if (loadId !== lastLoadId) return
+                        //update page token
+                        const pageToken = response.nextPageCursor
+                        if (pageToken && pageToken.length > 0) {
+                            setNextPageToken(pageToken)
                         } else {
-                            isOffsale = true
+                            setNextPageToken(null)
                         }
 
-                        //limitedType
-                        let limitedType: undefined | "Limited" | "LimitedUnique" = undefined
-                        if (item.itemRestrictions.includes("Limited")) {
-                            limitedType = "Limited"
-                        } else if (item.itemRestrictions.includes("LimitedUnique")) {
-                            limitedType = "LimitedUnique"
-                        } else if (item.itemRestrictions.includes("Collectible")) {
-                            limitedType = "LimitedUnique"
-                        }
+                        //add all new items to the items list
+                        const newItems: AvatarInventoryItem[] = []
+                        for (const item of response.data) {
+                            //price
+                            let isOffsale = false
+                            let itemPrice = undefined
+                            if (!item.isOffSale && !item.hasResellers) {
+                                itemPrice = item.price
+                            } else if (item.hasResellers) {
+                                itemPrice = item.lowestPrice
+                            } else {
+                                isOffsale = true
+                            }
 
-                        //bundled asset
-                        let bundledAssets = undefined
-                        if (item.bundledItems) {
-                            bundledAssets = []
-                            for (const asset of item.bundledItems) {
-                                if (asset.type === "Asset") {
-                                    bundledAssets.push(asset.id)
+                            //limitedType
+                            let limitedType: undefined | "Limited" | "LimitedUnique" = undefined
+                            if (item.itemRestrictions.includes("Limited")) {
+                                limitedType = "Limited"
+                            } else if (item.itemRestrictions.includes("LimitedUnique")) {
+                                limitedType = "LimitedUnique"
+                            } else if (item.itemRestrictions.includes("Collectible")) {
+                                limitedType = "LimitedUnique"
+                            }
+
+                            //bundled asset
+                            let bundledAssets = undefined
+                            if (item.bundledItems) {
+                                bundledAssets = []
+                                for (const asset of item.bundledItems) {
+                                    if (asset.type === "Asset") {
+                                        bundledAssets.push(asset.id)
+                                    }
                                 }
                             }
-                        }
 
-                        //push item data
-                        newItems.push({
-                            itemName: item.name,
-                            itemId: item.id,
-                            itemCategory: {
-                                itemType: item.itemType === "Asset" ? 1 : 0,
-                                itemSubType: (item.itemType === "Asset" ? item.assetType : item.bundleType) || 0
-                            },
-                            price: itemPrice,
-                            limitedType: limitedType,
-                            bundledAssets: bundledAssets,
-                            offsale: isOffsale,
-                        })
+                            //push item data
+                            newItems.push({
+                                itemName: item.name,
+                                itemId: item.id,
+                                itemCategory: {
+                                    itemType: item.itemType === "Asset" ? 1 : 0,
+                                    itemSubType: (item.itemType === "Asset" ? item.assetType : item.bundleType) || 0
+                                },
+                                price: itemPrice,
+                                limitedType: limitedType,
+                                bundledAssets: bundledAssets,
+                                offsale: isOffsale,
+                            })
+                        }
+                        
+                        setItems(prev => [...prev, ...newItems])
+                    } else {
+                        console.warn("Failed to get catalog search", response)
                     }
-                    
-                    setItems(prev => [...prev, ...newItems])
+                    setIsLoading(false)
+                })
+            } else {
+                if (searchData.keyword && searchData.keyword.length > 0) {
+                    API.Catalog.GetMarketplaceWidgetsSearch(searchData.keyword).then(response => {
+                        if (loadId !== lastLoadId) return
+                        if (!(response instanceof Response)) {
+                            if (loadId !== lastLoadId) return
+                            //update page token
+                            setNextPageToken(null)
+
+                            //add all new items to the items list
+                            const newItems: AvatarInventoryItem[] = []
+                            for (const widget of Object.values(response.widgets)) {
+                                for (const item of widget.content) {
+                                    if (item.type !== "Look") continue
+                                    //push item data
+                                    newItems.push({
+                                        itemName: "",
+                                        itemId: item.id,
+                                        itemCategory: {
+                                            itemType: "Look",
+                                            itemSubType: 0
+                                        },
+                                        offsale: false,
+                                    })
+                                }
+                            }
+                            
+                            setItems(prev => [...prev, ...newItems])
+                        } else {
+                            console.warn("Failed to get marketplace widgets search", response)
+                        }
+                        setIsLoading(false)
+                    })
                 } else {
-                    console.warn("Failed to get catalog search", response)
+                    API.Catalog.GetMarketplaceWidgets("avatarTab").then(response => {
+                        if (loadId !== lastLoadId) return
+                        if (!(response instanceof Response)) {
+                            if (loadId !== lastLoadId) return
+                            //update page token
+                            setNextPageToken(null)
+
+                            //add all new items to the items list
+                            const newItems: AvatarInventoryItem[] = []
+                            for (const widget of Object.values(response.widgets)) {
+                                for (const item of widget.content) {
+                                    //push item data
+                                    newItems.push({
+                                        itemName: "",
+                                        itemId: item.id,
+                                        itemCategory: {
+                                            itemType: "Look",
+                                            itemSubType: 0
+                                        },
+                                        offsale: false,
+                                    })
+                                }
+                            }
+                            
+                            setItems(prev => [...prev, ...newItems])
+                        } else {
+                            console.warn("Failed to get marketplace widgets search", response)
+                        }
+                        setIsLoading(false)
+                    })
                 }
-                setIsLoading(false)
-            })
+            }
         }
     }
 
@@ -126,7 +193,7 @@ function useMarketplaceItems(auth: Authentication | undefined, searchData: Searc
 type AvatarInventoryItem = {
     itemName: string,
     itemId: number,
-    itemCategory: {itemType: number, itemSubType: number},
+    itemCategory: {itemType: number | string, itemSubType: number},
     price?: number,
     limitedType?: "Limited" | "LimitedUnique",
     bundledAssets?: number[],
@@ -171,7 +238,8 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
     //create item infos based on response
     const itemInfos: ItemInfo[] = []
     for (const item of items) {
-        const itemType = item.itemCategory.itemType === 1 ? "Asset" : "Bundle"
+        const itemType = item.itemCategory.itemType === 1 ? "Asset" : item.itemCategory.itemType === 0 ? "Bundle" : "Look" //ew, renderer doesnt export ItemType so we need this
+        
         let itemSubType: string = "undefined"
         if (itemType === "Asset") {
             itemSubType = AssetTypes[item.itemCategory.itemSubType]
@@ -205,7 +273,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName)
+                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName, auth)
                     }
                 }}/>
             ))

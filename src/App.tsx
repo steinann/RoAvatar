@@ -262,6 +262,17 @@ function App() {
         if (result instanceof Response) {
           alert("Failed to load Marketplace", Infinity, false)
         } else {
+          result.categories.push({
+            taxonomy: "avatarTab",
+            name: "Avatars",
+            category: "avatarTab",
+            categoryId: -1,
+            subcategories: [],
+            assetTypeIds: [],
+            bundleTypeIds: [],
+            isSearchable: true,
+            orderIndex: 0,
+          })
           setNavigationMenuItems(result)
 
           const marketplaceSource: {[k in string]: {[k in string]: SpecialInfo}} = {}

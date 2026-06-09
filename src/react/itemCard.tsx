@@ -15,7 +15,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         auth?: Authentication,
         itemInfo?: ItemInfo,
         isWorn?: boolean,
-        onClick?: (itemInfo: ItemInfo) => void,
+        onClick?: (itemInfo: ItemInfo, auth?: Authentication) => void,
         className?: string,
         buttonClassName?: string,
         includeName?: boolean,
@@ -333,7 +333,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                     if ((e.target as HTMLButtonElement).classList.contains("item-view")) return;
                     if (bundleDetailsRef.current && bundleDetailsRef.current.contains(e.target as Node)) return;
                     if (editRef.current && editRef.current.contains(e.target as Node) || editOpen) return;
-                    if (onClick) onClick(itemInfo)
+                    if (onClick) onClick(itemInfo, auth)
                 }} shouldPreventEffect={(e) => {
                     if ((e.target as HTMLButtonElement).classList.contains("item-view")) return true;
                     if (bundleDetailsRef.current && bundleDetailsRef.current.contains(e.target as Node)) return true;

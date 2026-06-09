@@ -1,6 +1,6 @@
-import { API, CatalogBundleTypes, DefaultAnimations, Outfit, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
+import { API, Authentication, CatalogBundleTypes, DefaultAnimations, Outfit, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
 
-export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void, animName: string) => {
+export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void, animName: string, auth?: Authentication) => {
     if (item.itemType !== "Asset") {
         setAnimName(`idle`)
     }
@@ -132,6 +132,19 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
         API.Avatar.GetAvatarDetails(Number(item.id)).then((result) => {
             if (!(result instanceof Response)) {
                 setOutfit(result)
+            }
+        })
+    } else if (item.itemType === "Look") {
+        if (!auth) return
+
+        const newOutfit = new Outfit()
+        API.Looks.GetLook(item.id.toString()).then(lookDetails => {
+            if (!(lookDetails instanceof Response)) {
+                newOutfit.fromLook(lookDetails.look, auth).then((success) => {
+                    if (success) {
+                        setOutfit(newOutfit)
+                    }
+                })
             }
         })
     }

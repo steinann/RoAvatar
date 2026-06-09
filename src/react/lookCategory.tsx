@@ -1,11 +1,12 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import ItemCard from "./itemCard";
 import RadialButton from "./generic/radialButton";
-import { OutfitContext } from "./context/outfit-context";
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
 import { type Search_Payload, Authentication, type UserLooks_Result, API, Outfit, ItemInfo } from "roavatar-renderer";
 import { AuthContext } from "./context/auth-context";
+import { defaultOnClick } from "./categoryShared";
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
@@ -103,6 +104,7 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
+    const outfitFunc = useContext(OutfitFuncContext)
     
     const [outfitDialogOpen, setOutfitDialogOpen] = useState(false)
     const [hasPremium, setHasPremium] = useState<boolean | undefined>(undefined)
@@ -180,24 +182,6 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
         itemInfos.push(itemInfo)
     }
 
-    //determine on click function for itemcards
-    const onClickFunc = (auth: Authentication, item: ItemInfo) => {
-        const newOutfit = new Outfit()
-        API.Looks.GetLook(item.id.toString()).then(lookDetails => {
-            if (!(lookDetails instanceof Response)) {
-                newOutfit.fromLook(lookDetails.look, auth).then((success) => {
-                    if (success) {
-                        setOutfit(newOutfit)
-                    } else if (alert) {
-                        alert("Failed to wear Look", 3000, false)
-                    }
-                })
-            } else if (alert) {
-                alert("Failed to get Look", 3000, false)
-            }
-        })
-    }
-
     //create item cards
     let itemComponents = null
 
@@ -253,7 +237,7 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
         {
             itemInfos.map((item) => (
                 <ItemCard isSpecialOutfit={true} showViewButton={true} canEditOutfit={true} key={i++} auth={auth} itemInfo={item} refresh={refresh} onClick={(item) => {
-                    onClickFunc(auth, item)
+                    defaultOnClick(item, outfit, outfitFunc.setAnimName, setOutfit, outfitFunc.animName, auth)
                 }} deleteCallback={() => {
                     //delete outfit
                     API.Looks.DeleteLook(auth, item.id.toString()).then((response) => {

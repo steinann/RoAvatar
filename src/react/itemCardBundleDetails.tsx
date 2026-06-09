@@ -195,7 +195,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
                 <>
                     {assets && assets.length > 0 ? assets.map((asset) => (
                         <ItemCard auth={auth} itemInfo={asset} isWorn={outfit.containsAsset(Number(asset.id))}
-                        onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, ()=>{}, setOutfit, animName)}}
+                        onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, ()=>{}, setOutfit, animName, auth)}}
                         />
                     ))
                     :
