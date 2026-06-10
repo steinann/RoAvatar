@@ -5,6 +5,7 @@ import RadialButton from "./generic/radialButton"
 import { AlertContext } from "./context/alert-context"
 import { API } from "roavatar-renderer"
 import { Tooltip } from "react-tooltip"
+import { getSetting, OnSettingChange } from "./generic/settings"
 
 let lastHistoryIndex: number | undefined = undefined
 
@@ -15,6 +16,23 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
 
     const [lastSaveIndex, setLastSaveIndex] = useState(0)
     const [justSaved, setJustSaved] = useState(false)
+    const [autosave, setAutosave] = useState(false)
+
+    useEffect(() => {
+        getSetting("s-autosave", autosave).then((value) => {
+            setAutosave(value as boolean)
+        })
+
+        const connection = OnSettingChange.Connect((storage, value) => {
+            if (storage as string === "s-autosave") {
+                setAutosave(value as boolean)
+            }
+        })
+
+        return () => {
+            connection.Disconnect()
+        }
+    }, [autosave, setAutosave])
 
     if (!lastHistoryIndex) {
         lastHistoryIndex = historyIndex
@@ -38,9 +56,28 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
 
     const buttonEnabled = (lastSaveIndex !== historyIndex || (forceOn && !justSaved)) && !hasIssue
 
+    useEffect(() => {
+        if (auth && buttonEnabled && autosave) {
+            //if you redraw a thumbnail right before updating the avatar the thumbnail might end up becoming the old avatar instead of the new one (kinda cool), happens more frequently if the old one takes long to render
+            //API.Avatar.RedrawThumbnail(auth)
+            API.Avatar.WearOutfit(auth, outfit, false).then(result => {
+                console.log(result)
+                if (result[0]) {
+                    setLastSaveIndex(historyIndex)
+                    if (result[1] && alert) {
+                        alert("Some items were not saved, due to not being owned", 3000, true)
+                    }
+                    setJustSaved(true)
+                } else if (alert) {
+                    alert("Failed to save outfit", 3000, false)
+                }
+            })
+        }
+    }, [alert, auth, buttonEnabled, historyIndex, outfit, autosave])
+
     //TODO: compare the current outfit with the last saved one
     return <>
-    <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
+    {!autosave ? <RadialButton effectDisabled={!buttonEnabled} className={`save-button roboto-600${!buttonEnabled ? " save-button-inactive" : ""}`} onClick={() => {
         if (auth && buttonEnabled) {
             //if you redraw a thumbnail right before updating the avatar the thumbnail might end up becoming the old avatar instead of the new one (kinda cool), happens more frequently if the old one takes long to render
             //API.Avatar.RedrawThumbnail(auth)
@@ -67,7 +104,7 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
         data-tooltip-content={validationIssues[0].text}
         data-tooltip-id="save-button-error"
         >error</span> : null}
-    </RadialButton>
+    </RadialButton> : <span className={`roboto-600 autosave${!buttonEnabled?" autosave-inactive":""}`}>{buttonEnabled ? "Saving..." : "Saved"}</span>}
     <Tooltip id="save-button-error"/>
     </>
 }

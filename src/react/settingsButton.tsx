@@ -3,11 +3,12 @@ import ToggleButton from "./generic/toggleButton"
 import RadialButton from "./generic/radialButton";
 import Icon from "./generic/icon";
 import { Tooltip } from "react-tooltip";
+import { setSetting } from "./generic/settings";
 
 declare const browser: typeof chrome;
 
 function SettingsToggle({text, storage, defaultValue}: {text: string, storage: string, defaultValue: boolean}): React.JSX.Element {
-    const [value, _setValue] = useState(false)
+    const [value, _setValue] = useState(defaultValue)
 
     useEffect(() => {
         (chrome || browser).storage.local.get([storage]).then((result) => {
@@ -24,7 +25,7 @@ function SettingsToggle({text, storage, defaultValue}: {text: string, storage: s
 
     function setValue(newValue: boolean) {
         _setValue(newValue);
-        (chrome || browser).storage.local.set({[storage]: newValue})
+        setSetting(storage, newValue)
     }
 
     return <div className="setting-row">
@@ -67,6 +68,7 @@ export default function SettingsButton(): React.JSX.Element {
             {/*Actual settings*/}
             <div className="dialog-line"></div>
             <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={true}/>
+            <SettingsToggle text={"Save automatically"} storage="s-autosave" defaultValue={false}/>
         </dialog>
     </>
 }

@@ -560,6 +560,23 @@ body {
     align-items: center;
 }
 
+.autosave {
+    color: #f5f5f5;
+    width: 45%;
+    margin: 15px 2.5% 15px 15px;
+    font-size: 2em;
+    border-style: none;
+    border-radius: 12px;
+    transition-duration: 0.1s;
+
+    display: flex;
+    align-items: center;
+}
+
+.autosave-inactive {
+    color: #f5f5f5c4;
+}
+
 .save-button:hover {
     background-color: var(--blue-dark);
 }
