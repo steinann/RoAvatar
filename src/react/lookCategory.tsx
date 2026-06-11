@@ -193,9 +193,9 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
                 <span className="dialog-title roboto-700">Publish Current Character</span>
                 <div className="dialog-line"></div>
                 <span className="dialog-text dialog-text-margin roboto-400">Your current character appearance will be published to the Marketplace</span>
-                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
+                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name" maxLength={1000}></input>
                 <div className="dialog-line"></div>
-                <input ref={outfitDescriptionInputRef} className="dialog-text-input roboto-400" placeholder="Description"></input>
+                <input ref={outfitDescriptionInputRef} className="dialog-text-input roboto-400" placeholder="Description" maxLength={1000}></input>
                 <div className="dialog-line"></div>
                 <div className="dialog-actions">
                     <RadialButton className="dialog-cancel roboto-600" onClick={() => {

@@ -166,7 +166,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                 <span className="dialog-title roboto-700">Create New Character</span>
                 <div className="dialog-line"></div>
                 <span className="dialog-text dialog-text-margin roboto-400">A saved character will be created locally from your current appearance</span>
-                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
+                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name" maxLength={1000}></input>
                 <div className="dialog-line"></div>
                 <div className="dialog-actions">
                     <RadialButton className="dialog-cancel roboto-600" onClick={() => {
@@ -178,6 +178,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                         const nameValue = outfitNameInputRef.current?.value || ""
 
                         const toSaveOutfit = outfit.clone()
+
                         if (nameValue.length > 0) {
                             toSaveOutfit.name = nameValue
                         } else {

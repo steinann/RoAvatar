@@ -284,7 +284,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
             <span className="dialog-title roboto-700">Rename Character</span>
             <div className="dialog-line"></div>
             <span className="dialog-text dialog-text-margin roboto-400">Choose a new name for your character</span>
-            <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name" value={renameValue} onChange={() => {setRenameValue(outfitNameInputRef.current?.value || "")}}></input>
+            <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name" value={renameValue} maxLength={1000} onChange={() => {setRenameValue(outfitNameInputRef.current?.value || "")}}></input>
             <div className="dialog-line"></div>
             <div className="dialog-actions">
                 <RadialButton className="dialog-cancel roboto-600" onClick={() => {

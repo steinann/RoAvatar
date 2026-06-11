@@ -332,7 +332,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                 <span className="dialog-title roboto-700">Create New Character</span>
                 <div className="dialog-line"></div>
                 <span className="dialog-text dialog-text-margin roboto-400">A saved character will be created from your current appearance</span>
-                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name"></input>
+                <input ref={outfitNameInputRef} className="dialog-text-input roboto-400" placeholder="Name" maxLength={1000}></input>
                 <div className="dialog-line"></div>
                 <div className="dialog-actions">
                     <RadialButton className="dialog-cancel roboto-600" onClick={() => {
