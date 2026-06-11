@@ -344,6 +344,28 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
     }, [outfit])
 
+    //jump with space
+    useEffect(() => {
+        const keyDownListener = (e: KeyboardEvent) => {
+            if ((e.target as HTMLElement)?.tagName == "INPUT") {
+                return
+            }
+
+            if (e.key === " ") {
+                const cameraData = getCameraData()
+                if (cameraData.type === "Editor") {
+                    jump()
+                }
+            }
+        }
+
+        document.addEventListener("keydown", keyDownListener)
+        
+        return () => {
+            document.removeEventListener("keydown", keyDownListener)
+        }
+    })
+
     //load the initial avatar
     useEffect(() => {
         if (auth) {
