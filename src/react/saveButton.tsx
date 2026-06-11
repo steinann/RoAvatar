@@ -56,10 +56,9 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
 
     const buttonEnabled = (lastSaveIndex !== historyIndex || (forceOn && !justSaved)) && !hasIssue
 
+    //autosave logic
     useEffect(() => {
         if (auth && buttonEnabled && autosave) {
-            //if you redraw a thumbnail right before updating the avatar the thumbnail might end up becoming the old avatar instead of the new one (kinda cool), happens more frequently if the old one takes long to render
-            //API.Avatar.RedrawThumbnail(auth)
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
                 if (result[0]) {
@@ -70,6 +69,7 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
                     setJustSaved(true)
                 } else if (alert) {
                     alert("Failed to save outfit", 3000, false)
+                    setJustSaved(true)
                 }
             })
         }

@@ -38,7 +38,6 @@ FEATURES:
         -Better alert and warnings system
         -Reset to currently wearing
     MEDIUM PRIORITY:
-        -Autosave setting
         -Layered clothing quality setting
         -Snapping for adjustment sliders and numbers
         -Highlight searched text in item name
