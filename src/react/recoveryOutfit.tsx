@@ -35,9 +35,12 @@ export default function RecoveryOutfit(): React.JSX.Element {
                         setRecoveryOutfitOpen(true)
 
                         const ogTimeout = FLAGS.THUMBNAIL_TIMEOUT
-                        FLAGS.THUMBNAIL_TIMEOUT = FLAGS.LAYERED_CLOTHING_COOLDOWN * 1000 + 50
+                        const ogCooldown = FLAGS.LAYERED_CLOTHING_COOLDOWN
+                        FLAGS.LAYERED_CLOTHING_COOLDOWN = 0
+                        FLAGS.THUMBNAIL_TIMEOUT = 10
                         generateOutfitThumbnail(auth, outfit, [420,420], "webp", 0.9).then((result) => {
                             FLAGS.THUMBNAIL_TIMEOUT = ogTimeout
+                            FLAGS.LAYERED_CLOTHING_COOLDOWN = ogCooldown
                             setOutfitImage(result as string)
                         })
                     })
