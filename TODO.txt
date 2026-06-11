@@ -34,7 +34,6 @@ ISSUES (General):
 
 FEATURES:
     HIGH PRIORITY:
-        -Remember unsaved outfit
         -Better alert and warnings system
         -Reset to currently wearing
     MEDIUM PRIORITY:
