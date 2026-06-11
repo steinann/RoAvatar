@@ -6,6 +6,7 @@ import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, sna
 import Icon from "./generic/icon";
 import ItemCardBundleDetails from "./itemCardBundleDetails";
 import { CONFIG } from "./generic/config";
+import { setSetting } from "./generic/settings";
 
 let itemScene: undefined | RBXRendererScene = undefined
 let itemOutfitRenderer: undefined | OutfitRenderer = undefined
@@ -240,6 +241,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                         API.Avatar.UpdateOutfit(auth, itemInfo.id, newOutfit).then((result) => {
                             API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
                             if (result.status === 200 && refresh) {
+                                setSetting("recovery-outfit", null)
                                 refresh()
                             } else if (alert) {
                                 alert("Failed to update character", 3000, false)

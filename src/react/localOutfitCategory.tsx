@@ -6,6 +6,7 @@ import { OutfitContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
 import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, download, generateOutfitThumbnail } from "roavatar-renderer";
+import { setSetting } from "./generic/settings";
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
@@ -214,6 +215,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                                     resolve(undefined)
                                 })*/
                             }).then(() => {
+                                setSetting("recovery-outfit", null)
                                 API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
                                 chrome.storage.local.getBytesInUse(null).then((bytes) => {
                                     console.log("Storage used MB:", bytes / 1e6)
@@ -278,6 +280,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                             resolve(undefined)
                         })*/
                     }).then(() => {
+                        setSetting("recovery-outfit", null)
                         API.LocalOutfit.SetLocalOutfits(newLocalOutfits)
                         refresh()
                     }).finally(() => {

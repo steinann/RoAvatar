@@ -23,6 +23,7 @@ import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, 
 import CaptureButton from './react/captureButton'
 import { Tooltip } from 'react-tooltip'
 import PluginButton from './react/pluginButton'
+import RecoveryOutfit from './react/recoveryOutfit'
 
 declare const browser: typeof chrome;
 
@@ -490,6 +491,8 @@ function App() {
                   }}>Add</RadialButton>
                 </div>
               </dialog>
+
+              <RecoveryOutfit/>
 
               {/*LEFT SIDE*/}
               <div className='main-left division-down'>

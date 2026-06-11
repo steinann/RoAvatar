@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
+import { OnSettingChange } from './react/generic/settings.ts'
 
 const darkTheme = document.getElementById("style-dark-theme")
 const lightTheme = document.getElementById("style-light-theme")
@@ -44,6 +45,12 @@ exposeThumbnailGenerator()
 //FLAGS.SHOW_CAGE = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
+OnSettingChange.Connect((storage, value) => {
+  if (storage === "recovery-outfit") {
+    console.log(value)
+  }
+})
+
 RBXRenderer.fullSetup(true, true, true).then(() => {
   if (theme === "light") {
     RBXRenderer.wellLitDirectionalLightIntensity *= 2.25

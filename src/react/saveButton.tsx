@@ -1,18 +1,18 @@
-import { useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import { OutfitContext } from "./context/outfit-context"
 import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
 import { AlertContext } from "./context/alert-context"
-import { API } from "roavatar-renderer"
+import { API, LocalOutfit } from "roavatar-renderer"
 import { Tooltip } from "react-tooltip"
-import { getSetting, OnSettingChange } from "./generic/settings"
-
-let lastHistoryIndex: number | undefined = undefined
+import { getSetting, OnSettingChange, setSetting } from "./generic/settings"
 
 export default function SaveButton({forceOn, historyIndex, historyLength}: {forceOn: boolean, historyIndex: number, historyLength: number}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
+
+    const lastHistoryIndexRef = useRef<number | undefined>(undefined)
 
     const [lastSaveIndex, setLastSaveIndex] = useState(0)
     const [justSaved, setJustSaved] = useState(false)
@@ -34,8 +34,8 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
         }
     }, [autosave, setAutosave])
 
-    if (!lastHistoryIndex) {
-        lastHistoryIndex = historyIndex
+    if (lastHistoryIndexRef.current === undefined) {
+        lastHistoryIndexRef.current = historyIndex
     }
 
     const validationIssues = outfit.getValidationIssues()
@@ -48,11 +48,21 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
     }, [historyLength, lastSaveIndex])
 
     useEffect(() => {
-        if (historyIndex !== lastHistoryIndex) {
-            lastHistoryIndex = historyIndex
+        if (historyIndex !== lastHistoryIndexRef.current) {
+            lastHistoryIndexRef.current = historyIndex
             setJustSaved(false)
+
+            console.log("historyIndex:", historyIndex)
+
+            //update recovery outfit
+            try {
+                const localOutfit = new LocalOutfit(outfit)
+                if (!autosave && historyIndex >= 1) setSetting("recovery-outfit", localOutfit.toJson())
+            } catch {
+                console.warn("Failed to save recovery outfit")
+            }
         }
-    }, [historyIndex, setJustSaved])
+    }, [historyIndex, outfit, setJustSaved, autosave])
 
     const buttonEnabled = (lastSaveIndex !== historyIndex || (forceOn && !justSaved)) && !hasIssue
 
@@ -65,6 +75,8 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
                     setLastSaveIndex(historyIndex)
                     if (result[1] && alert) {
                         alert("Some items were not saved, due to not being owned", 3000, true)
+                    } else {
+                        setSetting("recovery-outfit", null)
                     }
                     setJustSaved(true)
                 } else if (alert) {
@@ -87,6 +99,8 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
                     setLastSaveIndex(historyIndex)
                     if (result[1] && alert) {
                         alert("Some items were removed, due to not being owned", 3000, true)
+                    } else {
+                        setSetting("recovery-outfit", null)
                     }
                     setJustSaved(true)
                 } else if (alert) {

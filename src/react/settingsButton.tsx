@@ -69,6 +69,7 @@ export default function SettingsButton(): React.JSX.Element {
             <div className="dialog-line"></div>
             <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={true}/>
             <SettingsToggle text={"Save automatically"} storage="s-autosave" defaultValue={false}/>
+            <SettingsToggle text={"Show last unsaved outfit on opening editor"} storage="s-recovery-outfit" defaultValue={true}/>
         </dialog>
     </>
 }

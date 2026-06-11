@@ -7,6 +7,7 @@ import { defaultOnClick } from "./categoryShared"
 import NothingLoaded from "./nothingLoaded"
 import { AlertContext } from "./context/alert-context"
 import { Authentication, type Search_Payload, type ItemDetails_Result, API, CategoryDictionary, type Inventory_Result, Outfit, ItemInfo, AssetTypes, BundleTypes, SortInfo } from "roavatar-renderer"
+import { setSetting } from "./generic/settings"
 
 type ItemList = {itemType: "Asset" | "Bundle", id: number}[]
 async function getItemDetailsIfNeeded(auth: Authentication, items: ItemList, searchData: Search_Payload): Promise<undefined | Response | ItemDetails_Result> {
@@ -352,6 +353,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
 
                         API.Avatar.SaveOutfit(auth, toSaveOutfit).then((result) => {
                         if (result.status === 200) {
+                            setSetting("recovery-outfit", null)
                             refresh()
                         } else {
                             if (alert) {
