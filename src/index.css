@@ -2062,7 +2062,7 @@ textarea {
 
 .item-bundle-details-frame {
     position: fixed;
-    z-index: 2;
+    z-index: 3;
     width: 300px;
     background-color: var(--container);
     padding: 12px 12px 20px 12px;

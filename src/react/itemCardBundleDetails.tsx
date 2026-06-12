@@ -58,7 +58,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
             totalAssets.push(assetItemInfo)
         }
         if (totalAssets.length === 0) {
-            setFailedToLoad(true)
+            //setFailedToLoad(true)
         }
 
         setAssets(totalAssets)
@@ -66,8 +66,6 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
 
     function loadAssets() {
         if (assets) return
-
-        setAssets([])
 
         switch (itemInfo.itemType) {
             case "Bundle":
@@ -199,7 +197,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, setOutfit, animNam
                         />
                     ))
                     :
-                    <><ItemCard/><ItemCard/></>
+                    <>{assets === undefined ? <><ItemCard/><ItemCard/></> : <NothingLoaded loadedAll={true} itemCount={0} searchData={undefined} forceText="No contents"/>}</>
                     }
                 </>
                 }
