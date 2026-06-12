@@ -122,8 +122,8 @@ export default function UserSearch({userId, setUserId}: {userId: number | undefi
             updateSuggestions(inputRef.current?.value || "")
         }} onSubmit={(e) => {
             e.preventDefault()
-
             setSuggestions([])
+            setPfps([])
 
             const inputString = inputRef.current?.value
             if (inputString !== undefined) {
@@ -135,13 +135,17 @@ export default function UserSearch({userId, setUserId}: {userId: number | undefi
                             if (data) {
                                 const user = data[0]
                                 if (user) {
+                                    lastLoadedId = lastLoadingId + 1
                                     setUserId(user.id)
                                     updateName(user.id)
+                                    setSuggestions([])
+                                    setPfps([])
                                 }
                             }
                         }
                     })
                 } else { //user id input
+                    lastLoadedId = lastLoadingId + 1
                     setUserId(Number(inputString))
                     updateName(Number(inputString))
                 }
