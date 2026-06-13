@@ -498,7 +498,7 @@ function App() {
               <div className='main-left division-down'>
                 {/*header*/}
                 <div className='main-left-top'>
-                  <img className='header-icon' src="../assets/icons/128x128.png"></img>
+                  <img className='header-icon' src="../assets/icons/64x64.png"></img>
                   <span className='editor-header roboto-600'>RoAvatar</span>
                 </div>
 
