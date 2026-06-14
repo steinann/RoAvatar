@@ -69,7 +69,9 @@ function setRigTo(animName: string, newRigType: AvatarType, auth: Authentication
                     const newRig = result.generateTree().GetChildren()[0]
 
                     currentRig = newRig
-                    RBXRenderer.addInstance(currentRig, auth)
+                    RBXRenderer.addInstance(currentRig, auth);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (window as any).rig = currentRig
 
                     updateAnim(animName, currentRig, auth)
 
@@ -140,10 +142,10 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
                         }
                         if (result instanceof Instance) {
                             failedLastDescription = false
+                            currentlyUpdatingPreview = false
                             if (outfit !== lastOutfit && lastOutfit) {
                                 updatePreview(currentAnim, lastOutfit, auth, setError)
                             }
-                            currentlyUpdatingPreview = false
                             setError(undefined)
                         } else {
                             failedLastDescription = true
