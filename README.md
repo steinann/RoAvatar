@@ -12,8 +12,7 @@
     <img style="height: 90px" src="https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/add-ons-badge-images/microsoft-edge-add-ons-badge.png">
 </a>
 <br>
-The extension is WIP.
-You can build the newest version yourself OR get the latest stable version from <a href="https://github.com/Mzigi/RoAvatar/releases">releases</a>
+You can also build the newest version yourself OR get the latest stable version from <a href="https://github.com/Mzigi/RoAvatar/releases">releases</a>
 <br>
 <br>
 
