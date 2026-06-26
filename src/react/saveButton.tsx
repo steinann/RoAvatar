@@ -52,8 +52,6 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
             lastHistoryIndexRef.current = historyIndex
             setJustSaved(false)
 
-            console.log("historyIndex:", historyIndex)
-
             //update recovery outfit
             try {
                 const localOutfit = new LocalOutfit(outfit)

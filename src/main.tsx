@@ -4,7 +4,6 @@ import './index.css'
 import App from './App.tsx'
 import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
-import { OnSettingChange } from './react/generic/settings.ts'
 
 const darkTheme = document.getElementById("style-dark-theme")
 const lightTheme = document.getElementById("style-light-theme")
@@ -24,9 +23,11 @@ if (theme === "light") {
   lightTheme?.remove()
 }
 
+//most of these lines are just setting the flags to the default, theyre just theyre so i remember the flags exist
 FLAGS.UPDATE_SKELETON = true
 FLAGS.ANIMATE_SKELETON = true
 FLAGS.SHOW_SKELETON_HELPER = false
+FLAGS.SKELETON_HELPER_INSTANCE_NAME = "Handle"
 FLAGS.USE_LOCAL_SKELETONDESC = false
 FLAGS.ENABLE_API_MESH_CACHE = true
 FLAGS.ENABLE_API_RBX_CACHE = false
@@ -36,6 +37,8 @@ FLAGS.ENABLE_HSR = true
 FLAGS.CACHE_HSR_HITS = true
 FLAGS.ONLINE_ASSETS = false
 FLAGS.USE_WORKERS = true
+FLAGS.VERBOSE_LOGGING = false
+FLAGS.USE_ASSEMBLY = true
 //FLAGS.API_REQUEST_RETRY = false
 //FLAGS.LOAD_TEST_PLACE = "rbxassetid://118593852151835"
 exposeAPI()
@@ -45,11 +48,6 @@ exposeThumbnailGenerator()
 //FLAGS.SHOW_CAGE = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
-OnSettingChange.Connect((storage, value) => {
-  if (storage === "recovery-outfit") {
-    console.log(value)
-  }
-})
 
 RBXRenderer.fullSetup(true, true, true).then(() => {
   if (theme === "light") {
