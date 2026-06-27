@@ -26,13 +26,13 @@ You can also build the newest version yourself OR get the latest stable version 
 - Run `npm run build` to build the project
 - The build will be in the **dist** folder in the project directory
 - You can then load the **dist** folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
-- The avatar editor will be available at https://www.roblox.com/my/avatar-plus
+- The avatar editor will be available at https://www.roblox.com/roavatar
 <br>
 
 **Instructions on installing release**:
 - Download RoAvatar.zip and unzip
 - Load the folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
-- The avatar editor will be available at https://www.roblox.com/my/avatar-plus
+- The avatar editor will be available at https://www.roblox.com/roavatar
 
 ## Renderer
 The renderer that this extension uses now has a standalone github repository and npm package:

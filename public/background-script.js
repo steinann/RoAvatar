@@ -1,5 +1,5 @@
 chrome.action.onClicked.addListener(function(activeTab){
-    chrome.tabs.create({ url: "https://www.roblox.com/my/avatar-plus" });
+    chrome.tabs.create({ url: "https://www.roblox.com/roavatar" });
 });
 
 chrome.runtime.onMessage.addListener(

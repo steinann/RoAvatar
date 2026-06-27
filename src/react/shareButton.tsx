@@ -43,7 +43,7 @@ export default function ShareButton(): React.JSX.Element {
             <span className="dialog-text dialog-text-margin roboto-400" style={{marginTop: "5px"}}>Only people with RoAvatar can use this link</span>
             <textarea style={{marginTop: "5px"}} className="roboto-400" readOnly={true} rows={8} cols={60}
                 value={
-                    `https://www.roblox.com/my/avatar-plus?buffer=${outfitData}`
+                    `https://www.roblox.com/roavatar?buffer=${outfitData}`
                 }>
             </textarea>
         </dialog>
