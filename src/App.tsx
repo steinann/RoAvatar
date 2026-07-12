@@ -24,6 +24,7 @@ import CaptureButton from './react/captureButton'
 import { Tooltip } from 'react-tooltip'
 import PluginButton from './react/pluginButton'
 import RecoveryOutfit from './react/recoveryOutfit'
+import ReviewReminder from './react/reviewReminder'
 
 declare const browser: typeof chrome;
 
@@ -573,6 +574,8 @@ function App() {
                   <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}/>
                 </> : null}
               </div>
+
+              <ReviewReminder/>
             </div>
             <Tooltip id="itemcard-edit"/>
             <Tooltip id="itemcard-bundledetails"/>

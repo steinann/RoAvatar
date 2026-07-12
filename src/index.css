@@ -2271,3 +2271,33 @@ textarea {
     font-variation-settings:
         "wdth" 100 !important;
 }
+
+.corner-dialog {
+    position: fixed;
+    right: 32px;
+    bottom: 32px;
+    background-color: var(--button-background);
+    display: flex;
+    flex-direction: column;
+    color: var(--font-color);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: black 0 0 15px 0;
+}
+
+.corner-dialog-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.5em;
+}
+
+.corner-dialog-body {
+    font-size: 1.3em;
+    max-width: 20em;
+}
+
+.corner-dialog-body > a {
+    color: var(--font-color);
+}
