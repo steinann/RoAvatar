@@ -4,7 +4,7 @@ import { API, LocalOutfit, type RoAvatarBrowser } from "roavatar-renderer";
 import { getSetting, setSetting } from "./generic/settings";
 
 export default function ReviewReminder(): React.JSX.Element {
-    const [shouldShow, setShouldShow] = useState(false)
+    const [shouldShow, setShouldShow] = useState(true)
 
     const browser: RoAvatarBrowser = API.Generic.GetBrowser()
 
@@ -57,7 +57,7 @@ export default function ReviewReminder(): React.JSX.Element {
     return shouldShow ? <div className="corner-dialog">
             <div className="corner-dialog-top roboto-700">
                 <span>Enjoying RoAvatar?</span>
-                <button className="icon-button" style={{height: "3em"}} onClick={close}><Icon>close</Icon></button>
+                <button className="exit-button icon-button" style={{height: "3em"}} onClick={close}><Icon>close</Icon></button>
             </div>
             <div className="dialog-line"></div>
             <div className="corner-dialog-body roboto-400">

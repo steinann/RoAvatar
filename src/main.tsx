@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
+import ReviewReminder from './react/reviewReminder.tsx'
 
 const darkTheme = document.getElementById("style-dark-theme")
 const lightTheme = document.getElementById("style-light-theme")
@@ -106,6 +107,7 @@ RBXRenderer.fullSetup(true, true, true).then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
+      <ReviewReminder/>
     </StrictMode>,
   )
 })
