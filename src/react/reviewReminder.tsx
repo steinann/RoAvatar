@@ -4,7 +4,7 @@ import { API, LocalOutfit, type RoAvatarBrowser } from "roavatar-renderer";
 import { getSetting, setSetting } from "./generic/settings";
 
 export default function ReviewReminder(): React.JSX.Element {
-    const [shouldShow, setShouldShow] = useState(true)
+    const [shouldShow, setShouldShow] = useState(false)
 
     const browser: RoAvatarBrowser = API.Generic.GetBrowser()
 
