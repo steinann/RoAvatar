@@ -8,6 +8,11 @@ chrome.runtime.onMessage.addListener(
             case "openURL":
                 chrome.tabs.create({ url: request.URL });
                 break;
+            case "fetch":
+                const [input, init] = request.args
+
+                sendResponse(fetch(input, init))
+                break
         }
     }
 )
