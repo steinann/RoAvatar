@@ -66,7 +66,7 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
 
     //autosave logic
     useEffect(() => {
-        if (auth && buttonEnabled && autosave) {
+        if (auth && buttonEnabled && autosave && historyIndex >= 0) {
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
                 if (result[0]) {
