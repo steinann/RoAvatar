@@ -6,6 +6,8 @@ import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnai
 import { CONFIG } from './react/generic/config.ts'
 import ReviewReminder from './react/reviewReminder.tsx'
 
+declare const browser: typeof chrome;
+
 const darkTheme = document.getElementById("style-dark-theme")
 const lightTheme = document.getElementById("style-light-theme")
 
@@ -23,6 +25,16 @@ if (theme === "light") {
 } else if (theme === "dark") {
   lightTheme?.remove()
 }
+
+/*FLAGS.FETCH_FUNC = (input: URL | RequestInfo, init?: RequestInit) => {
+  console.log("sending fetch to background")
+  const result = (chrome || browser).runtime.sendMessage({
+    type: "fetch",
+    args: [input, init],
+  })
+  console.log(result)
+  return result
+}*/
 
 //most of these lines are just setting the flags to the default, theyre just theyre so i remember the flags exist
 FLAGS.UPDATE_SKELETON = true
