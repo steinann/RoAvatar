@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
-import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber, RBXRenderer, OutfitRenderer, RBXRendererScene } from "roavatar-renderer";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber, RBXRenderer, OutfitRenderer, RBXRendererScene, OutfitModel } from "roavatar-renderer";
 import Icon from "./generic/icon";
 import ItemCardBundleDetails from "./itemCardBundleDetails";
 import { CONFIG } from "./generic/config";
@@ -11,11 +11,12 @@ import { setSetting } from "./generic/settings";
 let itemScene: undefined | RBXRendererScene = undefined
 let itemOutfitRenderer: undefined | OutfitRenderer = undefined
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
+export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
     {
         auth?: Authentication,
         itemInfo?: ItemInfo,
         isWorn?: boolean,
+        forceIsWorn?: boolean, //prevents itemcard from changing isWorn
         onClick?: (itemInfo: ItemInfo, auth?: Authentication) => void,
         className?: string,
         buttonClassName?: string,
@@ -150,17 +151,25 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
         }
     })
 
-    //check if bundle is worn
-    if (!canEditOutfit && itemInfo && itemInfo.bundledAssets && itemInfo.bundledAssets.length > 0) {
-        let isMissingAsset = false
-        for (const assetId of itemInfo.bundledAssets) {
-            if (!outfit.containsAsset(assetId)) {
-                isMissingAsset = true
-                break
+    if (!forceIsWorn) {
+        //check if bundle is worn
+        if (!canEditOutfit && itemInfo && itemInfo.bundledAssets && itemInfo.bundledAssets.length > 0) {
+            let isMissingAsset = false
+            for (const assetId of itemInfo.bundledAssets) {
+                if (!outfit.containsAsset(assetId)) {
+                    isMissingAsset = true
+                    break
+                }
             }
+
+            isWorn = isWorn || !isMissingAsset
         }
 
-        isWorn = isWorn || !isMissingAsset
+        //check if background is worn
+        const backgroundAsset = outfitFuncContext.outfitModel.background
+        if (itemInfo && backgroundAsset && backgroundAsset.id === itemInfo.id) {
+            isWorn = true
+        }
     }
 
     const cardImage = imageUrl !== "loading" ? (<img style={imageAffectedByTheme ? {filter:"var(--icon-filter)"} : {}} className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
@@ -234,11 +243,11 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 <RadialButton className="dialog-confirm roboto-600" onClick={() => {
                     setUpdateOpen(false)
 
-                    const newOutfit = outfit.clone()
-                    newOutfit.name = itemInfo.name
+                    const newOutfitModel = outfitFuncContext.outfitModel.clone()
+                    newOutfitModel.outfit.name = itemInfo.name
 
                     if (!isSpecialOutfit) {
-                        API.Avatar.UpdateOutfit(auth, itemInfo.id, newOutfit).then((result) => {
+                        API.Avatar.UpdateOutfitModel(auth, newOutfitModel, Number(itemInfo.id)).then((result) => {
                             API.Thumbnails.UncacheThumbnail(itemInfo.itemType, itemInfo.id, "150x150")
                             if (result.status === 200 && refresh) {
                                 setSetting("recovery-outfit", null)
@@ -303,8 +312,11 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                         toUseName = nameValue
                     }
 
+                    const nameOutfitModel = new OutfitModel()
+                    nameOutfitModel.outfit.name = toUseName
+
                     if (!isSpecialOutfit) {
-                        API.Avatar.PatchOutfit(auth, itemInfo.id, {name: toUseName}).then((result) => {
+                        API.Avatar.UpdateOutfitModel(auth, nameOutfitModel, Number(itemInfo.id), ["UpdateName"]).then((result) => {
                             if (result.status === 200 && refresh) {
                                 if (outfitNameInputRef.current) {
                                     outfitNameInputRef.current.value = ""
@@ -359,7 +371,6 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, onClick, clas
                 {["Outfit", "Bundle", "Look", "Avatar"].includes(itemInfo.itemType) || itemInfo.type === "LocalOutfit" ? <ItemCardBundleDetails
                     itemInfo={itemInfo}
                     ref={bundleDetailsRef}
-                    setOutfit={outfitFuncContext.setOutfit}
                     animName={outfitFuncContext.animName}
                     /> : null}
                 {/*Manage outfit buttons*/

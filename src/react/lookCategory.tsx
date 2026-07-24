@@ -4,7 +4,7 @@ import RadialButton from "./generic/radialButton";
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
-import { type Search_Payload, Authentication, type UserLooks_Result, API, Outfit, ItemInfo } from "roavatar-renderer";
+import { type Search_Payload, Authentication, type UserLooks_Result, API, ItemInfo } from "roavatar-renderer";
 import { AuthContext } from "./context/auth-context";
 import { defaultOnClick } from "./categoryShared";
 
@@ -100,7 +100,7 @@ function useLooks(auth: Authentication | undefined, searchData: Search_Payload, 
     return {items, searchedItems, isLoading, loadMore, hasLoadedAll, refresh }
 }
 
-export default function LooksCategory({children, searchData, setOutfit}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void}): React.JSX.Element {
+export default function LooksCategory({children, searchData}: React.PropsWithChildren & {searchData: Search_Payload}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
@@ -237,7 +237,7 @@ export default function LooksCategory({children, searchData, setOutfit}: React.P
         {
             itemInfos.map((item) => (
                 <ItemCard isSpecialOutfit={true} showViewButton={true} canEditOutfit={true} key={i++} auth={auth} itemInfo={item} refresh={refresh} onClick={(item) => {
-                    defaultOnClick(item, outfit, outfitFunc.setAnimName, setOutfit, outfitFunc.animName, auth)
+                    defaultOnClick(item, outfitFunc.outfitModel, outfitFunc.setOutfitModel, outfitFunc.setAnimName, outfitFunc.animName, auth)
                 }} deleteCallback={() => {
                     //delete outfit
                     API.Looks.DeleteLook(auth, item.id.toString()).then((response) => {

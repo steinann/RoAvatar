@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
-import { OutfitContext } from "./context/outfit-context"
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import ItemCard from "./itemCard"
 import RadialButton from "./generic/radialButton"
 import { defaultOnClick } from "./categoryShared"
@@ -233,10 +233,11 @@ type AvatarInventoryItem = {
     acquisitionTime?: string
 }
 
-export default function ItemCategory({children, searchData, categoryType, subCategoryType, setOutfit, animName, setAnimName, onClickItem, wornItems = [], showNames = true}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], showNames?: boolean}): React.JSX.Element {
+export default function ItemCategory({children, searchData, categoryType, subCategoryType, animName, setAnimName, onClickItem, wornItems = [], showNames = true}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], showNames?: boolean}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
+    const outfitFunc = useContext(OutfitFuncContext)
 
     const outfitNameInputRef: React.RefObject<HTMLInputElement | null> = useRef(null)
     const createOutfitDialogRef: React.RefObject<HTMLDialogElement | null> = useRef(null)
@@ -344,23 +345,23 @@ export default function ItemCategory({children, searchData, categoryType, subCat
 
                         const nameValue = outfitNameInputRef.current?.value || ""
 
-                        const toSaveOutfit = outfit.clone()
+                        const toSaveOutfitModel = outfitFunc.outfitModel.clone()
                         if (nameValue.length > 0) {
-                            toSaveOutfit.name = nameValue
+                            toSaveOutfitModel.outfit.name = nameValue
                         } else {
-                            toSaveOutfit.name = "Untitled Avatar"
+                            toSaveOutfitModel.outfit.name = "Untitled Avatar"
                         }
 
-                        API.Avatar.SaveOutfit(auth, toSaveOutfit).then((result) => {
-                        if (result.status === 200) {
-                            setSetting("recovery-outfit", null)
-                            refresh()
-                        } else {
-                            if (alert) {
-                                alert("Failed to save outfit, if you're missing items try saving to Local instead", 4000, false)
+                        API.Avatar.CreateOutfitModel(auth, toSaveOutfitModel).then((result) => {
+                            if (result.status === 200) {
+                                setSetting("recovery-outfit", null)
+                                refresh()
+                            } else {
+                                if (alert) {
+                                    alert("Failed to save outfit, if you're missing items try saving to Local instead", 4000, false)
+                                }
                             }
-                        }
-                })
+                        })
                     }}>Create</RadialButton>
                 </div>
             </dialog>
@@ -374,7 +375,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName, auth)
+                        defaultOnClick(item, outfitFunc.outfitModel, outfitFunc.setOutfitModel, setAnimName, animName, auth)
                     }
                 }}/>
             ))

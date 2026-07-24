@@ -1,6 +1,14 @@
-import { API, Authentication, CatalogBundleTypes, DefaultAnimations, Outfit, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
+import { API, Asset, Authentication, CatalogBundleTypes, DefaultAnimations, Outfit, OutfitModel, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
 
-export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: string) => void, setOutfit: (a: Outfit) => void, animName: string, auth?: Authentication) => {
+export const defaultOnClick = (item: ItemInfo, outfitModel: OutfitModel, setOutfitModel: (a: OutfitModel) => void, setAnimName: (a: string) => void, animName: string, auth?: Authentication) => {
+    const outfit = outfitModel.outfit
+
+    function setOutfit(newOutfit: Outfit) {
+        const newOutfitModel = outfitModel.clone()
+        newOutfitModel.outfit = newOutfit
+        setOutfitModel(newOutfitModel)
+    }
+
     if (item.itemType !== "Asset") {
         setAnimName(`idle`)
     }
@@ -9,6 +17,20 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
         const newOutfit = outfit.clone(); 
         if (WearableAssetTypes.includes(item.type)) {
             newOutfit.addAsset(Number(item.id), item.type, item.name, item.supportsHeadShapes);
+            setOutfit(newOutfit)
+        } else {
+            if (item.type === "AvatarBackground") { // background
+                const newOutfitModel = outfitModel.clone()
+                if (!outfitModel.background || outfitModel.background.id !== Number(item.id)) { //not worn
+                    newOutfitModel.background = new Asset()
+                    newOutfitModel.background.id = Number(item.id)
+                    newOutfitModel.background.assetType.name = item.type
+                    newOutfitModel.background.name = item.name
+                } else { //worn
+                    newOutfitModel.background = undefined
+                }
+                setOutfitModel(newOutfitModel)
+            }
         }
         if (item.type.endsWith("Animation") && item.type !== "EmoteAnimation" && item.type !== "MoodAnimation") {
             const entry = DefaultAnimations[item.type as AnimationProp]
@@ -24,22 +46,23 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
         } else {
             setAnimName(`idle`)
         }
-        setOutfit(newOutfit)
     } else if (item.itemType === "Asset") { //if asset thats already worn
         const newOutfit = outfit.clone(); 
         newOutfit.removeAsset(Number(item.id));
         setOutfit(newOutfit)
     } else if (item.itemType === "Outfit" && (item.type === "Outfit" || item.type === "Character")) { //if full outfit
-        API.Avatar.GetOutfitDetails(item.id, item.creatorId || outfit.creatorId || 0).then((result) => {
-            if (result instanceof Outfit) {
+        API.Avatar.GetOutfitModel(item.id, item.creatorId || outfit.creatorId || 0).then((resultModel) => {
+            if (resultModel instanceof OutfitModel) {
+                const result = resultModel.outfit
                 //check if we need to unequip or equip
                 const isWorn = outfit.containsAssets(result.assets.map((a) => {return a.id}))
 
                 if (!isWorn || item.type === "Outfit") {
                     if (item.type === "Outfit") {
-                        setOutfit(result)
+                        setOutfitModel(resultModel)
                     } else {
-                        const newOutfit = outfit.clone()
+                        const newOutfitModel = outfitModel.clone()
+                        const newOutfit = newOutfitModel.outfit
 
                         newOutfit.scale = result.scale.clone()
 
@@ -51,14 +74,14 @@ export const defaultOnClick = (item: ItemInfo, outfit: Outfit, setAnimName: (a: 
                         for (const asset of result.assets) {
                             newOutfit.addAsset(asset.id, asset.assetType.id, asset.name, asset.supportsHeadShapes)
                         }
-                        setOutfit(newOutfit)
+                        setOutfitModel(newOutfitModel)
                     }
                 } else {
-                    const newOutfit = outfit.clone()
+                    const newOutfitModel = outfitModel.clone()
                     for (const asset of result.assets) {
-                        newOutfit.removeAsset(asset.id)
+                        newOutfitModel.outfit.removeAsset(asset.id)
                     }
-                    setOutfit(newOutfit)
+                    setOutfitModel(newOutfitModel)
                 }
             }
         })

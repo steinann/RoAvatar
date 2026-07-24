@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { useCallback, useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame, FindFirstMatchingAttachment, AttachmentWrapper } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3 } from 'roavatar-renderer';
 import { CameraData, getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
@@ -313,6 +313,12 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [canFocus, setCanFocus] = useState<boolean>(true)
     const [isPfp, setIsPfp] = useState<boolean>(false)
 
+    const loadingCyclorama = useRef(false)
+    const [cyclorama, setCyclorama] = useState<Instance | undefined>(undefined)
+    const [backgroundId, setBackgroundId] = useState<number | undefined>(undefined)
+    const [backgroundData, setBackgroundData] = useState<Instance | undefined>(undefined)
+    const [backgroundSwitchTime, setBackgroundSwitchTime] = useState<number>(0)
+
     function setError(error: string | undefined) {
         if (error) {
             console.error(`Preview Error: ${error}`)
@@ -368,54 +374,107 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
     })
 
+    //load background data and update cyclorama
+    useEffect(() => {
+        let shouldLoad = true
+
+        if (cyclorama && auth) {
+            const newBackgroundId = outfitFunc.outfitModel.background?.id
+            if (newBackgroundId !== backgroundId) {
+                if (newBackgroundId) {
+                    API.Asset.GetRBX("rbxassetid://" + newBackgroundId).then((rbx) => {
+                        if (!shouldLoad) return
+
+                        if (rbx instanceof RBX) {
+                            const root = rbx.generateTree()
+                            const folder = root.GetChildren()[0]
+
+                            console.log(folder)
+                            setBackgroundId(newBackgroundId)
+                            setBackgroundData(folder)
+                            setBackgroundSwitchTime(Date.now() / 1000)
+                        } else {
+                            setBackgroundId(undefined)
+                            setBackgroundSwitchTime(Date.now() / 1000)
+                            setBackgroundData(undefined)
+                        }
+                    })
+                } else {
+                    setBackgroundId(undefined)
+                    setBackgroundSwitchTime(Date.now() / 1000)
+                    setBackgroundData(undefined)
+                }
+            }
+        }
+
+        return () => {
+            shouldLoad = false
+        }
+    }, [cyclorama, auth, setBackgroundId, setBackgroundSwitchTime, setBackgroundData, backgroundId, outfitFunc.outfitModel.background?.id])
+
+    //load the initial cyclorama
+    useEffect(() => {
+        if (!cyclorama && !loadingCyclorama.current) {
+            loadingCyclorama.current = true
+            API.Asset.GetRBX("roavatar://AvatarCyclorama.rbxm").then((rbx) => {
+                if (rbx instanceof RBX) {
+                    const root = rbx.generateTree()
+                    const newCyclorama = root.GetChildren()[0]
+                    setCyclorama(newCyclorama)
+                }
+            })
+
+            if (RBXRenderer.plane) {
+                RBXRenderer.plane.position.set(0,-0.01,0)
+            }
+            if (RBXRenderer.shadowPlane) {
+                RBXRenderer.shadowPlane.position.set(0,-0.01,0)
+            }
+        }
+    }, [cyclorama])
+
     //load the initial avatar
     useEffect(() => {
         if (auth) {
             if (!hasLoadedAvatar) {
-                API.Users.GetUserInfo().then(result => {
-                    if (result) {
-                        const urlParams = new URLSearchParams(window.location.search)
-                        const urlId = Number(urlParams.get("id"))
-                        const base64Json = urlParams.get("base64")
-                        const buffer = urlParams.get("buffer")
+                const urlParams = new URLSearchParams(window.location.search)
+                const base64Json = urlParams.get("base64")
+                const buffer = urlParams.get("buffer")
 
-                        if (buffer) {
-                            console.log("buffer", buffer)
-                            const arrayBuffer = base64ToArrayBuffer(buffer.replace(/\s/g, ''))
-                            const outfit = new Outfit()
-                            outfit.fromBuffer(arrayBuffer, auth).then(() => {
-                                setOutfit(outfit)
-                                hasLoadedAvatar = true
-                            })
-                        }
+                if (buffer) {
+                    console.log("buffer", buffer)
+                    const arrayBuffer = base64ToArrayBuffer(buffer.replace(/\s/g, ''))
+                    const outfit = new Outfit()
+                    outfit.fromBuffer(arrayBuffer, auth).then(() => {
+                        setOutfit(outfit)
+                        hasLoadedAvatar = true
+                    })
+                }
 
-                        if (base64Json && !buffer) {
-                            const jsonData = atob(base64Json)
-                            const outfit = new Outfit()
-                            outfit.fromJson(JSON.parse(jsonData))
-                            setOutfit(outfit)
+                if (base64Json && !buffer) {
+                    const jsonData = atob(base64Json)
+                    const outfit = new Outfit()
+                    outfit.fromJson(JSON.parse(jsonData))
+                    setOutfit(outfit)
+                    hasLoadedAvatar = true
+                }
+
+                if (!base64Json && !buffer) {
+                    API.Avatar.GetAvatarModel().then(result => {
+                        if (!(result instanceof Response)) {
+                            outfitFunc.setOutfitModel(result)
                             hasLoadedAvatar = true
                         }
-
-                        if (!base64Json && !buffer) {
-                            const idToUse = urlId || result.id
-                            API.Avatar.GetAvatarDetails(idToUse).then(result => {
-                                if (result instanceof Outfit) { 
-                                    setOutfit(result)
-                                    hasLoadedAvatar = true
-                                } 
-                            })
-                        } else {
-                            setSaveAlwaysOn(true)
-                        }
-                    }
-                })
+                    })
+                } else {
+                    setSaveAlwaysOn(true)
+                }
             } else {
                 lastOutfit = outfit
                 updatePreview(animName, outfit, auth, setError)
             }
         }
-    }, [auth, outfit, setOutfit, setSaveAlwaysOn, animName])
+    }, [auth, outfit, setOutfit, outfitFunc, setSaveAlwaysOn, animName])
 
     //play/load animations
     useEffect(() => {
@@ -448,6 +507,35 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                         controls.update()
                     }
                 }
+            }
+
+            //render cyclorama
+            if (cyclorama && auth) {
+                const cameraDirTransparency = specialClamp((dot(RBXRenderer.getCameraCFrame().lookVector(), [0,0,-1]) + 0.5) * 2, 0, 1)
+                const transitionTransparency = specialClamp(Date.now() / 1000 - backgroundSwitchTime, 0, 0)
+                const targetTransparency = Math.max(cameraDirTransparency, transitionTransparency)
+
+                cyclorama.Child("color_mesh")!.setProperty("Transparency", targetTransparency)
+                cyclorama.Child("texture_mesh")!.setProperty("Transparency", Math.max(0.05, targetTransparency))
+
+                if (backgroundData) {
+                    const colorValue = backgroundData.Child("Color")
+                    const imageIdValue = backgroundData.Child("ImageId")
+
+                    if (colorValue && imageIdValue) {
+                        const color = colorValue.Prop("Value") as Color3
+                        const imageId = imageIdValue.Prop("Value") as number
+
+                        cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
+                        cyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
+                    }
+                } else {
+                    cyclorama.Child("color_mesh")!.setProperty("Transparency", 1)
+                    cyclorama.Child("texture_mesh")!.setProperty("Transparency", 1)
+                }
+
+                cyclorama.preRender()
+                RBXRenderer.addInstance(cyclorama, auth)
             }
 
             //update animation and instance renderables
@@ -556,7 +644,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 animationInterval = undefined
             }
         }
-    }, [auth, cameraLocked, animLock, canFocus, setCanFocus, isPfp, setIsPfp])
+    }, [auth, cameraLocked, animLock, canFocus, setCanFocus, isPfp, setIsPfp, cyclorama, backgroundData, backgroundSwitchTime])
 
     useEffect(() => {
         document.body.addEventListener("mousemove", updateMousePos)

@@ -5,7 +5,7 @@ import ItemCard from "./itemCard";
 import { AuthContext } from "./context/auth-context";
 import NothingLoaded from "./nothingLoaded";
 import { defaultOnClick } from "./categoryShared";
-import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
+import { OutfitFuncContext } from "./context/outfit-context";
 
 let lastLoadId = 0
 
@@ -17,7 +17,6 @@ interface OutfitInfo {
 
 export default function OutfitViewerCategory(): React.JSX.Element {
     const auth = useContext(AuthContext)
-    const outfit = useContext(OutfitContext)
     const outfitFuncContext = useContext(OutfitFuncContext)
 
     const [userId, _setUserId] = useState<number | undefined>(undefined)
@@ -80,7 +79,7 @@ export default function OutfitViewerCategory(): React.JSX.Element {
                     return <ItemCard
                     auth={auth}
                     itemInfo={itemInfo}
-                    onClick={(itemInfo) => {defaultOnClick(itemInfo, outfit, outfitFuncContext.setAnimName, outfitFuncContext.setOutfit, outfitFuncContext.animName)}}
+                    onClick={(itemInfo) => {defaultOnClick(itemInfo, outfitFuncContext.outfitModel, outfitFuncContext.setOutfitModel, outfitFuncContext.setAnimName, outfitFuncContext.animName)}}
                     />
                 })
                 }

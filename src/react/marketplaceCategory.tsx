@@ -1,10 +1,10 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
-import { OutfitContext } from "./context/outfit-context"
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import ItemCard from "./itemCard"
 import { defaultOnClick } from "./categoryShared"
 import NothingLoaded from "./nothingLoaded"
-import { type Search_Payload, Authentication, API, Outfit, ItemInfo, AssetTypes, CatalogBundleTypes } from "roavatar-renderer"
+import { type Search_Payload, Authentication, API, ItemInfo, AssetTypes, CatalogBundleTypes } from "roavatar-renderer"
 
 let lastLoadId = 0
 let lastSearchData: Search_Payload | undefined = undefined
@@ -200,9 +200,10 @@ type AvatarInventoryItem = {
     offsale: boolean,
 }
 
-export default function MarketplaceCategory({children, searchData, setOutfit, animName, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
+export default function MarketplaceCategory({children, searchData, animName, setAnimName, onClickItem, wornItems = []}: React.PropsWithChildren & {searchData: Search_Payload, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[]}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
+    const outfitFunc = useContext(OutfitFuncContext)
 
     const scrollDivRef: React.RefObject<HTMLDivElement | null> = useRef(null)
 
@@ -273,7 +274,7 @@ export default function MarketplaceCategory({children, searchData, setOutfit, an
                     if (onClickFunc) {
                         onClickFunc(auth, item)
                     } else {
-                        defaultOnClick(item, outfit, setAnimName, setOutfit, animName, auth)
+                        defaultOnClick(item, outfitFunc.outfitModel, outfitFunc.setOutfitModel, setAnimName, animName, auth)
                     }
                 }}/>
             ))

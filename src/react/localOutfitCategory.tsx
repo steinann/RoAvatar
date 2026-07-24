@@ -2,10 +2,10 @@ import React, { useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context";
 import ItemCard from "./itemCard";
 import RadialButton from "./generic/radialButton";
-import { OutfitContext } from "./context/outfit-context";
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import NothingLoaded from "./nothingLoaded";
 import { AlertContext } from "./context/alert-context";
-import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, download, generateOutfitThumbnail } from "roavatar-renderer";
+import { type Search_Payload, Authentication, LocalOutfit, API, Outfit, ItemInfo, download, generateOutfitThumbnail, generateOutfitModelThumbnail } from "roavatar-renderer";
 import { setSetting } from "./generic/settings";
 
 let lastLoadId = 0
@@ -77,11 +77,12 @@ function useLocalOutfitItems(auth: Authentication | undefined, searchData: Searc
     return {items, searchedItems, isLoading, loadMore, hasLoadedAll, refresh }
 }
 
-export default function LocalOutfitCategory({children, searchData, setOutfit}: React.PropsWithChildren & {searchData: Search_Payload, setOutfit: (a: Outfit) => void}): React.JSX.Element {
+export default function LocalOutfitCategory({children, searchData}: React.PropsWithChildren & {searchData: Search_Payload}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
-    
+    const outfitFunc = useContext(OutfitFuncContext)
+
     const [outfitDialogOpen, setOutfitDialogOpen] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
 
@@ -128,8 +129,8 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
 
     //determine on click function for itemcards
     const onClickFunc = (auth: Authentication, item: ItemInfo) => {
-        items[Number(item.id)].toOutfit(auth).then((newOutfit) => {
-            setOutfit(newOutfit)
+        items[Number(item.id)].toOutfitModel(auth).then((newOutfitModel) => {
+            outfitFunc.setOutfitModel(newOutfitModel)
         })
     }
 
@@ -188,6 +189,7 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
 
                         if (hasLoadedAll && items.length < 1000) {
                             const localOutfit = new LocalOutfit(toSaveOutfit)
+                            localOutfit.bg = outfitFunc.outfitModel.background?.id || 0
                             localOutfit.date = Date.now()
                             localOutfit.name = toSaveOutfit.name
                             const newLocalOutfits = items.slice()
@@ -196,7 +198,11 @@ export default function LocalOutfitCategory({children, searchData, setOutfit}: R
                             setIsSaving(true)
 
                             new Promise((resolve) => {
-                                generateOutfitThumbnail(auth, outfit, [150,150], "webp", 0.6).then((result) => {
+                                generateOutfitModelThumbnail(auth, outfitFunc.outfitModel, {
+                                    size: [150,150],
+                                    type: "webp",
+                                    quality: 0.6
+                                }).then((result) => {
                                     localOutfit.image = result as string
                                     resolve(result as string)
                                 })

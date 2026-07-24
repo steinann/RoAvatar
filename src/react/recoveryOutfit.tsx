@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import Icon from "./generic/icon";
-import { FLAGS, generateOutfitThumbnail, LocalOutfit, Outfit, type LocalOutfitJson } from "roavatar-renderer";
+import { FLAGS, generateOutfitModelThumbnail, LocalOutfit, Outfit, OutfitModel, type LocalOutfitJson } from "roavatar-renderer";
 import { getSetting, setSetting } from "./generic/settings";
 import { AuthContext } from "./context/auth-context";
 import RadialButton from "./generic/radialButton";
@@ -11,7 +11,7 @@ export default function RecoveryOutfit(): React.JSX.Element {
     const outfitFunc = useContext(OutfitFuncContext)
 
     const [recoveryOutfitOpen, setRecoveryOutfitOpen] = useState(false)
-    const [recoveryOutfit, setRecoveryOutfit] = useState<Outfit | undefined>(undefined)
+    const [recoveryOutfit, setRecoveryOutfit] = useState<OutfitModel | undefined>(undefined)
     const [outfitImage, setOutfitImage] = useState<string | undefined>(undefined)
 
     const recoveryOutfitDialogRef = useRef<HTMLDialogElement>(null)
@@ -30,15 +30,19 @@ export default function RecoveryOutfit(): React.JSX.Element {
                     const localOutfit = new LocalOutfit(new Outfit())
                     localOutfit.fromJson(result as LocalOutfitJson)
 
-                    localOutfit.toOutfit(auth).then((outfit) => {
-                        setRecoveryOutfit(outfit)
+                    localOutfit.toOutfitModel(auth).then((outfitModel) => {
+                        setRecoveryOutfit(outfitModel)
                         setRecoveryOutfitOpen(true)
 
                         const ogTimeout = FLAGS.THUMBNAIL_TIMEOUT
                         const ogCooldown = FLAGS.LAYERED_CLOTHING_COOLDOWN
                         FLAGS.LAYERED_CLOTHING_COOLDOWN = 0
                         FLAGS.THUMBNAIL_TIMEOUT = 10
-                        generateOutfitThumbnail(auth, outfit, [420,420], "webp", 0.9).then((result) => {
+                        generateOutfitModelThumbnail(auth, outfitModel, {
+                            size: [420,420], 
+                            type: "webp", 
+                            quality: 0.9
+                        }).then((result) => {
                             FLAGS.THUMBNAIL_TIMEOUT = ogTimeout
                             FLAGS.LAYERED_CLOTHING_COOLDOWN = ogCooldown
                             setOutfitImage(result as string)
@@ -90,7 +94,7 @@ export default function RecoveryOutfit(): React.JSX.Element {
                     setRecoveryOutfitOpen(false)
 
                     if (recoveryOutfit) {
-                        outfitFunc.setOutfit(recoveryOutfit)
+                        outfitFunc.setOutfitModel(recoveryOutfit)
                     }
                 }}>Continue</RadialButton>
             </div>

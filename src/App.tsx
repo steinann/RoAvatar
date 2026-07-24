@@ -19,7 +19,7 @@ import TryInGameButton from './react/tryInGame'
 import Tip from './react/generic/tip'
 import { AlertContext } from './react/context/alert-context'
 import InfoButton from './react/infoButton'
-import { Outfit, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer, SortDivision } from 'roavatar-renderer'
+import { Outfit, OutfitModel, Authentication, type NavigationMenuItems, type Search_Payload, DefaultSearchData, AvatarType, CategoryDictionary, API, SpecialInfo, FLAGS, ItemInfo, SortInfo, arrayBufferToBase64, base64ToArrayBuffer, RBXRenderer, SortDivision } from 'roavatar-renderer'
 import CaptureButton from './react/captureButton'
 import { Tooltip } from 'react-tooltip'
 import PluginButton from './react/pluginButton'
@@ -27,13 +27,15 @@ import RecoveryOutfit from './react/recoveryOutfit'
 
 declare const browser: typeof chrome;
 
-const outfitHistory: Outfit[] = []
+const outfitModelHistory: OutfitModel[] = []
 
 let lastAlertTimeout: number | undefined = undefined
 
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
-  const [outfit, _setOutfit] = useState<Outfit>(new Outfit())
+  const [outfitModel, _setOutfitModel] = useState<OutfitModel>(new OutfitModel())
+  const outfit = outfitModel.outfit
+  //const [outfit, _setOutfit] = useState<Outfit>(new Outfit())
   const [navigationMenuItems, setNavigationMenuItems] = useState<NavigationMenuItems | undefined>(undefined)
 
   const [currentAnimName, _setCurrentAnimName] = useState<string>("idle")
@@ -93,28 +95,29 @@ function App() {
   function undo() {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1)
-      _setOutfit(outfitHistory[historyIndex - 1])
+      _setOutfitModel(outfitModelHistory[historyIndex - 1])
 
       setCanUndo(historyIndex - 1 > 0)
-      setCanRedo(historyIndex - 1 < outfitHistory.length - 1)
+      setCanRedo(historyIndex - 1 < outfitModelHistory.length - 1)
     }
     //console.log(outfitHistory, outfitHistoryIndex)
     
   }
 
   function redo() {
-    if (historyIndex < outfitHistory.length - 1) {
+    if (historyIndex < outfitModelHistory.length - 1) {
       setHistoryIndex(historyIndex + 1)
-      _setOutfit(outfitHistory[historyIndex + 1])
+      _setOutfitModel(outfitModelHistory[historyIndex + 1])
 
       setCanUndo(historyIndex + 1 > 0)
-      setCanRedo(historyIndex + 1 < outfitHistory.length - 1)
+      setCanRedo(historyIndex + 1 < outfitModelHistory.length - 1)
     }
     //console.log(outfitHistory, outfitHistoryIndex)
   }
 
-  const setOutfit = useCallback((newOutfit: Outfit) => {
-    window.outfit = newOutfit
+  const setOutfitModel = useCallback((newOutfitModel: OutfitModel) => {
+    window.outfitModel = newOutfitModel
+    window.outfit = newOutfitModel.outfit
 
     //if (!auth) return
     /*const outfitBuffer = newOutfit.toBuffer()
@@ -126,21 +129,32 @@ function App() {
       console.log("compare them!")
     })*/
 
-    if (outfitHistory.length > historyIndex + 1) {
-      outfitHistory.splice(historyIndex + 1)
+    if (outfitModelHistory.length > historyIndex + 1) {
+      outfitModelHistory.splice(historyIndex + 1)
     }
 
-    outfitHistory.push(newOutfit)
+    outfitModelHistory.push(newOutfitModel)
     setHistoryIndex(historyIndex + 1)
     
-    _setOutfit(newOutfit)
+    _setOutfitModel(newOutfitModel)
     setCanUndo(historyIndex + 1 > 0)
-    setCanRedo(historyIndex + 1 < outfitHistory.length - 1)
+    setCanRedo(historyIndex + 1 < outfitModelHistory.length - 1)
     //console.log(outfitHistory, outfitHistoryIndex)
     //console.log(newOutfit.toBuffer())
   }, [historyIndex])
+  window.setOutfitModel = setOutfitModel
 
-  window.setOutfit = setOutfit
+  const _setOutfit = useCallback((newOutfit: Outfit) => {
+    const newOutfitModel = outfitModel.clone()
+    newOutfitModel.outfit = newOutfit
+    _setOutfitModel(newOutfitModel)
+  }, [outfitModel, _setOutfitModel])
+
+  const setOutfit = useCallback((newOutfit: Outfit) => {
+    const newOutfitModel = outfitModel.clone()
+    newOutfitModel.outfit = newOutfit
+    setOutfitModel(newOutfitModel)
+  }, [outfitModel, setOutfitModel])
 
   function setCurrentAnimName(name: string, force?: boolean) {
     if (!canSetAnimName && !force) return
@@ -423,7 +437,7 @@ function App() {
     <AlertContext value={alert}>
       <AuthContext value={auth}>
         <OutfitContext value={outfit}>
-          <OutfitFuncContext value={{setOutfit, _setOutfit, setAnimName: setCurrentAnimName, animName: currentAnimName, setCanSetAnimName, animLock, setAnimLock}}>
+          <OutfitFuncContext value={{setOutfit, _setOutfit, setAnimName: setCurrentAnimName, animName: currentAnimName, setCanSetAnimName, animLock, setAnimLock, outfitModel, setOutfitModel, _setOutfitModel}}>
             <div className='main'>
               <div id="alert" className={`errorAlert${alertEnabled ? " alertOn":""}${alertIsWarning ? " warningAlert" : ""}${alertIsSuccess ? " successAlert" : ""}`} onMouseEnter={stopAlert}>
                 {alertText}
@@ -509,12 +523,19 @@ function App() {
 
                 {/*save and undo*/}
                 <div className="save-and-history">
-                  <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitHistory.length}/>
+                  <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitModelHistory.length}/>
                   <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
                 </div>
 
                 {/*worn items list*/}
                 <div className='worn-items dark-scrollbar'>
+                  {outfitModel.background ? 
+                    <ItemCard key={outfitModel.background._uuid} auth={auth} className='worn-list-item' isWorn={false} forceIsWorn={true} showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", "AvatarBackground", outfitModel.background.id, outfitModel.background.name)} onClick={() => {
+                      const newOutfitModel = outfitModel.clone()
+                      newOutfitModel.background = undefined
+                      setOutfitModel(newOutfitModel)
+                    }}/>
+                  : null}
                   {outfit.assets.map(asset => {
                     const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
                     itemInfo.headShape = asset.meta?.headShape
@@ -570,7 +591,7 @@ function App() {
                 </> : null}
                 {/*Marketplace category element*/
                 categorySource === "Marketplace" && taxonomy.length > 0 ? <>
-                  <MarketplaceCategory searchData={searchData} setOutfit={setOutfit} animName={currentAnimName} setAnimName={setCurrentAnimName}/>
+                  <MarketplaceCategory searchData={searchData} animName={currentAnimName} setAnimName={setCurrentAnimName}/>
                 </> : null}
               </div>
             </div>
@@ -585,8 +606,9 @@ function App() {
 
 declare global {
     interface Window {
+        outfitModel: OutfitModel;
         outfit: Outfit;
-        setOutfit: (a: Outfit) => void;
+        setOutfitModel: (a: OutfitModel) => void;
         arrayBufferToBase64: (a: ArrayBuffer) => string;
         base64ToArrayBuffer: (a: string) => ArrayBuffer;
         saveOutfit: (a: Outfit) => void;

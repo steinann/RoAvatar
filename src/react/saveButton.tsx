@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react"
-import { OutfitContext } from "./context/outfit-context"
+import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import { AuthContext } from "./context/auth-context"
 import RadialButton from "./generic/radialButton"
 import { AlertContext } from "./context/alert-context"
@@ -11,6 +11,7 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
+    const outfitFunc = useContext(OutfitFuncContext)
 
     const lastHistoryIndexRef = useRef<number | undefined>(undefined)
 
@@ -55,18 +56,22 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
             //update recovery outfit
             try {
                 const localOutfit = new LocalOutfit(outfit)
+                localOutfit.bg = outfitFunc.outfitModel.background?.id || 0
                 if (!autosave && historyIndex >= 1) setSetting("recovery-outfit", localOutfit.toJson())
             } catch {
                 console.warn("Failed to save recovery outfit")
             }
         }
-    }, [historyIndex, outfit, setJustSaved, autosave])
+    }, [historyIndex, outfit, setJustSaved, autosave, outfitFunc.outfitModel.background?.id])
 
     const buttonEnabled = (lastSaveIndex !== historyIndex || (forceOn && !justSaved)) && !hasIssue
 
     //autosave logic
     useEffect(() => {
         if (auth && buttonEnabled && autosave && historyIndex >= 0) {
+            API.Avatar.UpdateAvatarModel(auth, outfitFunc.outfitModel, ["UpdateBackground"]).then(result => {
+                console.log(result)
+            })
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
                 if (result[0]) {
@@ -83,7 +88,7 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
                 }
             })
         }
-    }, [alert, auth, buttonEnabled, historyIndex, outfit, autosave])
+    }, [alert, auth, buttonEnabled, historyIndex, outfit, autosave, outfitFunc.outfitModel])
 
     //TODO: compare the current outfit with the last saved one
     return <>
@@ -91,6 +96,9 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
         if (auth && buttonEnabled) {
             //if you redraw a thumbnail right before updating the avatar the thumbnail might end up becoming the old avatar instead of the new one (kinda cool), happens more frequently if the old one takes long to render
             //API.Avatar.RedrawThumbnail(auth)
+            API.Avatar.UpdateAvatarModel(auth, outfitFunc.outfitModel, ["UpdateBackground"]).then(result => {
+                console.log(result)
+            })
             API.Avatar.WearOutfit(auth, outfit, false).then(result => {
                 console.log(result)
                 if (result[0]) {

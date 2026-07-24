@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { Outfit } from 'roavatar-renderer'
+import { Outfit, OutfitModel } from 'roavatar-renderer'
 
 export const OutfitContext = createContext<Outfit>(new Outfit())
 
@@ -17,6 +17,9 @@ export const OutfitFuncContext = createContext<{
     setCanSetAnimName: (a: boolean) => void,
     animLock: AnimLock,
     setAnimLock: (a: AnimLock) => void,
+    outfitModel: OutfitModel,
+    setOutfitModel: (a: OutfitModel) => void,
+    _setOutfitModel: (a: OutfitModel) => void,
 }>({
     setOutfit: () => {},
     _setOutfit: () => {},
@@ -25,4 +28,7 @@ export const OutfitFuncContext = createContext<{
     setCanSetAnimName: () => {},
     animLock: new AnimLock(),
     setAnimLock: () => {},
+    outfitModel: new OutfitModel(),
+    setOutfitModel: () => {},
+    _setOutfitModel: () => {},
 })

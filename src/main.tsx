@@ -54,6 +54,7 @@ FLAGS.VERBOSE_LOGGING = false
 FLAGS.USE_ASSEMBLY = true
 //FLAGS.API_REQUEST_RETRY = false
 //FLAGS.LOAD_TEST_PLACE = "rbxassetid://118593852151835"
+//FLAGS.SEARCH_FOR_STRING = "profilebackground"
 exposeAPI()
 exposeMesh()
 exposeFLAGS()

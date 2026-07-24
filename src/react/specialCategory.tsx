@@ -17,9 +17,9 @@ export default function SpecialCategory({specialInfo, searchData, categoryType, 
         case "Skin Color":
             return <BodyColorCategory setOutfit={setOutfit} _setOutfit={_setOutfit}/>
         case "LocalOutfits":
-            return <LocalOutfitCategory searchData={searchData} setOutfit={setOutfit}/>
+            return <LocalOutfitCategory searchData={searchData}/>
         case "Looks":
-            return <LookCategory searchData={searchData} setOutfit={setOutfit}/>
+            return <LookCategory searchData={searchData}/>
         case "HeadAdjustment":
             return <HeadAdjustmentCategory setOutfit={setOutfit}/>
         case "OutfitViewer":
