@@ -52,6 +52,7 @@ FLAGS.ONLINE_ASSETS = false
 FLAGS.USE_WORKERS = true
 FLAGS.VERBOSE_LOGGING = false
 FLAGS.USE_ASSEMBLY = true
+FLAGS.LAYERED_CLOTHING_COOLDOWN = 0.25
 //FLAGS.API_REQUEST_RETRY = false
 //FLAGS.LOAD_TEST_PLACE = "rbxassetid://118593852151835"
 //FLAGS.SEARCH_FOR_STRING = "profilebackground"
@@ -62,6 +63,7 @@ exposeThumbnailGenerator()
 //FLAGS.SHOW_CAGE = true
 //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
 //FLAGS.SEARCH_FOR_STRING = "shape"
+
 
 RBXRenderer.fullSetup(true, true, true).then(() => {
   if (theme === "light") {
@@ -124,3 +126,65 @@ RBXRenderer.fullSetup(true, true, true).then(() => {
     </StrictMode>,
   )
 })
+
+/*
+//setup flags that are compatible with you environment
+    FLAGS.FETCH_FUNC = undefined //undefined is the default fetch() function, this flag can be used to intercept requests
+    FLAGS.ONLINE_ASSETS = true //set true to false if you want assets to be loaded locally
+
+    //if we arent using online assets we have to provide the renderer with the paths
+    if (!FLAGS.ONLINE_ASSETS) {
+        //path to asset files from RoAvatar
+        FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
+        FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
+    }
+    //if layered assets dont work set this to false (workers improve performance)
+    FLAGS.USE_WORKERS = true
+
+//setup RBXRenderer
+    //actually creating renderer
+    const includeScene = true
+    const includeControls = true
+    const success = await RBXRenderer.fullSetup(includeScene, includeControls)
+    if (!success) {
+        //roavatar-renderer automatically displays an error, but your own behavior can be included here (like a fallback)
+    }
+    //renderer customization
+    RBXRenderer.setBackgroundColor( 0xbbbbbb )
+    RBXRenderer.setRendererSize(1000,500)
+    RBXRenderer.setBackgroundTransparent(false)
+    //add renderer to document
+    document.body.appendChild(RBXRenderer.getRendererElement())
+
+//get avatar data for the user with id 1
+const outfit = await API.Avatar.GetAvatarDetails(126448532)
+if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
+
+//create renderer for outfit
+    //used by api
+    const auth = new Authentication()
+
+    const renderScene = RBXRenderer.addScene()
+    setupThumbnailScene(renderScene)
+
+    const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
+    await outfitRenderer.prepareForThumbnail()
+
+    //finalize
+    if (outfitRenderer.currentRig) {
+      //update camera positioning
+      const cameraCFrame = getThumbnailCameraCFrame(outfitRenderer.currentRig, renderScene.camera.fov)
+      if (cameraCFrame) {
+          RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
+      }
+
+      //click
+      imageThumbnailClick(renderScene, 420, 420, "png").then((result) => {
+        console.log(result)
+      })
+    }
+
+    //cleanup
+    outfitRenderer.destroy()
+    renderScene.destroy()
+  */
