@@ -389,7 +389,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                             const root = rbx.generateTree()
                             const folder = root.GetChildren()[0]
 
-                            console.log(folder)
                             setBackgroundId(newBackgroundId)
                             setBackgroundData(folder)
                             setBackgroundSwitchTime(Date.now() / 1000)
