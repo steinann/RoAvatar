@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 
 //custom select input
-export default function SelectInput({value, setValue, alternatives, isUp}: {value: string, setValue: (a: string) => void, alternatives: string[], isUp?: boolean}): React.JSX.Element {
+export default function SelectInput({value, setValue, alternatives, isUp, className = "", ...props}: React.ComponentPropsWithRef<'button'> & {value: string, setValue: (a: string) => void, alternatives: string[], isUp?: boolean, className?: string}): React.JSX.Element {
     const [open, setOpen] = useState(false)
     
     const selectRef = useRef<HTMLButtonElement | null>(null)
@@ -20,7 +20,7 @@ export default function SelectInput({value, setValue, alternatives, isUp}: {valu
         }
     })
 
-    return <button ref={selectRef} className="select roboto-600" onClick={() => {
+    return <button ref={selectRef} className={`select roboto-600 ${className}`} {...props} onClick={() => {
         setOpen(!open)
     }}>
         <span>{value}</span>

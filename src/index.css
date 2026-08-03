@@ -2301,3 +2301,14 @@ textarea {
 .corner-dialog-body > a {
     color: var(--font-color);
 }
+
+.animation-picker {
+    position: absolute;
+    bottom: 3%;
+    left: 3%;
+    background-color: var(--body-background);
+}
+
+.animation-picker ul button {
+    background-color: var(--body-background);
+}

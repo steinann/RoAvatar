@@ -24,12 +24,15 @@ import CaptureButton from './react/captureButton'
 import { Tooltip } from 'react-tooltip'
 import PluginButton from './react/pluginButton'
 import RecoveryOutfit from './react/recoveryOutfit'
+import AnimationPicker from './react/animationPicker'
 
 declare const browser: typeof chrome;
 
 const outfitModelHistory: OutfitModel[] = []
 
 let lastAlertTimeout: number | undefined = undefined
+
+const nameToCategory = new Map<string,string>()
 
 function App() {
   const [auth, setAuth] = useState<Authentication | undefined>(undefined)
@@ -339,9 +342,18 @@ function App() {
             }
           }
 
+          //set name -> category map
+          for (const category of result.categories) {
+            nameToCategory.set(category.name, category.category)
+
+            for (const subcategory of category.subcategories) {
+              nameToCategory.set(subcategory.name, subcategory.subcategory || subcategory.name)
+            }
+          }
+
           for (const category of result.categories) {
             //flip order so classic clothing is first
-            if (category.name === "Clothing") {
+            if (category.category === "Clothing") {
               category.subcategories = category.subcategories.reverse()
             }
 
@@ -519,6 +531,10 @@ function App() {
                 {/*avatar preview*/}
                 <AvatarPreview setSaveAlwaysOn={setSaveAlwaysOn} setOutfit={setOutfit} animName={currentAnimName}>
                   <AvatarAdjustment/>
+                  {categorySource === "Marketplace" &&
+                  nameToCategory.get(categoryType) === "AvatarAnimations" &&
+                  nameToCategory.get(subCategoryType || "") !== "EmoteAnimations" ? 
+                  <AnimationPicker/> : null}
                 </AvatarPreview>
 
                 {/*save and undo*/}
