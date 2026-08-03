@@ -29,6 +29,7 @@ export function AvatarAdjustment(): React.JSX.Element {
     const [currentButton, setCurrentButton] = useState<ButtonType>("adjust")
 
     const [adjustType, setAdjustType] = useState<AdjustType>("position")
+    const [thumbnailResetCount, setThumbnailResetCount] = useState<number>(0) //hacky
 
     const menuRef = useRef<HTMLUListElement>(null)
 
@@ -100,11 +101,20 @@ export function AvatarAdjustment(): React.JSX.Element {
                 <button data-tooltip-place='right' data-tooltip-id="accessory-adjustment-tooltip" data-tooltip-content="Scale" className={`menu-icon menu-adjust-scale${adjustType === "scale" ? " menu-icon-active" : ""}`} onClick={() => {setAdjustType("scale")}}><Icon>expand_content</Icon></button>
                 <Tooltip id="accessory-adjustment-tooltip"/>
             </ul>
+            {/*Thumbnail adjustment buttons*/}
+            <ul className={`inner-menu-icons adjust-menu-icons${thumbnailOpen ? "" : " icons-collapsed"}`}>
+                <button data-tooltip-place='right' data-tooltip-id="thumbnail-adjustment-tooltip" data-tooltip-content="Discard changes" className='menu-icon' onClick={() => {
+                    setThumbnailResetCount(thumbnailResetCount + 1)
+                }}>
+                    <Icon>refresh</Icon>
+                </button>
+                <Tooltip id="thumbnail-adjustment-tooltip"/>
+            </ul>
         </ul>
 
         {/*Adjustment menus*/}
         <AccessoryAdjustment isOpen={adjustOpen} adjustType={adjustType}/>
         <OrderAdjustment isOpen={orderOpen}/>
-        <ThumbnailAdjustment isOpen={thumbnailOpen}/>
+        <ThumbnailAdjustment isOpen={thumbnailOpen} resetCount={thumbnailResetCount}/>
     </>
 }

@@ -6,7 +6,7 @@ import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnai
 import { CONFIG } from './react/generic/config.ts'
 import ReviewReminder from './react/reviewReminder.tsx'
 
-declare const browser: typeof chrome;
+//declare const browser: typeof chrome;
 
 const darkTheme = document.getElementById("style-dark-theme")
 const lightTheme = document.getElementById("style-light-theme")

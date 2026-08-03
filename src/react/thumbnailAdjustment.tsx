@@ -1,5 +1,5 @@
-import { useCallback, useContext, useEffect, useState } from "react"
-import { API, AvatarType, mapNum, RBXRenderer, specialClamp } from "roavatar-renderer"
+import { useCallback, useContext, useEffect, useRef, useState } from "react"
+import { API, AvatarType, mapNum, RBXRenderer, specialClamp, type ThumbnailCustomizations_Result } from "roavatar-renderer"
 import { AnimLock, OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import SliderInput from "./generic/sliderInput"
 import { getCameraData, setCameraData } from "./generic/cameraData"
@@ -252,12 +252,13 @@ function AdvancedAdjustment({thumbnailCustomization, setThumbnailCustomization, 
     </>
 }
 
-export default function ThumbnailAdjustment({isOpen}: {isOpen: boolean}): React.JSX.Element {
+export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boolean, resetCount: number}): React.JSX.Element {
     const outfit = useContext(OutfitContext)
     const outfitFunc = useContext(OutfitFuncContext)
 
     const [top, setTop] = useState<number>(0)
 
+    const [initialCustomization, setInitialCustomization] = useState<ThumbnailCustomizations_Result | undefined>(undefined)
     const [loadingCustomizations, setLoadingCustomizations] = useState<boolean>(false)
     const [loadedCustomizations, setLoadedCustomizations] = useState<boolean>(false)
     const [headshotCustomization, setHeadshotCustomization] = useState<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.AvatarHeadshot))
@@ -266,6 +267,8 @@ export default function ThumbnailAdjustment({isOpen}: {isOpen: boolean}): React.
     const [selectedType, setSelectedType] = useState<SelectedType>("Both")
 
     const [isAdvanced, setIsAdvanced] = useState<boolean>(false)
+
+    const lastResetCount = useRef(0)
 
     const avatarPreview = document.getElementById("avatar-preview")
 
@@ -357,6 +360,10 @@ export default function ThumbnailAdjustment({isOpen}: {isOpen: boolean}): React.
             API.Avatar.GetThumbnailCustomizations().then((newThumbnailCustomizations) => {
                 setLoadingCustomizations(false)
                 if (newThumbnailCustomizations instanceof Response) return
+                if (!initialCustomization) {
+                    setInitialCustomization(newThumbnailCustomizations)
+                }
+
                 setLoadedCustomizations(true)
 
                 for (const customization of newThumbnailCustomizations.avatarThumbnailCustomizations) {
@@ -375,7 +382,28 @@ export default function ThumbnailAdjustment({isOpen}: {isOpen: boolean}): React.
                 }
             })
         }
-    }, [loadedCustomizations, loadingCustomizations, setLoadedCustomizations, setLoadingCustomizations, updateAnimation, setThumbnailCustomization, headshotCustomization, avatarCustomization])
+    }, [avatarCustomization, headshotCustomization, initialCustomization, loadedCustomizations, loadingCustomizations, setThumbnailCustomization, updateAnimation])
+
+    //reset to initial thumbnail customization
+    useEffect(() => {
+        if (initialCustomization && resetCount !== lastResetCount.current) {
+            lastResetCount.current = resetCount
+            for (const customization of initialCustomization.avatarThumbnailCustomizations) {
+                if (customization.camera.distanceScale >= 0) {
+                    const newCustomization = new ThumbnailCustomization(customization.thumbnailType)
+                    newCustomization.distanceScale = customization.camera.distanceScale
+                    newCustomization.emoteAssetId = customization.emoteAssetId
+                    newCustomization.fieldOfViewDeg = customization.camera.fieldOfViewDeg
+                    newCustomization.yRotDeg = customization.camera.yRotDeg
+
+                    setThumbnailCustomization(newCustomization)
+                    updateAnimation(newCustomization)
+                } else {
+                    setThumbnailCustomization(customization.thumbnailType === ThumbnailCustomizationType.AvatarHeadshot ? headshotCustomization : avatarCustomization)
+                }
+            }
+        }
+    }, [avatarCustomization, headshotCustomization, initialCustomization, resetCount, setThumbnailCustomization, updateAnimation])
 
     //update for open/close
     useEffect(() => {
