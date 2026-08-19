@@ -346,8 +346,8 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             } else {
                 lockData = new AnimLock()
                 lockData.locked = true
-                lockData.lockType = "keyframe"
-                lockData.value = 0
+                lockData.lockType = "time"
+                lockData.value = -1
 
                 console.log("lock!", lockData)
                 if (isOpen) outfitFunc.setAnimLock(lockData)
