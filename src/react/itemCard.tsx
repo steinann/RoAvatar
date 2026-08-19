@@ -31,7 +31,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
         isSpecialOutfit?: boolean,
         interactive?: boolean,
         deleteCallback?: () => void,
-        updateCallback?: (a: Outfit) => void,
+        updateCallback?: (a: OutfitModel) => void,
         renameCallback?: (a: string) => void,
     }): React.JSX.Element {
     const outfit = useContext(OutfitContext)
@@ -257,7 +257,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
                             }
                         })
                     } else if (updateCallback) {
-                        updateCallback(outfit)
+                        updateCallback(newOutfitModel)
                     }
                 }}>Update</RadialButton>
             </div>

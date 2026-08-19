@@ -267,7 +267,7 @@ export default function LocalOutfitCategory({children, searchData}: React.PropsW
                     setIsSaving(true)
 
                     new Promise((resolve) => {
-                        generateOutfitThumbnail(auth, outfit, [150,150], "webp", 0.6).then((result) => {
+                        generateOutfitThumbnail(auth, newOutfit, [150,150], "webp", 0.6).then((result) => {
                             localOutfit.image = result as string
                             resolve(result as string)
                         })
