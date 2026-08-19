@@ -1,7 +1,7 @@
 import { CFrame, deg, RBXRenderer, Event } from "roavatar-renderer"
 import type { AdjustType } from "../accessoryAdjustment"
 
-export type CameraDataType = "Editor" | "AvatarHeadshot"
+export type CameraDataType = "Editor" | "AvatarHeadshot" | "Avatar"
 export class CameraData {
     canFocus: boolean = true
     type: CameraDataType = "Editor"

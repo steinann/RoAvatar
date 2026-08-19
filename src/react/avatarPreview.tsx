@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3 } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3, getCameraCFrameForAvatarCustomized } from 'roavatar-renderer';
 import { CameraData, getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
@@ -16,6 +16,7 @@ let lastOutfit: Outfit | undefined = undefined
 let lastFrameTime = Date.now() / 1000
 
 let currentlyChangingRig = false
+let latestAnimName = "idle"
 
 const gravity = 196.2
 const jumpPower = 50
@@ -31,7 +32,9 @@ function updateAnim(animName: string, currentRig: Instance, auth?: Authenticatio
             const animatorW = new AnimatorWrapper(animator)
 
             //main animation
-            const successfullyPlayed = animatorW.playAnimation(animName)
+            let successfullyPlayed = animatorW.playAnimation(animName)
+            if (!successfullyPlayed && animName === "pose") successfullyPlayed = animatorW.playAnimation("idle")
+
             if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
                 const emoteId = BigInt(animName.split(".")[1])
                 animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
@@ -138,6 +141,7 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
 
                     hrpWrapper.applyDescription(humanoid).then((result) => {
                         if (currentRig) {
+                            updateAnim(latestAnimName, currentRig, auth) //hack done so animation can switch between idle/pose based on availability
                             RBXRenderer.addInstance(currentRig, auth)
                         }
                         if (result instanceof Instance) {
@@ -318,6 +322,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [backgroundId, setBackgroundId] = useState<number | undefined>(undefined)
     const [backgroundData, setBackgroundData] = useState<Instance | undefined>(undefined)
     const [backgroundSwitchTime, setBackgroundSwitchTime] = useState<number>(0)
+
+    latestAnimName = animName
 
     function setError(error: string | undefined) {
         if (error) {
@@ -591,6 +597,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
 
                 if (cameraData.type === "AvatarHeadshot") {
                     targetCF = getCameraCFrameForHeadshotCustomized(currentRig, cameraData.thumbnailFov, cameraData.yRot, cameraData.distanceScale) || targetCF
+                } else if (cameraData.type === "Avatar") {
+                    targetCF = getCameraCFrameForAvatarCustomized(currentRig, cameraData.thumbnailFov, cameraData.yRot) || targetCF
                 }
 
                 if (isTransition) {

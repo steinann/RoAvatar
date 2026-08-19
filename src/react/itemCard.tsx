@@ -51,7 +51,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
                 itemScene = RBXRenderer.addScene()
                 itemScene.noRect()
 
-                RBXRenderer.setupScene("WellLit", RBXRenderer.backgroundColorHex, itemScene)
+                RBXRenderer.setupScene("WellLit", RBXRenderer.backgroundColor, itemScene)
                 RBXRenderer.setupControls(itemScene)
 
                 itemOutfitRenderer = new OutfitRenderer(new Authentication(), new Outfit(), itemScene)
