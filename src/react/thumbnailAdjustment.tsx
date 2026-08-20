@@ -270,6 +270,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
     const [isAdvanced, setIsAdvanced] = useState<boolean>(false)
 
     const lastResetCount = useRef(0)
+    const lastThumbnailCustomization = useRef<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.AvatarHeadshot))
 
     const avatarPreview = document.getElementById("avatar-preview")
 
@@ -363,6 +364,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
     //update thumbnail customization and camera to match
     const setThumbnailCustomization = useCallback((newCustomization: ThumbnailCustomization) => {
         if (newCustomization.thumbnailType === ThumbnailCustomizationType.AvatarHeadshot) {
+            lastThumbnailCustomization.current = newCustomization
             setHeadshotCustomization(newCustomization)
         } else if (newCustomization.thumbnailType === ThumbnailCustomizationType.Avatar) {
             setAvatarCustomization(newCustomization)
@@ -489,6 +491,8 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
         function onMouseMove(e: MouseEvent) {
             if (!avatarPreview || e.target !== avatarPreview && avatarPreview.querySelector("canvas") !== e.target) return
             if (e.buttons === 1) {
+                e.preventDefault()
+                const thumbnailCustomization = lastThumbnailCustomization.current
                 const newYRot = thumbnailCustomization.yRotDeg - e.movementX / 2.5
 
                 const newThumbnailCustomization = thumbnailCustomization.clone()
@@ -499,6 +503,8 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
 
         function onWheel(e: WheelEvent) {
             if (!avatarPreview || e.target !== avatarPreview && avatarPreview.querySelector("canvas") !== e.target) return
+            e.preventDefault()
+            const thumbnailCustomization = lastThumbnailCustomization.current
             const newDistance = thumbnailCustomization.distanceScale + e.deltaY / 500
 
             const newThumbnailCustomization = thumbnailCustomization.clone()
@@ -506,14 +512,14 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             setThumbnailCustomization(newThumbnailCustomization)
         }
 
-        avatarPreview.addEventListener("mousemove", onMouseMove)
-        avatarPreview.addEventListener("wheel", onWheel)
+        avatarPreview.addEventListener("mousemove", onMouseMove, { passive: false })
+        avatarPreview.addEventListener("wheel", onWheel, { passive: false })
 
         return () => {
             avatarPreview.removeEventListener("mousemove", onMouseMove)
             avatarPreview.removeEventListener("wheel", onWheel)
         }
-    }, [avatarPreview, setThumbnailCustomization, thumbnailCustomization, isOpen])
+    }, [avatarPreview, setThumbnailCustomization, isOpen])
 
     return <>
         <div className={`thumbnail-adjustment${isOpen ? " open" : ""}`} style={{top: `${top}px`}}>
