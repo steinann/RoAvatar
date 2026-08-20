@@ -9,6 +9,7 @@ import RadialButton from "./generic/radialButton"
 import { AuthContext } from "./context/auth-context"
 import { AlertContext } from "./context/alert-context"
 import SelectInput from "./generic/selectInput"
+import { Tooltip } from "react-tooltip"
 
 const ThumbnailCustomizationType = {
     "AvatarHeadshot": 1,
@@ -72,17 +73,19 @@ function CustomizationSlider({name, min, max, normal, property, thumbnailCustomi
 
 const lockDataMap = new Map<number,AnimLock>()
 
-function AdjustmentBottom({thumbnailCustomization, setIsAdvanced, isExit, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setIsAdvanced: (a: boolean) => void, isExit?: boolean, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
+function AdjustmentBottom({thumbnailCustomization, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const alert = useContext(AlertContext)
-
-    if (Math.random() > 10) console.log(setIsAdvanced, isExit)
 
     return <div className="thumbnail-adjustment-bottom">
         {/*<button style={{display: "none"}} className="thumbnail-advanced roboto-500" onClick={() => {setIsAdvanced(!isExit)}}>
             {isExit ? "Simple" : "Advanced"}
         </button>*/}
-        <SelectInput value={selectedType} setValue={setSelectedType as (a: string) => void} alternatives={["Both", "Head", "Fullbody"]} isUp={true}/>
+        <Tooltip id="thumbnail-type"/>
+        <SelectInput 
+            data-tooltip-place='right' data-tooltip-id="thumbnail-type" data-tooltip-content="Thumbnail to update"
+            value={selectedType} setValue={setSelectedType as (a: string) => void} alternatives={["Head", "Fullbody"]} isUp={true}
+        />
         <div className="dialog-actions">
             <RadialButton className="dialog-cancel roboto-600" onClick={() => {
                 if (!auth && alert) {
@@ -206,12 +209,10 @@ function AdjustmentBottom({thumbnailCustomization, setIsAdvanced, isExit, select
     </div>
 }
 
-function SimpleAdjustment({thumbnailCustomization, setThumbnailCustomization, setIsAdvanced, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, setIsAdvanced: (a: boolean) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
+function EmoteAdjustment({thumbnailCustomization, setThumbnailCustomization, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
     const outfitFunc = useContext(OutfitFuncContext)
 
     return <>
-        <CustomizationSlider name="Rotation" min={-60} max={60} normal={0} property="yRotDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
-        <CustomizationSlider name="Distance" min={0.5} max={2.5} normal={1} property="distanceScale" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
         <ItemCategory
             searchData={{taxonomy:"", salesTypeFilter: 0}}
             categoryType={"Animations"}
@@ -231,25 +232,20 @@ function SimpleAdjustment({thumbnailCustomization, setThumbnailCustomization, se
             }}
             showNames={false}
         />
-        <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} setIsAdvanced={setIsAdvanced} selectedType={selectedType} setSelectedType={setSelectedType}/>
+        <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
     </>
 }
 
 type SelectedType = "Both" | "Head" | "Fullbody"
 
-//UNUSED
-function AdvancedAdjustment({thumbnailCustomization, setThumbnailCustomization, setIsAdvanced, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, setIsAdvanced: (a: boolean) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
+function CameraAdjustment({thumbnailCustomization, setThumbnailCustomization, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
     //const outfitFunc = useContext(OutfitFuncContext)
 
     return <>
-        <div className="thumbnail-customization-top" style={{width: "90%", margin: "1em 0"}}>
-            <span className="thumbnail-customization-slider-name roboto-600">Thumbnail Type</span>
-            <SelectInput value={selectedType} setValue={setSelectedType as (a: string) => void} alternatives={["Both", "Head", "Fullbody"]}/>
-        </div>
         <CustomizationSlider name="Rotation" min={-60} max={60} normal={0} property="yRotDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
         <CustomizationSlider name="Distance" min={0.5} max={2.5} normal={1} property="distanceScale" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
-        {/*<CustomizationSlider name="FOV" min={15} max={45} normal={28.814} property="fieldOfViewDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization}/>*/}
-        <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} setIsAdvanced={setIsAdvanced} isExit={true} selectedType={selectedType} setSelectedType={setSelectedType}/>
+        <CustomizationSlider name="FOV" min={15} max={45} normal={28.814} property="fieldOfViewDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
+        <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
     </>
 }
 
@@ -265,17 +261,18 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
     const [headshotCustomization, setHeadshotCustomization] = useState<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.AvatarHeadshot))
     const [avatarCustomization, setAvatarCustomization] = useState<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.Avatar))
 
-    const [selectedType, _setSelectedType] = useState<SelectedType>("Both")
-
-    const [isAdvanced, setIsAdvanced] = useState<boolean>(false)
+    const [selectedScreen, setSelectedScreen] = useState<"emote" | "camera">("emote")
+    const [selectedType, _setSelectedType] = useState<SelectedType>("Head")
+    const lastSelectedType = useRef<SelectedType>("Head")
 
     const lastResetCount = useRef(0)
-    const lastThumbnailCustomization = useRef<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.AvatarHeadshot))
+    const lastHeadshotThumbnailCustomization = useRef<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.AvatarHeadshot))
+    const lastAvatarThumbnailCustomization = useRef<ThumbnailCustomization>(new ThumbnailCustomization(ThumbnailCustomizationType.Avatar))
 
     const avatarPreview = document.getElementById("avatar-preview")
 
     const playerAvatarType = outfit.playerAvatarType
-    const thumbnailCustomization = headshotCustomization
+    const thumbnailCustomization = lastSelectedType.current === "Fullbody" ? avatarCustomization : headshotCustomization
     const avatarPreviewBottom = avatarPreview?.getBoundingClientRect().bottom
 
     //update animation
@@ -291,6 +288,10 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
 
     //update camera when changing type
     const setSelectedType = useCallback((newValue: SelectedType) => {
+        if (newValue !== "Both") {
+            lastSelectedType.current = newValue
+        }
+
         const newCameraData = getCameraData().clone()
         newCameraData.transition(newValue === "Fullbody" ? "Avatar" : "AvatarHeadshot")
         setCameraData(newCameraData)
@@ -364,15 +365,16 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
     //update thumbnail customization and camera to match
     const setThumbnailCustomization = useCallback((newCustomization: ThumbnailCustomization) => {
         if (newCustomization.thumbnailType === ThumbnailCustomizationType.AvatarHeadshot) {
-            lastThumbnailCustomization.current = newCustomization
+            lastHeadshotThumbnailCustomization.current = newCustomization
             setHeadshotCustomization(newCustomization)
         } else if (newCustomization.thumbnailType === ThumbnailCustomizationType.Avatar) {
+            lastAvatarThumbnailCustomization.current = newCustomization
             setAvatarCustomization(newCustomization)
         }
 
         const newCameraData = getCameraData().clone()
         newCameraData.distanceScale = newCustomization.distanceScale
-        //newCameraData.thumbnailFov = newCustomization.fieldOfViewDeg
+        newCameraData.thumbnailFov = newCustomization.fieldOfViewDeg
         newCameraData.yRot = newCustomization.yRotDeg
         setCameraData(newCameraData)
         updateAnimation(newCustomization, selectedType)
@@ -461,10 +463,8 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
 
             outfitFunc.setAnimLock(new AnimLock())
             outfitFunc.setAnimName(`idle`, true)
-
-            setIsAdvanced(false)
         }
-    }, [isOpen, outfitFunc, headshotCustomization, updateAnimation, setIsAdvanced, selectedType])
+    }, [isOpen, outfitFunc, headshotCustomization, updateAnimation, selectedType])
 
     //update animation
     useEffect(() => {
@@ -492,7 +492,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             if (!avatarPreview || e.target !== avatarPreview && avatarPreview.querySelector("canvas") !== e.target) return
             if (e.buttons === 1) {
                 e.preventDefault()
-                const thumbnailCustomization = lastThumbnailCustomization.current
+                const thumbnailCustomization = selectedType === "Head" ? lastHeadshotThumbnailCustomization.current : lastAvatarThumbnailCustomization.current
                 const newYRot = thumbnailCustomization.yRotDeg - e.movementX / 2.5
 
                 const newThumbnailCustomization = thumbnailCustomization.clone()
@@ -504,7 +504,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
         function onWheel(e: WheelEvent) {
             if (!avatarPreview || e.target !== avatarPreview && avatarPreview.querySelector("canvas") !== e.target) return
             e.preventDefault()
-            const thumbnailCustomization = lastThumbnailCustomization.current
+            const thumbnailCustomization = selectedType === "Head" ? lastHeadshotThumbnailCustomization.current : lastAvatarThumbnailCustomization.current
             const newDistance = thumbnailCustomization.distanceScale + e.deltaY / 500
 
             const newThumbnailCustomization = thumbnailCustomization.clone()
@@ -519,15 +519,25 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             avatarPreview.removeEventListener("mousemove", onMouseMove)
             avatarPreview.removeEventListener("wheel", onWheel)
         }
-    }, [avatarPreview, setThumbnailCustomization, isOpen])
+    }, [avatarPreview, setThumbnailCustomization, isOpen, selectedType])
 
     return <>
         <div className={`thumbnail-adjustment${isOpen ? " open" : ""}`} style={{top: `${top}px`}}>
             {thumbnailCustomization ? 
                 <>
-                    {!isAdvanced ? 
-                        <SimpleAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} setIsAdvanced={setIsAdvanced} selectedType={selectedType} setSelectedType={setSelectedType}/> :
-                        <AdvancedAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} setIsAdvanced={setIsAdvanced} selectedType={selectedType} setSelectedType={setSelectedType}/>
+                    <div className="choice-button-container">
+                        <RadialButton
+                            className={`roboto-600 choice-button${selectedScreen === "emote" ? " selected":""}`}
+                            onClick={()=>{setSelectedScreen("emote")}}
+                        >Emote</RadialButton>
+                        <RadialButton
+                            className={`roboto-600 choice-button${selectedScreen === "camera" ? " selected":""}`}
+                            onClick={()=>{setSelectedScreen("camera")}}
+                        >Camera</RadialButton>
+                    </div>
+                    {selectedScreen === "emote" ? 
+                        <EmoteAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/> :
+                        <CameraAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
                     }
                 </>
             : null}

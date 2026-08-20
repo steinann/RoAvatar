@@ -2312,3 +2312,31 @@ textarea {
 .animation-picker ul button {
     background-color: var(--body-background);
 }
+
+.choice-button-container {
+    display: flex;
+    justify-content: flex-start;
+    width: 90%;
+    margin: 12px 0px;
+    gap: 0.5em;
+}
+
+.choice-button {
+    height: 2em;
+    font-size: 1.4em;
+    border-style: none;
+    border-radius: 1em;
+    padding: .4em 1.2em;
+    background-color: var(--button-background);
+    color: var(--font-color);
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    text-wrap-mode: nowrap;
+}
+
+.choice-button.selected {
+    color: var(--button-background);
+    background-color: var(--font-color);
+}

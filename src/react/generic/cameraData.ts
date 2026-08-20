@@ -1,4 +1,4 @@
-import { CFrame, deg, RBXRenderer, Event } from "roavatar-renderer"
+import { CFrame, deg, RBXRenderer, Event, lerp } from "roavatar-renderer"
 import type { AdjustType } from "../accessoryAdjustment"
 
 export type CameraDataType = "Editor" | "AvatarHeadshot" | "Avatar"
@@ -9,7 +9,7 @@ export class CameraData {
     previousCF: CFrame = new CFrame()
 
     previousFov: number = 70
-    fov: number = 70 //28.81402587890625
+    editorFov: number = 70 //28.81402587890625
 
     transitionTime: number = 0.25
 
@@ -22,6 +22,26 @@ export class CameraData {
     adjustmentType: AdjustType = "position"
     adjustmentId: bigint = -1n
     adjustmentOpen: boolean = false
+
+    getPassedTransitionTime() {
+        const currentTime = Date.now() / 1000
+        return currentTime - this.transitionStart
+    }
+
+    getNormalizedPassedTransitionTime() {
+        return this.getPassedTransitionTime() / this.transitionTime
+    }
+
+    isTransition() {
+        return this.getPassedTransitionTime() < this.transitionTime
+    }
+
+    get fov() {
+        const normTransitionTime = this.getNormalizedPassedTransitionTime()
+        const targetFov = this.type === "Editor" ? this.editorFov : this.thumbnailFov
+        const fov = this.isTransition() ? lerp(this.previousFov, targetFov, normTransitionTime) : targetFov
+        return fov
+    }
 
     updatePreviousCF() {
         const camera = RBXRenderer.getRendererCamera()
@@ -37,16 +57,11 @@ export class CameraData {
     }
 
     transition(type: CameraDataType) {
+        this.previousFov = this.fov //has to be at the start so it calculates correctly
         this.type = type
         this.canFocus = type === "Editor"
         this.transitionStart = Date.now() / 1000
         this.updatePreviousCF()
-        this.previousFov = this.fov
-        if (type !== "Editor") {
-            this.fov = this.thumbnailFov
-        } else {
-            this.fov = 70
-        }
     }
 
     clone() {
@@ -57,7 +72,7 @@ export class CameraData {
         copy.previousCF = this.previousCF.clone()
 
         copy.previousFov = this.previousFov
-        copy.fov = this.fov
+        copy.editorFov = this.editorFov
 
         copy.transitionTime = this.transitionTime
 

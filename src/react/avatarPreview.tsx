@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, lerp, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3, getCameraCFrameForAvatarCustomized } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3, getCameraCFrameForAvatarCustomized } from 'roavatar-renderer';
 import { CameraData, getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
@@ -33,7 +33,7 @@ function updateAnim(animName: string, currentRig: Instance, auth?: Authenticatio
 
             //main animation
             let successfullyPlayed = animatorW.playAnimation(animName)
-            if (!successfullyPlayed && animName === "pose") successfullyPlayed = animatorW.playAnimation("idle")
+            if (!successfullyPlayed && animName === "pose") successfullyPlayed = animatorW.playAnimation("idle:0")
 
             if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
                 const emoteId = BigInt(animName.split(".")[1])
@@ -581,14 +581,14 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
 
                 //update camera
                 const cameraData = getCameraData()
-                const currentTime = Date.now() / 1000
-                const transitionTime = currentTime - cameraData.transitionStart
-                const isTransition = transitionTime < cameraData.transitionTime
+                const normTransitionTime = cameraData.getNormalizedPassedTransitionTime()
+                const isTransition = cameraData.isTransition()
 
                 let targetCF = new CFrame()
 
                 const controls = RBXRenderer.getRendererControls()
                 if (controls) {
+                    controls.maxDistance = cameraData.type === "Editor" ? 8 : 25 //so camera isnt super far away when transitioning to editor
                     controls.update(0)
                     targetCF = RBXRenderer.getCameraCFrame()
 
@@ -602,14 +602,13 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 }
 
                 if (isTransition) {
-                    const newCF = lerpCFrame(cameraData.previousCF, targetCF, transitionTime / cameraData.transitionTime)
-                    const newFov = lerp(cameraData.previousFov, cameraData.fov, transitionTime / cameraData.transitionTime)
+                    const newCF = lerpCFrame(cameraData.previousCF, targetCF, normTransitionTime)
                     RBXRenderer.setCameraCFrame(newCF)
-                    RBXRenderer.setCameraFov(newFov)
                 } else if (cameraData.type !== "Editor") {
                     RBXRenderer.setCameraCFrame(targetCF)
-                    RBXRenderer.setCameraFov(cameraData.fov)
                 }
+
+                RBXRenderer.setCameraFov(cameraData.fov)
 
                 if (canFocus !== cameraData.canFocus) {
                     setCanFocus(cameraData.canFocus)
