@@ -57,14 +57,18 @@ function CustomizationSlider({name, min, max, normal, property, thumbnailCustomi
         setThumbnailCustomization(newCustom)
     }
 
-    return <div className="thumbnail-customization-slider" style={{opacity: selectedType === "Fullbody" && property === "distanceScale" ? 0.5 : 1}}>
+    return <div className="thumbnail-customization-slider" style={{opacity: selectedType === "Fullbody" && property === "distanceScale" ? 0.3 : 1}}>
         <div className="thumbnail-customization-top">
             <span className="thumbnail-customization-slider-name roboto-600">{name}</span>
             <button className="clear" onClick={()=>{setValue(normal)}}>
                 <Icon>delete</Icon>
             </button>
         </div>
-        <SliderInput value={mapNum(thumbnailCustomization[property], min, max, 0, 1)} setValue={(val) => {
+        <SliderInput value={
+            selectedType === "Fullbody" && property === "distanceScale" ?
+            mapNum(1, min, max, 0, 1) :
+            mapNum(thumbnailCustomization[property], min, max, 0, 1)
+        } setValue={(val) => {
             val = mapNum(val, 0, 1, min, max)
             setValue(val)
         }}/>
@@ -244,7 +248,7 @@ function CameraAdjustment({thumbnailCustomization, setThumbnailCustomization, se
     return <>
         <CustomizationSlider name="Rotation" min={-60} max={60} normal={0} property="yRotDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
         <CustomizationSlider name="Distance" min={0.5} max={2.5} normal={1} property="distanceScale" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
-        <CustomizationSlider name="FOV" min={15} max={45} normal={28.814} property="fieldOfViewDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
+        <CustomizationSlider name="FOV" min={15} max={45} normal={28.751935958862305} property="fieldOfViewDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
         <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
     </>
 }
@@ -292,14 +296,19 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             lastSelectedType.current = newValue
         }
 
+        const newCustomization = newValue === "Fullbody" ? avatarCustomization : headshotCustomization
+
         const newCameraData = getCameraData().clone()
         newCameraData.transition(newValue === "Fullbody" ? "Avatar" : "AvatarHeadshot")
+        newCameraData.thumbnailFov = newCustomization.fieldOfViewDeg
+        newCameraData.yRot = newCustomization.yRotDeg
+        newCameraData.distanceScale = newCustomization.distanceScale
         setCameraData(newCameraData)
 
         updateAnimation(thumbnailCustomization, newValue)
 
         _setSelectedType(newValue)
-    }, [thumbnailCustomization, updateAnimation])
+    }, [avatarCustomization, headshotCustomization, thumbnailCustomization, updateAnimation])
 
     //update animation lock
     useEffect(() => {
@@ -416,17 +425,22 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
         if (initialCustomization && resetCount !== lastResetCount.current) {
             lastResetCount.current = resetCount
             for (const customization of initialCustomization.avatarThumbnailCustomizations) {
-                if (customization.camera.distanceScale >= 0) {
-                    const newCustomization = new ThumbnailCustomization(customization.thumbnailType)
-                    newCustomization.distanceScale = customization.camera.distanceScale
-                    newCustomization.emoteAssetId = customization.emoteAssetId
-                    newCustomization.fieldOfViewDeg = customization.camera.fieldOfViewDeg
-                    newCustomization.yRotDeg = customization.camera.yRotDeg
+                if (
+                    customization.thumbnailType === ThumbnailCustomizationType.Avatar && selectedType === "Fullbody" ||
+                    customization.thumbnailType === ThumbnailCustomizationType.AvatarHeadshot && selectedType === "Head"
+                ) {
+                    if (customization.camera.distanceScale >= 0) {
+                        const newCustomization = new ThumbnailCustomization(customization.thumbnailType)
+                        newCustomization.distanceScale = customization.camera.distanceScale
+                        newCustomization.emoteAssetId = customization.emoteAssetId
+                        newCustomization.fieldOfViewDeg = customization.camera.fieldOfViewDeg
+                        newCustomization.yRotDeg = customization.camera.yRotDeg
 
-                    setThumbnailCustomization(newCustomization)
-                    updateAnimation(newCustomization, selectedType)
-                } else {
-                    setThumbnailCustomization(customization.thumbnailType === ThumbnailCustomizationType.AvatarHeadshot ? headshotCustomization : avatarCustomization)
+                        setThumbnailCustomization(newCustomization)
+                        updateAnimation(newCustomization, selectedType)
+                    } else {
+                        setThumbnailCustomization(new ThumbnailCustomization(customization.thumbnailType))
+                    }
                 }
             }
         }
