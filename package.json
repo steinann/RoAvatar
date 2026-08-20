@@ -15,8 +15,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-tooltip": "^5.30.0",
-    "roavatar-renderer": "^1.5.19",
-    "three": "^0.180.0",
+    "roavatar-renderer": "^1.6.2",
+    "three": "^0.185.1",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
@@ -27,7 +27,7 @@
     "@types/node": "^24.9.1",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
-    "@types/three": "^0.180.0",
+    "@types/three": "^0.185.3",
     "@vitejs/plugin-react": "^5.0.4",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
     "eslint": "^9.36.0",
