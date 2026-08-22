@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, Outfit, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
+import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, OutfitModel, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
 import ReviewReminder from './react/reviewReminder.tsx'
 
@@ -87,9 +87,9 @@ RBXRenderer.fullSetup(true, true, true).then(() => {
     RBXRenderer.setupControls(extraScene)
 
     //get avatar data for the user with id 1
-    API.Avatar.GetAvatarDetails(126448532).then((outfit) => {
+    API.Avatar.GetUserAvatarModel(126448532).then((outfit) => {
       console.log(outfit)
-      if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
+      if (!(outfit instanceof OutfitModel)) throw new Error("Failed to get outfit")
 
     //create renderer for outfit
         //used by api
@@ -103,16 +103,16 @@ RBXRenderer.fullSetup(true, true, true).then(() => {
           console.log("updating 1")
           outfitRenderer.setMainAnimation("idle")
           const outfitWithJacket = outfit.clone()
-          outfitWithJacket.removeAssetType("JacketAccessory")
-          outfitWithJacket.addAsset(76294859738495, "JacketAccessory", "The Stalker Thriller Jacket | Violence district")
+          outfitWithJacket.outfit.removeAssetType("JacketAccessory")
+          outfitWithJacket.outfit.addAsset(76294859738495, "JacketAccessory", "The Stalker Thriller Jacket | Violence district")
           outfitRenderer.setMainAnimation("idle")
-          outfitRenderer.setOutfit(outfitWithJacket)
+          outfitRenderer.setOutfitModel(outfitWithJacket)
           setTimeout(() => {
             console.log("updating 2")
             const outfitWithEmote = outfit.clone()
-            outfitWithEmote.addAsset(97887354709121, "EmoteAnimation", "Light-Yagami-Kira-Laugh-anime-Evil-Laugh")
+            outfitWithEmote.outfit.addAsset(97887354709121, "EmoteAnimation", "Light-Yagami-Kira-Laugh-anime-Evil-Laugh")
             outfitRenderer.setMainAnimation("emote.97887354709121")
-            outfitRenderer.setOutfit(outfitWithEmote)
+            outfitRenderer.setOutfitModel(outfitWithEmote)
           },1000)
         },2000)
     })

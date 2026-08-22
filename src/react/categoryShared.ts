@@ -152,9 +152,9 @@ export const defaultOnClick = (item: ItemInfo, outfitModel: OutfitModel, setOutf
             }
         })
     } else if (item.itemType === "Avatar") {
-        API.Avatar.GetAvatarDetails(Number(item.id)).then((result) => {
+        API.Avatar.GetUserAvatarModel(Number(item.id)).then((result) => {
             if (!(result instanceof Response)) {
-                setOutfit(result)
+                setOutfitModel(result)
             }
         })
     } else if (item.itemType === "Look") {

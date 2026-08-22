@@ -43,6 +43,10 @@ export class CameraData {
         return fov
     }
 
+    get rotateBackground() {
+        return this.type !== "Editor"
+    }
+
     updatePreviousCF() {
         const camera = RBXRenderer.getRendererCamera()
         const camPos = camera.position

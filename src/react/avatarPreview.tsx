@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3, getCameraCFrameForAvatarCustomized } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3, getCameraCFrameForAvatarCustomized, type Vec3 } from 'roavatar-renderer';
 import { CameraData, getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
@@ -322,6 +322,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [backgroundId, setBackgroundId] = useState<number | undefined>(undefined)
     const [backgroundData, setBackgroundData] = useState<Instance | undefined>(undefined)
     const [backgroundSwitchTime, setBackgroundSwitchTime] = useState<number>(0)
+    const originalCycloramaPartCFrames = useRef<Map<Instance,CFrame>>(new Map())
 
     latestAnimName = animName
 
@@ -425,6 +426,14 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 if (rbx instanceof RBX) {
                     const root = rbx.generateTree()
                     const newCyclorama = root.GetChildren()[0]
+
+                    for (const child of newCyclorama.GetChildren()) {
+                        if (child.IsA("BasePart")) {
+                            const childCF = child.Prop("CFrame") as CFrame
+                            originalCycloramaPartCFrames.current.set(child, childCF)
+                        }
+                    }
+
                     setCyclorama(newCyclorama)
                 }
             })
@@ -496,6 +505,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
 
         animationInterval = setInterval(() => {
             //update camera position
+            const cameraData = getCameraData()
             if (cameraLocked && currentRig) {
                 const upperTorso = currentRig.FindFirstChild("HumanoidRootPart")
                 if (upperTorso) {
@@ -512,35 +522,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                         controls.update()
                     }
                 }
-            }
-
-            //render cyclorama
-            if (cyclorama && auth) {
-                const cameraDirTransparency = specialClamp((dot(RBXRenderer.getCameraCFrame().lookVector(), [0,0,-1]) + 0.5) * 2, 0, 1)
-                const transitionTransparency = specialClamp(Date.now() / 1000 - backgroundSwitchTime, 0, 0)
-                const targetTransparency = Math.max(cameraDirTransparency, transitionTransparency)
-
-                cyclorama.Child("color_mesh")!.setProperty("Transparency", targetTransparency)
-                cyclorama.Child("texture_mesh")!.setProperty("Transparency", Math.max(0.05, targetTransparency))
-
-                if (backgroundData) {
-                    const colorValue = backgroundData.Child("Color")
-                    const imageIdValue = backgroundData.Child("ImageId")
-
-                    if (colorValue && imageIdValue) {
-                        const color = colorValue.Prop("Value") as Color3
-                        const imageId = imageIdValue.Prop("Value") as number
-
-                        cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
-                        cyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
-                    }
-                } else {
-                    cyclorama.Child("color_mesh")!.setProperty("Transparency", 1)
-                    cyclorama.Child("texture_mesh")!.setProperty("Transparency", 1)
-                }
-
-                cyclorama.preRender()
-                RBXRenderer.addInstance(cyclorama, auth)
             }
 
             //update animation and instance renderables
@@ -580,7 +561,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 }
 
                 //update camera
-                const cameraData = getCameraData()
                 const normTransitionTime = cameraData.getNormalizedPassedTransitionTime()
                 const isTransition = cameraData.isTransition()
 
@@ -618,6 +598,52 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 if (isPfp !== newIsPfp) {
                     setIsPfp(newIsPfp)
                 }
+            }
+
+             //render cyclorama
+            if (cyclorama && auth) {
+                const cameraDirTransparency = specialClamp((dot(RBXRenderer.getCameraCFrame().lookVector(), [0,0,-1]) + 0.5) * 2, 0, 1)
+                const transitionTransparency = specialClamp(Date.now() / 1000 - backgroundSwitchTime, 0, 0)
+                const targetTransparency = cameraData.rotateBackground ? 0 : Math.max(cameraDirTransparency, transitionTransparency)
+
+                cyclorama.Child("color_mesh")!.setProperty("Transparency", targetTransparency)
+                cyclorama.Child("texture_mesh")!.setProperty("Transparency", Math.max(0.05, targetTransparency))
+
+                if (backgroundData) {
+                    const colorValue = backgroundData.Child("Color")
+                    const imageIdValue = backgroundData.Child("ImageId")
+
+                    if (colorValue && imageIdValue) {
+                        const color = colorValue.Prop("Value") as Color3
+                        const imageId = imageIdValue.Prop("Value") as number
+
+                        cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
+                        cyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
+                    }
+                } else {
+                    cyclorama.Child("color_mesh")!.setProperty("Transparency", 1)
+                    cyclorama.Child("texture_mesh")!.setProperty("Transparency", 1)
+                }
+
+                const cameraCF = RBXRenderer.getCameraCFrame()
+                const cameraLook = cameraData.rotateBackground ? cameraCF.lookVector() : [0,0,1] as Vec3
+                cameraLook[0] = -cameraLook[0]
+                cameraLook[1] = 0
+                cameraLook[2] = -cameraLook[2]
+                const cameraAngle = CFrame.lookAt([0,0,0], cameraLook)
+                
+                for (const child of cyclorama.GetChildren()) {
+                    if (child.IsA("BasePart")) {
+                        const ogChildCF = originalCycloramaPartCFrames.current.get(child)
+                        if (ogChildCF) {
+                            const newChildCF = cameraAngle.multiply(ogChildCF)
+                            child.setProperty("CFrame", newChildCF)
+                        }
+                    }
+                }
+
+                cyclorama.preRender()
+                RBXRenderer.addInstance(cyclorama, auth)
             }
 
             //add extra details
