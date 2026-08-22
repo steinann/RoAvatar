@@ -495,6 +495,9 @@ function App() {
                             for (const asset of newOutfit.assets) {
                               if (asset.id === id && asset.assetType.name === "EmoteAnimation") {
                                 setCurrentAnimName(`emote.${id}`)
+                              } else if (asset.id === id && asset.assetType.name === "AvatarBackground") {
+                                outfitModel.background = asset
+                                setOutfitModel(outfitModel)
                               }
                             }
                           } else {
