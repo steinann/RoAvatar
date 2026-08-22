@@ -25,6 +25,7 @@ import { Tooltip } from 'react-tooltip'
 import PluginButton from './react/pluginButton'
 import RecoveryOutfit from './react/recoveryOutfit'
 import AnimationPicker from './react/animationPicker'
+import DiscordButton from './react/discordButton'
 
 declare const browser: typeof chrome;
 
@@ -579,6 +580,7 @@ function App() {
                   <TryInGameButton/>
                   <InfoButton/>
                   <PluginButton/>
+                  <DiscordButton/>
                 </div>
               </div>
 
