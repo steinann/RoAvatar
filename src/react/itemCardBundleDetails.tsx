@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import Icon from "./generic/icon";
-import { API, ItemInfo, Outfit, type Vec2 } from "roavatar-renderer";
+import { API, ItemInfo, Outfit, OutfitModel, type Vec2 } from "roavatar-renderer";
 import NothingLoaded from "./nothingLoaded";
 import ItemCard from "./itemCard";
 import { AuthContext } from "./context/auth-context";
@@ -47,16 +47,23 @@ export default function ItemCardBundleDetails({ref, itemInfo, animName}: {ref: R
         }
     })
 
-    function addOutfitAssets(outfit: Outfit | Response) {
-        if (outfit instanceof Response) {
+    function addOutfitAssets(outfitModel: Outfit | OutfitModel | Response) {
+        if (outfitModel instanceof Response) {
             setFailedToLoad(true)
             return
         }
+
+        const outfit = outfitModel instanceof Outfit ? outfitModel : outfitModel.outfit
 
         const totalAssets: ItemInfo[] = []
         for (const asset of outfit.assets) {
             const assetItemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
             totalAssets.push(assetItemInfo)
+        }
+        if (outfitModel instanceof OutfitModel) {
+            if (outfitModel.background) {
+                totalAssets.push(new ItemInfo("Asset", outfitModel.background.assetType.name, outfitModel.background.id, outfitModel.background.name))
+            }
         }
         if (totalAssets.length === 0) {
             //setFailedToLoad(true)
@@ -78,7 +85,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, animName}: {ref: R
 
                     for (const bundledItem of result.bundledItems) {
                         if (bundledItem.type === "UserOutfit") {
-                            API.Avatar.GetOutfitDetails(bundledItem.id, result.creatorTargetId).then((outfit) => {
+                            API.Avatar.GetOutfitModel(bundledItem.id, result.creatorTargetId).then((outfit) => {
                                 addOutfitAssets(outfit)
                             })
                             break
@@ -87,7 +94,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, animName}: {ref: R
                 })
                 break
             case "Outfit":
-                API.Avatar.GetOutfitDetails(itemInfo.id, -1).then((outfit) => {
+                API.Avatar.GetOutfitModel(itemInfo.id, -1).then((outfit) => {
                     addOutfitAssets(outfit)
                 })
                 break
@@ -108,7 +115,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, animName}: {ref: R
                 })
                 break
             case "Avatar":
-                API.Avatar.GetAvatarDetails(Number(itemInfo.id)).then((outfit) => {
+                API.Avatar.GetUserAvatarModel(Number(itemInfo.id)).then((outfit) => {
                     addOutfitAssets(outfit)
                 })
                 break
@@ -121,7 +128,7 @@ export default function ItemCardBundleDetails({ref, itemInfo, animName}: {ref: R
                         }
 
                         const localOutfit = localOutfits[Number(itemInfo.id)]
-                        localOutfit.toOutfit(auth).then((outfit) => {
+                        localOutfit.toOutfitModel(auth).then((outfit) => {
                             addOutfitAssets(outfit)
                         })
                     })
