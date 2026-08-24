@@ -1744,6 +1744,7 @@ form {
     background-color: gray;
     border-radius: 10000px;
     cursor: pointer;
+    padding: 4px;
 }
 
 .toggle-button.active {
@@ -1751,7 +1752,7 @@ form {
 }
 
 .toggle-button div {
-    width: 48%;
+    width: 50%;
     aspect-ratio: 1;
     background-color: white;
     border-radius: 100%;

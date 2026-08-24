@@ -179,7 +179,7 @@ export default function SearchFilter({categorySource, minPrice, setMinPrice, max
                     <ToggleButton value={limitedOnly} setValue={setLimitedOnly}/>
                 </Filter>
                 <Filter name={"Creator"}>
-                    <div className="dialog-text-input filter-text-div">
+                    <div className="dialog-text-input filter-text-div" style={{minWidth: "10.6em"}}>
                         <form onSubmit={(e) => {
                             e.preventDefault()
                             updateCreator()
