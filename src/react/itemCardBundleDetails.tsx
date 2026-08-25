@@ -91,6 +91,18 @@ export default function ItemCardBundleDetails({ref, itemInfo, animName}: {ref: R
                             break
                         }
                     }
+
+                    //if no UserOutfit found
+                    if (!result.bundledItems.find((v) => {return v.type === "UserOutfit"})) {
+                        const fakeOutfit = new Outfit()
+                        fakeOutfit.addBundleId(Number(itemInfo.id)).then((success) => {
+                            if (success) {
+                                addOutfitAssets(fakeOutfit)
+                            } else {
+                                setFailedToLoad(true)
+                            }
+                        })
+                    }
                 })
                 break
             case "Outfit":

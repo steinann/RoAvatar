@@ -147,6 +147,19 @@ export const defaultOnClick = (item: ItemInfo, outfitModel: OutfitModel, setOutf
                         break
                     }
                 }
+
+                //if no UserOutfit
+                if (!result.bundledItems.find((v) => {return v.type === "UserOutfit"})) {
+                    const newOutfit = outfit.clone()
+
+                    const promises = []
+                    for (const item of result.bundledItems) {
+                        if (item.type !== "Asset") continue
+                        const promise = auth ? newOutfit.addAssetId(item.id, auth) : newOutfit.addAssetIdEconomy(item.id)
+                        promises.push(promise)
+                    }
+                    Promise.all(promises).then(() => {setOutfit(newOutfit)})
+                }
             } else {
                 console.warn("Failed to get bundleDetails", result)
             }
