@@ -568,7 +568,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
 
                 const controls = RBXRenderer.getRendererControls()
                 if (controls) {
-                    controls.maxDistance = cameraData.type === "Editor" ? 8 : 25 //so camera isnt super far away when transitioning to editor
+                    controls.maxDistance = cameraData.type === "Editor" && !cameraData.isTransition() ? 25 : 8 //so camera isnt super far away when transitioning to editor
                     controls.update(0)
                     targetCF = RBXRenderer.getCameraCFrame()
 
