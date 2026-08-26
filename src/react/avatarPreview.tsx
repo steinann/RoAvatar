@@ -154,7 +154,7 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
                         } else {
                             failedLastDescription = true
                             //TODO: show error!
-                            setError("Failed to apply HumanoidDescription")
+                            setError("Failed to apply HumanoidDescription (caused by deleted items, bad internet, not logged in)")
                             currentlyUpdatingPreview = false
                         }
                     })
