@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import AccessoryList from "./accessoryList";
 import { AuthContext } from "./context/auth-context";
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
@@ -17,6 +17,27 @@ function AdjustInput({asset, axis, type, allAxis = false}: {asset: Asset, axis: 
     const outfit = useContext(OutfitContext)
     const outfitFunc = useContext(OutfitFuncContext)
     
+    const [proposedValue, setProposedValue] = useState<string | undefined>(undefined)
+
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    //remove proposed value on unfocus
+    useEffect(() => {
+        const input = inputRef.current
+        if (!input) return
+
+        function focusoutEvent() {
+            setProposedValue(undefined)
+        }
+
+        input.addEventListener("focusout", focusoutEvent)
+
+        return () => {
+            input.removeEventListener("focusout", focusoutEvent)
+        }
+    })
+
+    //calculate raw value
     let rawValue = 0
     if (type === "scale") {
         rawValue = 1
@@ -36,9 +57,17 @@ function AdjustInput({asset, axis, type, allAxis = false}: {asset: Asset, axis: 
     const lv = axis === "y" || type !== "position" ? 0 : 1
     const uv = axis === "y" || type !== "position" ? 1 : 0
 
-    return <SliderInput value={
-        mapNum(rawValue, lowerBound, upperBound, lv, uv)
-    } setValue={(value: number, mouseUp: boolean) => {
+    let calculatedValueToShow = Math.round(mapNum(rawValue, lowerBound, upperBound, lv, uv) * 100)
+    if (type === "scale") calculatedValueToShow = Math.round(mapNum(calculatedValueToShow, 0, 100, lowerBound*100, upperBound*100))
+
+    const valueToShow = proposedValue !== undefined ? proposedValue : calculatedValueToShow
+
+    const updateValue = useCallback((value: number, mouseUp: boolean) => {
+        if (type !== "scale") {
+            value = Math.round(value*100)/100
+        } else {
+            value = mapNum(Math.round(mapNum(value, 0, 1, lowerBound*100, upperBound*100)), lowerBound*100, upperBound*100, 0, 1)
+        }
         const newOutfit = outfit.clone()
         let newAsset = undefined
         for (const outfitAsset of newOutfit.assets) {
@@ -71,7 +100,44 @@ function AdjustInput({asset, axis, type, allAxis = false}: {asset: Asset, axis: 
         } else {
             outfitFunc._setOutfit(newOutfit)
         }
-    }}/>
+    }, [allAxis, asset.id, axis, lowerBound, lv, outfit, outfitFunc, type, upperBound, uv])
+
+    return <div>
+        <SliderInput value={
+            mapNum(rawValue, lowerBound, upperBound, lv, uv)
+        } setValue={updateValue}/>
+        <div className="adjustment-bar-right">
+            <input ref={inputRef} className="roboto-600"
+                value={valueToShow}
+                onChange={(e) => {
+                    const input = inputRef.current
+                    if (input) {
+                        //get value as only numbers
+                        let strNum = e.target.value.match(/\d+/g)?.toString()
+                        if (!strNum) strNum = ""
+                        
+                        if (strNum.length <= 3) {
+                            const proposedValue = strNum
+
+                            let proposedValueNum = proposedValue.length > 0 ? Number(proposedValue) : 0
+                            if (type === "scale") proposedValueNum = Math.round(mapNum(proposedValueNum, lowerBound*100, upperBound*100, 0, 100))
+
+                            if (proposedValueNum >= 0 && proposedValueNum <= 100) { //if valid
+                                //update outfit
+                                updateValue(proposedValueNum / 100, true)
+
+                                setProposedValue(undefined)
+                            } else { //not valid
+                                //update proposal
+                                setProposedValue(proposedValue)
+                            }
+                        }
+                    }
+                }}
+            />
+            <span className="roboto-600">%</span>
+        </div>
+    </div>
 }
 
 export function AccessoryAdjustment({isOpen, adjustType}: {isOpen: boolean, adjustType: AdjustType}): React.JSX.Element {

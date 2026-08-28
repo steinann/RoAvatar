@@ -1256,6 +1256,38 @@ dialog::backdrop {
     width: 18px;
 }
 
+.adjustment-bar > div {
+    display: flex;
+    flex-direction: row;
+    width:  100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adjustment-bar > div > .slider-input {
+    width: calc(92% - 3em);
+}
+
+.adjustment-bar-right {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.adjustment-bar-right > input {
+    width: 2em;
+    text-align: right;
+    background: transparent;
+    color: var(--font-color);
+    border: none;
+}
+
+.adjustment-bar-right > span {
+    background: transparent;
+    color: var(--font-color);
+}
+
 .adjustment-top {
     display: flex;
     flex-direction: row;
