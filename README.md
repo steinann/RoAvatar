@@ -36,6 +36,7 @@ You can also build the newest version yourself OR get the latest stable version 
 
 ## Links
 Discord: https://discord.gg/PHa5Vgtbva
+Website: https://roavatar.net
 
 ## Renderer
 The renderer that this extension uses now has a standalone github repository and npm package:
