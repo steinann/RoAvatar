@@ -15,7 +15,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-tooltip": "^5.30.0",
-    "roavatar-renderer": "^1.6.3",
+    "roavatar-renderer": "^1.6.5",
     "three": "^0.185.1",
     "vite-tsconfig-paths": "^5.1.4"
   },
