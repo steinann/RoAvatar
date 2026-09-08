@@ -24,6 +24,11 @@
             "js": ["inject.js"],
             "matches": ["https://*.roblox.com/roavatar*", "https://*.roblox.com/*/roavatar*"],
             "run_at": "document_start"
+        },
+        {
+            "js": ["react/index.js"],
+            "matches": ["https://*.roblox.com/*"],
+            "run_at": "document_start"
         }
     ],
     "web_accessible_resources": [

@@ -1,17 +1,19 @@
 import * as THREE from 'three';
-import { useCallback, useContext, useEffect, useRef, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, dot, specialClamp, Color3, getCameraCFrameForAvatarCustomized, type Vec3 } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, getCameraCFrameForAvatarCustomized, BackgroundRenderer, OutfitModel } from 'roavatar-renderer';
 import { CameraData, getCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
 import { getRotationLines, getPositionLines, getScaleLines } from './generic/adjustmentGeometry';
+import { ROAVATAR_API } from './generic/roavatar-api';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
 let currentRig: Instance | undefined = undefined
-let lastOutfit: Outfit | undefined = undefined
+let backgroundRenderer: BackgroundRenderer | undefined = undefined
+let lastOutfitModel: OutfitModel | undefined = undefined
 
 let lastFrameTime = Date.now() / 1000
 
@@ -94,9 +96,14 @@ function setRigTo(animName: string, newRigType: AvatarType, auth: Authentication
 
 let currentlyUpdatingPreview = false
 let failedLastDescription = false
-function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication, setError: (a: string | undefined) => void) {
+function updatePreview(currentAnim: string, outfitModel: OutfitModel, auth: Authentication, setError: (a: string | undefined) => void) {
     if (!currentlyUpdatingPreview) {
         currentlyUpdatingPreview = true
+
+        if (!backgroundRenderer) {
+            backgroundRenderer = new BackgroundRenderer(auth)
+        }
+        backgroundRenderer.setBackground(outfitModel.background?.id)
 
         if (FLAGS.LOAD_TEST_PLACE) {
             API.Asset.GetRBX(FLAGS.LOAD_TEST_PLACE).then((result) => {
@@ -115,7 +122,7 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
         }
 
         //update rig
-        const newRigType: AvatarType = outfit.playerAvatarType
+        const newRigType: AvatarType = outfitModel.outfit.playerAvatarType
 
         const promises: Promise<undefined>[] = []
         if (newRigType !== currentRigType || !currentRig) {
@@ -126,7 +133,7 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
             //get humanoid description
             const hrp = new Instance("HumanoidDescription")
             const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
-            hrpWrapper.fromOutfit(outfit)
+            hrpWrapper.fromOutfit(outfitModel.outfit)
             
             if (currentRig) {
                 const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
@@ -147,8 +154,8 @@ function updatePreview(currentAnim: string, outfit: Outfit, auth: Authentication
                         if (result instanceof Instance) {
                             failedLastDescription = false
                             currentlyUpdatingPreview = false
-                            if (outfit !== lastOutfit && lastOutfit) {
-                                updatePreview(currentAnim, lastOutfit, auth, setError)
+                            if (outfitModel !== lastOutfitModel && lastOutfitModel) {
+                                updatePreview(currentAnim, lastOutfitModel, auth, setError)
                             }
                             setError(undefined)
                         } else {
@@ -317,13 +324,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const [canFocus, setCanFocus] = useState<boolean>(true)
     const [isPfp, setIsPfp] = useState<boolean>(false)
 
-    const loadingCyclorama = useRef(false)
-    const [cyclorama, setCyclorama] = useState<Instance | undefined>(undefined)
-    const [backgroundId, setBackgroundId] = useState<number | undefined>(undefined)
-    const [backgroundData, setBackgroundData] = useState<Instance | undefined>(undefined)
-    const [backgroundSwitchTime, setBackgroundSwitchTime] = useState<number>(0)
-    const originalCycloramaPartCFrames = useRef<Map<Instance,CFrame>>(new Map())
-
     latestAnimName = animName
 
     function setError(error: string | undefined) {
@@ -381,72 +381,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         }
     })
 
-    //load background data and update cyclorama
-    useEffect(() => {
-        let shouldLoad = true
-
-        if (cyclorama && auth) {
-            const newBackgroundId = outfitFunc.outfitModel.background?.id
-            if (newBackgroundId !== backgroundId) {
-                if (newBackgroundId) {
-                    API.Asset.GetRBX("rbxassetid://" + newBackgroundId).then((rbx) => {
-                        if (!shouldLoad) return
-
-                        if (rbx instanceof RBX) {
-                            const root = rbx.generateTree()
-                            const folder = root.GetChildren()[0]
-
-                            setBackgroundId(newBackgroundId)
-                            setBackgroundData(folder)
-                            setBackgroundSwitchTime(Date.now() / 1000)
-                        } else {
-                            setBackgroundId(undefined)
-                            setBackgroundSwitchTime(Date.now() / 1000)
-                            setBackgroundData(undefined)
-                        }
-                    })
-                } else {
-                    setBackgroundId(undefined)
-                    setBackgroundSwitchTime(Date.now() / 1000)
-                    setBackgroundData(undefined)
-                }
-            }
-        }
-
-        return () => {
-            shouldLoad = false
-        }
-    }, [cyclorama, auth, setBackgroundId, setBackgroundSwitchTime, setBackgroundData, backgroundId, outfitFunc.outfitModel.background?.id])
-
-    //load the initial cyclorama
-    useEffect(() => {
-        if (!cyclorama && !loadingCyclorama.current) {
-            loadingCyclorama.current = true
-            API.Asset.GetRBX("roavatar://AvatarCyclorama.rbxm").then((rbx) => {
-                if (rbx instanceof RBX) {
-                    const root = rbx.generateTree()
-                    const newCyclorama = root.GetChildren()[0]
-
-                    for (const child of newCyclorama.GetChildren()) {
-                        if (child.IsA("BasePart")) {
-                            const childCF = child.Prop("CFrame") as CFrame
-                            originalCycloramaPartCFrames.current.set(child, childCF)
-                        }
-                    }
-
-                    setCyclorama(newCyclorama)
-                }
-            })
-
-            if (RBXRenderer.plane) {
-                RBXRenderer.plane.position.set(0,-0.01,0)
-            }
-            if (RBXRenderer.shadowPlane) {
-                RBXRenderer.shadowPlane.position.set(0,-0.01,0)
-            }
-        }
-    }, [cyclorama])
-
     //load the initial avatar
     useEffect(() => {
         if (auth) {
@@ -454,6 +388,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 const urlParams = new URLSearchParams(window.location.search)
                 const base64Json = urlParams.get("base64")
                 const buffer = urlParams.get("buffer")
+                const apiId = urlParams.get("api")
+                const userId = urlParams.get("userId")
 
                 if (buffer) {
                     console.log("buffer", buffer)
@@ -465,7 +401,17 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     })
                 }
 
-                if (base64Json && !buffer) {
+                if (apiId && !buffer) {
+                    ROAVATAR_API.avatars.getAvatar(apiId).then((outfit) => {
+                        if (outfit instanceof Outfit) {
+                            outfit.creatorId = Number(userId)
+                            setOutfit(outfit)
+                            hasLoadedAvatar = true
+                        }
+                    })
+                }
+
+                if (base64Json && !buffer && !apiId) {
                     const jsonData = atob(base64Json)
                     const outfit = new Outfit()
                     outfit.fromJson(JSON.parse(jsonData))
@@ -473,7 +419,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     hasLoadedAvatar = true
                 }
 
-                if (!base64Json && !buffer) {
+                if (!base64Json && !buffer && !apiId) {
                     API.Avatar.GetAvatarModel().then(result => {
                         if (!(result instanceof Response)) {
                             outfitFunc.setOutfitModel(result)
@@ -484,8 +430,8 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     setSaveAlwaysOn(true)
                 }
             } else {
-                lastOutfit = outfit
-                updatePreview(animName, outfit, auth, setError)
+                lastOutfitModel = outfitFunc.outfitModel
+                updatePreview(animName, outfitFunc.outfitModel, auth, setError)
             }
         }
     }, [auth, outfit, setOutfit, outfitFunc, setSaveAlwaysOn, animName])
@@ -503,7 +449,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             clearInterval(animationInterval)
         }
 
-        animationInterval = setInterval(() => {
+        animationInterval = window.setInterval(() => {
             //update camera position
             const cameraData = getCameraData()
             if (cameraLocked && currentRig) {
@@ -600,50 +546,11 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 }
             }
 
-             //render cyclorama
-            if (cyclorama && auth) {
-                const cameraDirTransparency = specialClamp((dot(RBXRenderer.getCameraCFrame().lookVector(), [0,0,-1]) + 0.5) * 2, 0, 1)
-                const transitionTransparency = specialClamp(Date.now() / 1000 - backgroundSwitchTime, 0, 0)
-                const targetTransparency = cameraData.rotateBackground ? 0 : Math.max(cameraDirTransparency, transitionTransparency)
-
-                cyclorama.Child("color_mesh")!.setProperty("Transparency", targetTransparency)
-                cyclorama.Child("texture_mesh")!.setProperty("Transparency", Math.max(0.05, targetTransparency))
-
-                if (backgroundData) {
-                    const colorValue = backgroundData.Child("Color")
-                    const imageIdValue = backgroundData.Child("ImageId")
-
-                    if (colorValue && imageIdValue) {
-                        const color = colorValue.Prop("Value") as Color3
-                        const imageId = imageIdValue.Prop("Value") as number
-
-                        cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
-                        cyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
-                    }
-                } else {
-                    cyclorama.Child("color_mesh")!.setProperty("Transparency", 1)
-                    cyclorama.Child("texture_mesh")!.setProperty("Transparency", 1)
-                }
-
-                const cameraCF = RBXRenderer.getCameraCFrame()
-                const cameraLook = cameraData.rotateBackground ? cameraCF.lookVector() : [0,0,1] as Vec3
-                cameraLook[0] = -cameraLook[0]
-                cameraLook[1] = 0
-                cameraLook[2] = -cameraLook[2]
-                const cameraAngle = CFrame.lookAt([0,0,0], cameraLook)
-                
-                for (const child of cyclorama.GetChildren()) {
-                    if (child.IsA("BasePart")) {
-                        const ogChildCF = originalCycloramaPartCFrames.current.get(child)
-                        if (ogChildCF) {
-                            const newChildCF = cameraAngle.multiply(ogChildCF)
-                            child.setProperty("CFrame", newChildCF)
-                        }
-                    }
-                }
-
-                cyclorama.preRender()
-                RBXRenderer.addInstance(cyclorama, auth)
+            //render background
+            if (backgroundRenderer) {
+                backgroundRenderer.cameraAffectsRotation = cameraData.rotateBackground
+                backgroundRenderer.cameraAffectsTransparency = !cameraData.rotateBackground
+                backgroundRenderer.animateOnce()
             }
 
             //add extra details
@@ -676,7 +583,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 animationInterval = undefined
             }
         }
-    }, [auth, cameraLocked, animLock, canFocus, setCanFocus, isPfp, setIsPfp, cyclorama, backgroundData, backgroundSwitchTime])
+    }, [auth, cameraLocked, animLock, canFocus, setCanFocus, isPfp, setIsPfp])
 
     useEffect(() => {
         document.body.addEventListener("mousemove", updateMousePos)

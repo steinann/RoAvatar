@@ -1,5 +1,6 @@
+import JSZip from 'jszip'
 import './index.css'
-import { Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, OutfitModel, OutfitRenderer, RBXRenderer, saveByteArray } from 'roavatar-renderer'
+import { API, Authentication, awaitTimeout, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, OutfitModel, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 
 //declare const browser: typeof chrome;
 
@@ -69,6 +70,15 @@ function fastHash(str: string) {
   return hash >>> 0
 }
 
+type QueuedBufferDownload = {
+  name: string,
+  data: ArrayBuffer,
+}
+
+const queuedBufferDownloads: QueuedBufferDownload[] = [
+
+]
+
 let totalCount = 0
 //setup flags that are compatible with you environment
     FLAGS.FETCH_FUNC = (input: URL | RequestInfo, init?: RequestInit) => {
@@ -77,8 +87,12 @@ let totalCount = 0
           result.arrayBuffer().then((buffer) => {
             totalCount += 1
             const base64Str = fastHash(input.toString())
-            console.log("Saved asset", input.toString(), "as",base64Str, totalCount)
-            setTimeout(() => {saveByteArray([buffer], base64Str + ".buffer")}, totalCount * 500)
+            console.log("Saving asset", input.toString(), "as",base64Str, totalCount)
+            queuedBufferDownloads.push({
+              name: base64Str + ".buffer",
+              data: buffer
+            })
+            //setTimeout(() => {saveByteArray([buffer], base64Str + ".buffer")}, totalCount * 500)
             resolve(new Response(buffer, {status: result.status, headers: result.headers, statusText: result.statusText}))
           })
         })
@@ -90,8 +104,12 @@ let totalCount = 0
           result.arrayBuffer().then((buffer) => {
             totalCount += 1
             const base64Str = fastHash(url.toString())
-            console.log("Saved asset", url.toString(), "as",base64Str, totalCount)
-            setTimeout(() => {saveByteArray([buffer], base64Str + ".buffer")}, totalCount * 500)
+            console.log("Saving asset", url.toString(), "as",base64Str, totalCount)
+            queuedBufferDownloads.push({
+              name: base64Str + ".buffer",
+              data: buffer
+            })
+            //setTimeout(() => {saveByteArray([buffer], base64Str + ".buffer")}, totalCount * 500)
             resolve(url)
           })
         })
@@ -123,12 +141,68 @@ let totalCount = 0
     //add renderer to document
     document.body.appendChild(RBXRenderer.getRendererElement())
 
+const baseItemLinks = [
+  "https://www.roblox.com/catalog/658832408/Ninja-Idle",
+]
+
+const addedItemLinks = [
+  "https://www.roblox.com/bundles/311/Robloxian-2-0",
+  "https://www.roblox.com/catalog/5509426582/Shirt-5509426582 is Shirt",
+  "https://www.roblox.com/catalog/233615637/Beautiful-Blonde-Hair-for-Beautiful-People",
+  "https://www.roblox.com/catalog/151314918/Raeglyns-Winged-Blindfold-of-Justice",
+  "https://www.roblox.com/catalog/104077820810525/white",
+  "https://www.roblox.com/catalog/192557913/Sparkling-Angel-Wings"
+]
+
+const auth = new Authentication()
+
+function idFromLink(link: string) {
+  const id = Number(link.split("/")[4])
+  return id
+}
+
+async function addItemLink(outfitModel: OutfitModel, link: string): Promise<boolean> {
+  const id = idFromLink(link)
+
+  if (link.includes("catalog/")) {
+    if (link.includes(" is ")) {
+      const assetType = link.split(" is ")[1]
+      outfitModel.outfit.addAsset(id, assetType, "")
+      return true
+    }
+    return outfitModel.outfit.addAssetId(id, auth)
+  } else {
+    return outfitModel.outfit.addBundleId(id, auth)
+  }
+}
+
+const loadedThumbnails = new Map<string,string>()
+
+async function addThumbnailFromLink(itemLink: string) {
+  const result = await awaitTimeout(API.Thumbnails.GetThumbnail(auth, itemLink.includes("catalog/") ? "Asset" : "BundleThumbnail", idFromLink(itemLink), "420x420"))
+  if (result && !(result instanceof Response)) {
+    loadedThumbnails.set(itemLink, result)
+
+    const response = await fetch(result)
+    const data = await response.arrayBuffer()
+
+    console.log("Got thumbnail for", itemLink)
+
+    queuedBufferDownloads.push({
+      "name": (itemLink.includes("catalog/") ? "Asset" : "Bundle") + idFromLink(itemLink) + ".webp",
+      data,
+    })
+  } else {
+    console.error("Failed to get thumbnail for", itemLink, result)
+  }
+}
+
 //get avatar data for the user with id 1
 const outfitModel = new OutfitModel()
 
 //create renderer for outfit
     //used by api
-    const auth = new Authentication()
+    
 
     const outfitRenderer = new OutfitRenderer(auth, outfitModel)
     outfitRenderer.startAnimating()
@@ -138,6 +212,14 @@ const outfitModel = new OutfitModel()
       const newOutfitModel = outfitModel.clone()
       const promises = []
 
+      for (const itemlink of baseItemLinks) {
+        promises.push(addItemLink(newOutfitModel, itemlink))
+      }
+      for (const itemLink of addedItemLinks) {
+        promises.push(addItemLink(newOutfitModel, itemLink))
+        promises.push(addThumbnailFromLink(itemLink))
+      }
+      /*
       promises.push(newOutfitModel.outfit.addBundleId(311))
       promises.push(newOutfitModel.outfit.addAssetId(192557913, auth))
       promises.push(newOutfitModel.outfit.addAssetId(9399980877, auth))
@@ -145,9 +227,61 @@ const outfitModel = new OutfitModel()
       promises.push(newOutfitModel.outfit.addBundleId(949))
       promises.push(newOutfitModel.outfit.addAssetId(131592085, auth))
       promises.push(outfitRenderer.setOutfitModel(newOutfitModel))
+      */
 
       Promise.all(promises).then(() => {
+        const itemList = []
+
+        for (const itemLink of addedItemLinks) {
+          const id = idFromLink(itemLink)
+
+          if (itemLink.includes("catalog/")) {
+            for (const asset of newOutfitModel.outfit.assets) {
+              if (asset.id === id) {
+                itemList.push({
+                  id,
+                  type: "Asset",
+                  assetType: asset.assetType.name,
+                })
+              }
+            }
+          } else {
+            itemList.push({
+              id,
+              type: "Bundle"
+            })
+          }
+        }
+
+        console.log(itemList)
+        console.log(JSON.stringify(itemList))
+
         outfitRenderer.setOutfitModel(newOutfitModel)
+        outfitRenderer.setMainAnimation("emote.3576686446")
       })
-    }, 3000)
+    }, 3000);
   
+function saveBlob(blob: Blob, name: string) {
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.setAttribute("style","display: none;")
+
+    const url = globalThis.URL.createObjectURL(blob);
+    a.href = url;
+    a.download = name;
+    a.click();
+    globalThis.URL.revokeObjectURL(url);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).downloadAll = () => {
+  const zip = new JSZip()
+
+  for (const bufferDownload of queuedBufferDownloads) {
+    zip.file(bufferDownload.name, bufferDownload.data)
+  }
+
+  zip.generateAsync({type: "blob"}).then((content) => {
+    saveBlob(content, "allAssets.zip")
+  })
+}

@@ -67,9 +67,14 @@ export default function SettingsButton(): React.JSX.Element {
             
             {/*Actual settings*/}
             <div className="dialog-line"></div>
+            <SettingsToggle text={"High graphics (requires refresh)"} storage="s-postprocessing" defaultValue={true}/>
+            <div className="dialog-line"></div>
+            <SettingsToggle text={"Save avatar automatically"} storage="s-autosave" defaultValue={false}/>
             <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={true}/>
-            <SettingsToggle text={"Save automatically"} storage="s-autosave" defaultValue={false}/>
-            <SettingsToggle text={"Show last unsaved outfit on opening editor"} storage="s-recovery-outfit" defaultValue={true}/>
+            <SettingsToggle text={"Show last unsaved outfit when editor is opened"} storage="s-recovery-outfit" defaultValue={true}/>
+            <div className="dialog-line"></div>
+            <SettingsToggle text={"Show avatar history on profiles (API)"} storage="s-avatar-history" defaultValue={true}/>
+            <SettingsToggle text={"Show avatars made with item in marketplace (API)"} storage="s-avatars-made-with" defaultValue={true}/>
         </dialog>
     </>
 }

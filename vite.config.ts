@@ -10,6 +10,23 @@ const fallbackPath = path.resolve(__dirname, "node_modules/roavatar-renderer/dis
 
 const chosenPath = fs.existsSync(primaryPath) ? primaryPath : fallbackPath
 
+//used to bundle draco with index.js
+function rawPrependPlugin() {
+  return {
+    name: 'raw-prepend-plugin',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    generateBundle(_options: any, bundle: any) {
+      const targetFile = 'react/index.js'
+      
+      if (bundle[targetFile]) {
+        const rawPrependCode = fs.readFileSync(chosenPath, 'utf8');
+        bundle[targetFile].code = rawPrependCode + '\n\n' + bundle[targetFile].code
+      }
+    },
+  };
+}
+
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -26,11 +43,14 @@ export default defineConfig({
           dest: ""
         }
       ]
-    })
+    }),
+    rawPrependPlugin()
   ],
   build: {
+    cssCodeSplit: false,
     rollupOptions: {
       output: {
+        format: "iife",
         entryFileNames: "react/[name].js",
         chunkFileNames: "react/[name].js",
         assetFileNames: "react/[name].css"

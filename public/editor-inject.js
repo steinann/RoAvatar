@@ -19,10 +19,8 @@ var observer = new MutationObserver(function (mutations) {
 
             avatarEditorHeader.insertBefore(aElement, catalogHeader)
             avatarEditorHeader.style.position = "relative";
-            console.log (chrome || browser);
 
             (chrome || browser).storage.local.get(["hasSeenTip"]).then((result) => {
-                console.log(result)
                 const hasSeen = result["hasSeenTip"]
                 
                 if (!hasSeen) {

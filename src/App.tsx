@@ -26,6 +26,7 @@ import PluginButton from './react/pluginButton'
 import RecoveryOutfit from './react/recoveryOutfit'
 import AnimationPicker from './react/animationPicker'
 import DiscordButton from './react/discordButton'
+import { ROAVATAR_API } from './react/generic/roavatar-api'
 
 declare const browser: typeof chrome;
 
@@ -85,7 +86,7 @@ function App() {
     setAlertIsSuccess(!!isSuccess)
 
     clearTimeout(lastAlertTimeout)
-    lastAlertTimeout = setTimeout(() => {
+    lastAlertTimeout = window.setTimeout(() => {
       setAlertEnabled(false)
       lastAlertTimeout = undefined
     }, duration)
@@ -573,7 +574,7 @@ function App() {
                 {/*extra buttons*/}
                 <div className='main-left-top'>
                   <SettingsButton/>
-                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can make the old avatar editor the default in settings"} setActive={(shouldActive: boolean) => {
+                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can change settings here, such as enabling autosave or lower graphics"} setActive={(shouldActive: boolean) => {
                     (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
                       setShowDefaultEditorTip(shouldActive);
                     })
@@ -639,6 +640,7 @@ declare global {
         createLook: typeof API.Looks.CreateLook;
         exportScene: typeof RBXRenderer.exportScene;
         RBXRenderer: typeof RBXRenderer;
+        ROAVATAR_API: typeof ROAVATAR_API;
     }
 }
 
@@ -646,6 +648,7 @@ window.arrayBufferToBase64 = arrayBufferToBase64
 window.base64ToArrayBuffer = base64ToArrayBuffer
 window.exportScene = RBXRenderer.exportScene
 window.RBXRenderer = RBXRenderer
+window.ROAVATAR_API = ROAVATAR_API
 
 export default App
 

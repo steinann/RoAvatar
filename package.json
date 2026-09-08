@@ -11,11 +11,13 @@
   },
   "dependencies": {
     "fzstd": "^0.1.1",
+    "javascript-time-ago": "^2.6.4",
+    "jszip": "^3.10.1",
     "mathjs": "^15.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-tooltip": "^5.30.0",
-    "roavatar-renderer": "^1.6.5",
+    "roavatar-renderer": "^1.7.0",
     "three": "^0.185.1",
     "vite-tsconfig-paths": "^5.1.4"
   },

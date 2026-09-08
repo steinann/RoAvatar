@@ -21,11 +21,31 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
 
     useEffect(() => {
         getSetting("s-autosave", autosave).then((value) => {
+            const urlParams = new URLSearchParams(window.location.search)
+            const base64Json = urlParams.get("base64")
+            const buffer = urlParams.get("buffer")
+            const apiId = urlParams.get("api")
+
+            if (base64Json || buffer || apiId) {
+                setAutosave(false)
+                return
+            }
+
             setAutosave(value as boolean)
         })
 
         const connection = OnSettingChange.Connect((storage, value) => {
             if (storage as string === "s-autosave") {
+                const urlParams = new URLSearchParams(window.location.search)
+                const base64Json = urlParams.get("base64")
+                const buffer = urlParams.get("buffer")
+                const apiId = urlParams.get("api")
+
+                if (base64Json || buffer || apiId) {
+                    setAutosave(false)
+                    return
+                }
+
                 setAutosave(value as boolean)
             }
         })
@@ -68,7 +88,7 @@ export default function SaveButton({forceOn, historyIndex, historyLength}: {forc
 
     //autosave logic
     useEffect(() => {
-        if (auth && buttonEnabled && autosave && historyIndex >= 0) {
+        if (auth && buttonEnabled && autosave && historyIndex >= 1) {
             API.Avatar.UpdateAvatarModel(auth, outfitFunc.outfitModel, ["UpdateBackground"]).then(result => {
                 console.log(result)
             })

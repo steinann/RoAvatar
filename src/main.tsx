@@ -5,187 +5,199 @@ import App from './App.tsx'
 import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, OutfitModel, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
 import ReviewReminder from './react/reviewReminder.tsx'
+import { initWebsite } from './website/init.ts'
+import { getSetting } from './react/generic/settings.ts'
 
 //declare const browser: typeof chrome;
+if (window.location.href.startsWith("chrome-extension")) {
+  const initEditor = async () => {
+    const darkTheme = document.getElementById("style-dark-theme")
+    const lightTheme = document.getElementById("style-light-theme")
 
-const darkTheme = document.getElementById("style-dark-theme")
-const lightTheme = document.getElementById("style-light-theme")
+    const urlParams = new URLSearchParams(window.location.search)
+    const theme = urlParams.get("theme")
+    const bodyBackgroundBase64 = urlParams.get("body")
 
-const urlParams = new URLSearchParams(window.location.search)
-const theme = urlParams.get("theme")
-const bodyBackgroundBase64 = urlParams.get("body")
+    if (bodyBackgroundBase64) {
+      const bodyBackground = atob(bodyBackgroundBase64)
+      document.body.style.backgroundColor = bodyBackground
+    }
 
-if (bodyBackgroundBase64) {
-  const bodyBackground = atob(bodyBackgroundBase64)
-  document.body.style.backgroundColor = bodyBackground
-}
+    if (theme === "light") {
+      darkTheme?.remove()
+    } else if (theme === "dark") {
+      lightTheme?.remove()
+    }
 
-if (theme === "light") {
-  darkTheme?.remove()
-} else if (theme === "dark") {
-  lightTheme?.remove()
-}
+    /*FLAGS.FETCH_FUNC = (input: URL | RequestInfo, init?: RequestInit) => {
+      console.log("sending fetch to background")
+      const result = (chrome || browser).runtime.sendMessage({
+        type: "fetch",
+        args: [input, init],
+      })
+      console.log(result)
+      return result
+    }*/
 
-/*FLAGS.FETCH_FUNC = (input: URL | RequestInfo, init?: RequestInit) => {
-  console.log("sending fetch to background")
-  const result = (chrome || browser).runtime.sendMessage({
-    type: "fetch",
-    args: [input, init],
-  })
-  console.log(result)
-  return result
-}*/
+    //most of these lines are just setting the flags to the default, theyre just theyre so i remember the flags exist
+    FLAGS.UPDATE_SKELETON = true
+    FLAGS.ANIMATE_SKELETON = true
+    FLAGS.SHOW_SKELETON_HELPER = false
+    FLAGS.SKELETON_HELPER_INSTANCE_NAME = "Handle"
+    FLAGS.USE_LOCAL_SKELETONDESC = false
+    FLAGS.ENABLE_API_MESH_CACHE = true
+    FLAGS.ENABLE_API_RBX_CACHE = false
+    FLAGS.HIDE_LAYERED_CLOTHING = false
+    FLAGS.HSR_SHOW_RAY = false
+    FLAGS.ENABLE_HSR = true
+    FLAGS.CACHE_HSR_HITS = true
+    FLAGS.ONLINE_ASSETS = false
+    FLAGS.USE_WORKERS = true
+    FLAGS.VERBOSE_LOGGING = false
+    FLAGS.USE_ASSEMBLY = true
+    FLAGS.LAYERED_CLOTHING_COOLDOWN = 0.25
 
-//most of these lines are just setting the flags to the default, theyre just theyre so i remember the flags exist
-FLAGS.UPDATE_SKELETON = true
-FLAGS.ANIMATE_SKELETON = true
-FLAGS.SHOW_SKELETON_HELPER = false
-FLAGS.SKELETON_HELPER_INSTANCE_NAME = "Handle"
-FLAGS.USE_LOCAL_SKELETONDESC = false
-FLAGS.ENABLE_API_MESH_CACHE = true
-FLAGS.ENABLE_API_RBX_CACHE = false
-FLAGS.HIDE_LAYERED_CLOTHING = false
-FLAGS.HSR_SHOW_RAY = false
-FLAGS.ENABLE_HSR = true
-FLAGS.CACHE_HSR_HITS = true
-FLAGS.ONLINE_ASSETS = false
-FLAGS.USE_WORKERS = true
-FLAGS.VERBOSE_LOGGING = false
-FLAGS.USE_ASSEMBLY = true
-FLAGS.LAYERED_CLOTHING_COOLDOWN = 0.25
-FLAGS.USE_POST_PROCESSING = false
-//FLAGS.API_REQUEST_RETRY = false
-//FLAGS.LOAD_TEST_PLACE = "rbxassetid://118593852151835"
-//FLAGS.SEARCH_FOR_STRING = "profilebackground"
-exposeAPI()
-exposeMesh()
-exposeFLAGS()
-exposeThumbnailGenerator()
-//FLAGS.SHOW_CAGE = true
-//FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
-//FLAGS.SEARCH_FOR_STRING = "shape"
+    const postprocessingEnabled = await getSetting("s-postprocessing", true) as boolean
+    FLAGS.USE_POST_PROCESSING = postprocessingEnabled
+    FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = postprocessingEnabled
+    //FLAGS.API_REQUEST_RETRY = false
+    //FLAGS.LOAD_TEST_PLACE = "rbxassetid://118593852151835"
+    //FLAGS.SEARCH_FOR_STRING = "profilebackground"
+    exposeAPI()
+    exposeMesh()
+    exposeFLAGS()
+    exposeThumbnailGenerator()
+    //FLAGS.SHOW_CAGE = true
+    //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
+    //FLAGS.SEARCH_FOR_STRING = "shape"
 
 
-RBXRenderer.fullSetup(true, true, true).then(() => {
-  if (theme === "light") {
-    RBXRenderer.wellLitDirectionalLightIntensity *= 2.25
-    RBXRenderer.setBackgroundColor(0xdbdbdc)
-  }
+    RBXRenderer.fullSetup(true, true, true).then(() => {
+      RBXRenderer.wellLitDirectionalLightIntensity *= 2.25
+      if (theme === "light") {
+        RBXRenderer.setBackgroundColor(0xdbdbdc)
+      }
 
-  if (CONFIG.MULTI_VIEWPORT) {
-    RBXRenderer.getRendererElement().style.position = "fixed"
-    RBXRenderer.getRendererElement().style.left = "0px"
-    RBXRenderer.getRendererElement().style.top = "0px"
-  }
+      if (CONFIG.MULTI_VIEWPORT) {
+        RBXRenderer.getRendererElement().style.position = "fixed"
+        RBXRenderer.getRendererElement().style.left = "0px"
+        RBXRenderer.getRendererElement().style.top = "0px"
+      }
 
-  if (CONFIG.MULTI_VIEWPORT) {
-    const extraScene = RBXRenderer.addScene()
-    extraScene.viewport = [400, 400, 200, 200]
-    extraScene.scissor = extraScene.viewport
+      if (CONFIG.MULTI_VIEWPORT) {
+        const extraScene = RBXRenderer.addScene()
+        RBXRenderer._createEffectComposer(extraScene)
+        extraScene.viewport = [400, 400, 200, 200]
+        extraScene.scissor = extraScene.viewport
 
-    RBXRenderer.setupScene("WellLit", RBXRenderer.backgroundColorHex, extraScene)
-    RBXRenderer.setupControls(extraScene)
+        RBXRenderer.setupScene("WellLit", RBXRenderer.backgroundColorHex, extraScene)
+        RBXRenderer.setupControls(extraScene)
+
+        //get avatar data for the user with id 1
+        API.Avatar.GetUserAvatarModel(126448532).then((outfit) => {
+          console.log(outfit)
+          if (!(outfit instanceof OutfitModel)) throw new Error("Failed to get outfit")
+
+        //create renderer for outfit
+            //used by api
+            const auth = new Authentication()
+            //manages outfit rendering for you
+            const outfitRenderer = new OutfitRenderer(auth, outfit, extraScene)
+            outfitRenderer.startAnimating()
+            outfitRenderer.setMainAnimation("idle")
+
+            setTimeout(() => {
+              console.log("updating 1")
+              outfitRenderer.setMainAnimation("idle")
+              const outfitWithJacket = outfit.clone()
+              outfitWithJacket.outfit.removeAssetType("JacketAccessory")
+              outfitWithJacket.outfit.addAsset(76294859738495, "JacketAccessory", "The Stalker Thriller Jacket | Violence district")
+              outfitRenderer.setMainAnimation("idle")
+              outfitRenderer.setOutfitModel(outfitWithJacket)
+              setTimeout(() => {
+                console.log("updating 2")
+                const outfitWithEmote = outfit.clone()
+                outfitWithEmote.outfit.addAsset(97887354709121, "EmoteAnimation", "Light-Yagami-Kira-Laugh-anime-Evil-Laugh")
+                outfitRenderer.setMainAnimation("emote.97887354709121")
+                outfitRenderer.setOutfitModel(outfitWithEmote)
+              },1000)
+            },2000)
+        })
+      }
+
+      RBXRenderer.getRendererElement().style.zIndex = "-1"
+
+      createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+          <App />
+          <ReviewReminder/>
+        </StrictMode>,
+      )
+    })
+
+    /*
+    //setup flags that are compatible with you environment
+        FLAGS.FETCH_FUNC = undefined //undefined is the default fetch() function, this flag can be used to intercept requests
+        FLAGS.ONLINE_ASSETS = true //set true to false if you want assets to be loaded locally
+
+        //if we arent using online assets we have to provide the renderer with the paths
+        if (!FLAGS.ONLINE_ASSETS) {
+            //path to asset files from RoAvatar
+            FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
+            FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
+        }
+        //if layered assets dont work set this to false (workers improve performance)
+        FLAGS.USE_WORKERS = true
+
+    //setup RBXRenderer
+        //actually creating renderer
+        const includeScene = true
+        const includeControls = true
+        const success = await RBXRenderer.fullSetup(includeScene, includeControls)
+        if (!success) {
+            //roavatar-renderer automatically displays an error, but your own behavior can be included here (like a fallback)
+        }
+        //renderer customization
+        RBXRenderer.setBackgroundColor( 0xbbbbbb )
+        RBXRenderer.setRendererSize(1000,500)
+        RBXRenderer.setBackgroundTransparent(false)
+        //add renderer to document
+        document.body.appendChild(RBXRenderer.getRendererElement())
 
     //get avatar data for the user with id 1
-    API.Avatar.GetUserAvatarModel(126448532).then((outfit) => {
-      console.log(outfit)
-      if (!(outfit instanceof OutfitModel)) throw new Error("Failed to get outfit")
+    const outfit = await API.Avatar.GetAvatarDetails(126448532)
+    if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
 
     //create renderer for outfit
         //used by api
         const auth = new Authentication()
-        //manages outfit rendering for you
-        const outfitRenderer = new OutfitRenderer(auth, outfit, extraScene)
-        outfitRenderer.startAnimating()
-        outfitRenderer.setMainAnimation("idle")
 
-        setTimeout(() => {
-          console.log("updating 1")
-          outfitRenderer.setMainAnimation("idle")
-          const outfitWithJacket = outfit.clone()
-          outfitWithJacket.outfit.removeAssetType("JacketAccessory")
-          outfitWithJacket.outfit.addAsset(76294859738495, "JacketAccessory", "The Stalker Thriller Jacket | Violence district")
-          outfitRenderer.setMainAnimation("idle")
-          outfitRenderer.setOutfitModel(outfitWithJacket)
-          setTimeout(() => {
-            console.log("updating 2")
-            const outfitWithEmote = outfit.clone()
-            outfitWithEmote.outfit.addAsset(97887354709121, "EmoteAnimation", "Light-Yagami-Kira-Laugh-anime-Evil-Laugh")
-            outfitRenderer.setMainAnimation("emote.97887354709121")
-            outfitRenderer.setOutfitModel(outfitWithEmote)
-          },1000)
-        },2000)
-    })
+        const renderScene = RBXRenderer.addScene()
+        setupThumbnailScene(renderScene)
+
+        const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
+        await outfitRenderer.prepareForThumbnail()
+
+        //finalize
+        if (outfitRenderer.currentRig) {
+          //update camera positioning
+          const cameraCFrame = getThumbnailCameraCFrame(outfitRenderer.currentRig, renderScene.camera.fov)
+          if (cameraCFrame) {
+              RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
+          }
+
+          //click
+          imageThumbnailClick(renderScene, 420, 420, "png").then((result) => {
+            console.log(result)
+          })
+        }
+
+        //cleanup
+        outfitRenderer.destroy()
+        renderScene.destroy()
+      */
   }
-
-  RBXRenderer.getRendererElement().style.zIndex = "-1"
-
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-      <ReviewReminder/>
-    </StrictMode>,
-  )
-})
-
-/*
-//setup flags that are compatible with you environment
-    FLAGS.FETCH_FUNC = undefined //undefined is the default fetch() function, this flag can be used to intercept requests
-    FLAGS.ONLINE_ASSETS = true //set true to false if you want assets to be loaded locally
-
-    //if we arent using online assets we have to provide the renderer with the paths
-    if (!FLAGS.ONLINE_ASSETS) {
-        //path to asset files from RoAvatar
-        FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
-        FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
-    }
-    //if layered assets dont work set this to false (workers improve performance)
-    FLAGS.USE_WORKERS = true
-
-//setup RBXRenderer
-    //actually creating renderer
-    const includeScene = true
-    const includeControls = true
-    const success = await RBXRenderer.fullSetup(includeScene, includeControls)
-    if (!success) {
-        //roavatar-renderer automatically displays an error, but your own behavior can be included here (like a fallback)
-    }
-    //renderer customization
-    RBXRenderer.setBackgroundColor( 0xbbbbbb )
-    RBXRenderer.setRendererSize(1000,500)
-    RBXRenderer.setBackgroundTransparent(false)
-    //add renderer to document
-    document.body.appendChild(RBXRenderer.getRendererElement())
-
-//get avatar data for the user with id 1
-const outfit = await API.Avatar.GetAvatarDetails(126448532)
-if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
-
-//create renderer for outfit
-    //used by api
-    const auth = new Authentication()
-
-    const renderScene = RBXRenderer.addScene()
-    setupThumbnailScene(renderScene)
-
-    const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
-    await outfitRenderer.prepareForThumbnail()
-
-    //finalize
-    if (outfitRenderer.currentRig) {
-      //update camera positioning
-      const cameraCFrame = getThumbnailCameraCFrame(outfitRenderer.currentRig, renderScene.camera.fov)
-      if (cameraCFrame) {
-          RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
-      }
-
-      //click
-      imageThumbnailClick(renderScene, 420, 420, "png").then((result) => {
-        console.log(result)
-      })
-    }
-
-    //cleanup
-    outfitRenderer.destroy()
-    renderScene.destroy()
-  */
+  initEditor()
+} else if (!window.location.href.includes("/roavatar")) {
+  initWebsite()
+}
