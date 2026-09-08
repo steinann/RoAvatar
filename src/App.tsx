@@ -440,8 +440,8 @@ function App() {
 
   //get storage
   useEffect(() => {
-    (chrome || browser).storage.local.get("hasSeenSettingsTip").then((result) => {
-      if (!result["hasSeenSettingsTip"]) {
+    (chrome || browser).storage.local.get("hasSeenSettingsTip2").then((result) => {
+      if (!result["hasSeenSettingsTip2"]) {
         setShowDefaultEditorTip(true)
       }
     })
@@ -574,8 +574,8 @@ function App() {
                 {/*extra buttons*/}
                 <div className='main-left-top'>
                   <SettingsButton/>
-                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can change settings here, such as enabling autosave or lower graphics"} setActive={(shouldActive: boolean) => {
-                    (chrome || browser).storage.local.set({"hasSeenSettingsTip": !shouldActive}).then(() => {
+                  <Tip className="settings-tip" active={showDefaultEditorTip} text={"You can change settings here, such as enabling autosave or higher graphics"} setActive={(shouldActive: boolean) => {
+                    (chrome || browser).storage.local.set({"hasSeenSettingsTip2": !shouldActive}).then(() => {
                       setShowDefaultEditorTip(shouldActive);
                     })
                   }}/>

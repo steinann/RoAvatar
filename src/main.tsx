@@ -57,7 +57,7 @@ if (window.location.href.startsWith("chrome-extension")) {
     FLAGS.USE_ASSEMBLY = true
     FLAGS.LAYERED_CLOTHING_COOLDOWN = 0.25
 
-    const postprocessingEnabled = await getSetting("s-postprocessing", true) as boolean
+    const postprocessingEnabled = await getSetting("s-postprocessing", false) as boolean
     FLAGS.USE_POST_PROCESSING = postprocessingEnabled
     FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = postprocessingEnabled
     //FLAGS.API_REQUEST_RETRY = false

@@ -67,7 +67,7 @@ export default function SettingsButton(): React.JSX.Element {
             
             {/*Actual settings*/}
             <div className="dialog-line"></div>
-            <SettingsToggle text={"High graphics (requires refresh)"} storage="s-postprocessing" defaultValue={true}/>
+            <SettingsToggle text={"High graphics (requires refresh)"} storage="s-postprocessing" defaultValue={false}/>
             <div className="dialog-line"></div>
             <SettingsToggle text={"Save avatar automatically"} storage="s-autosave" defaultValue={false}/>
             <SettingsToggle text={"Make RoAvatar default avatar editor"} storage="s-default" defaultValue={true}/>
