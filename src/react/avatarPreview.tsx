@@ -560,9 +560,13 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
             const container = document.getElementById("avatar-preview")
             if (container) {
                 if (!CONFIG.MULTI_VIEWPORT) {
-                    RBXRenderer.setRendererSize(container.clientWidth, container.clientHeight)
+                    if (RBXRenderer.resolution[0] !== container.clientWidth || RBXRenderer.resolution[1] !== container.clientHeight) {
+                        RBXRenderer.setRendererSize(container.clientWidth, container.clientHeight)
+                    }
                 } else {
-                    RBXRenderer.setRendererSize(document.body.clientWidth, document.body.clientHeight)
+                    if (RBXRenderer.resolution[0] !== document.body.clientWidth || RBXRenderer.resolution[1] !== document.body.clientHeight) {
+                        RBXRenderer.setRendererSize(document.body.clientWidth, document.body.clientHeight)
+                    }
 
                     const bounds = container.getBoundingClientRect()
                     RBXRenderer.firstScene.viewport = [bounds.left, document.body.clientHeight - bounds.bottom, container.clientWidth, container.clientHeight]
