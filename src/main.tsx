@@ -60,6 +60,7 @@ if (window.location.href.startsWith("chrome-extension")) {
     const postprocessingEnabled = await getSetting("s-postprocessing", false) as boolean
     FLAGS.USE_POST_PROCESSING = postprocessingEnabled
     FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = postprocessingEnabled
+
     //FLAGS.API_REQUEST_RETRY = false
     //FLAGS.LOAD_TEST_PLACE = "rbxassetid://118593852151835"
     //FLAGS.SEARCH_FOR_STRING = "profilebackground"
@@ -74,6 +75,9 @@ if (window.location.href.startsWith("chrome-extension")) {
 
     RBXRenderer.fullSetup(true, true, true).then(() => {
       RBXRenderer.wellLitDirectionalLightIntensity *= 2.25
+      if (!postprocessingEnabled) {
+        if (RBXRenderer.directionalLight2) RBXRenderer.directionalLight2.visible = false
+      }
       if (theme === "light") {
         RBXRenderer.setBackgroundColor(0xdbdbdc)
       }

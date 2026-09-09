@@ -8,6 +8,7 @@ import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
 import { getRotationLines, getPositionLines, getScaleLines } from './generic/adjustmentGeometry';
 import { ROAVATAR_API } from './generic/roavatar-api';
+import { getSetting } from './generic/settings';
 
 let hasLoadedAvatar = false
 let currentRigType = AvatarType.R15
@@ -102,6 +103,10 @@ function updatePreview(currentAnim: string, outfitModel: OutfitModel, auth: Auth
 
         if (!backgroundRenderer) {
             backgroundRenderer = new BackgroundRenderer(auth)
+            backgroundRenderer.affectSceneLighting = false
+            getSetting("s-postprocessing", false).then((enabled) => {
+                if (backgroundRenderer) backgroundRenderer.affectSceneLighting = enabled as boolean
+            })
         }
         backgroundRenderer.setBackground(outfitModel.background?.id)
 
