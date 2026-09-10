@@ -12,8 +12,9 @@ export default function AnimationPicker(): React.JSX.Element  {
 
     const isR6 = outfitFunc.outfitModel.outfit.playerAvatarType === AvatarType.R6
     const alternatives = isR6 ? 
-        ["Idle", "Walk", "Fall", "Jump", "Climb"] : 
-        ["Idle", "Walk", "Run", "Fall", "Jump", "Swim", "Climb"]
+        ["Idle", "Walk", "Jump", "Fall", "Climb"] : 
+        ["Idle", "Walk", "Run", "Jump", "Fall", "Swim", "Climb"]
+    alternatives.reverse() //i dont like the most important ones being at the top
     const fixedAnimName = capitalizeFirstLetter(outfitFunc.animName)
 
     return <SelectInput
