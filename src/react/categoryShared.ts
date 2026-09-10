@@ -1,4 +1,4 @@
-import { API, Asset, Authentication, CatalogBundleTypes, DefaultAnimations, Outfit, OutfitModel, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
+import { API, Asset, Authentication, CatalogBundleTypes, cleanString, DefaultAnimations, Outfit, OutfitModel, ToRemoveBeforeBundleType, WearableAssetTypes, type AnimationProp, type ItemInfo } from "roavatar-renderer";
 
 export const defaultOnClick = (item: ItemInfo, outfitModel: OutfitModel, setOutfitModel: (a: OutfitModel) => void, setAnimName: (a: string) => void, animName: string, auth?: Authentication) => {
     const outfit = outfitModel.outfit
@@ -184,4 +184,18 @@ export const defaultOnClick = (item: ItemInfo, outfitModel: OutfitModel, setOutf
             }
         })
     }
+}
+
+export function getItemURL(itemInfo: ItemInfo): string | undefined {
+    let url = undefined
+    const cleanName = cleanString(itemInfo.name)
+    if (itemInfo.itemType === "Asset") {
+        url = `https://www.roblox.com/catalog/${itemInfo.id}/${cleanName}`
+    } else if (itemInfo.itemType === "Bundle")  {
+        url = `https://www.roblox.com/bundles/${itemInfo.id}/${cleanName}`
+    } else if (itemInfo.itemType === "Look") {
+        url = `https://www.roblox.com/looks/${itemInfo.id}/${cleanName}`
+    }
+
+    return url
 }

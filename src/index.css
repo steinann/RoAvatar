@@ -198,7 +198,7 @@ body {
 
     opacity: 100%;
     transition-duration: .1s;
-    transition-property: opacity;
+    transition-property: opacity, border-color, background-color;
     cursor: pointer;
 
     display: flex;
@@ -670,6 +670,7 @@ body {
     display: flex;
     flex-direction: row;
     overflow-x: auto;
+    gap: 3px;
 }
 
 .worn-list-item .item-image {
@@ -679,7 +680,6 @@ body {
 .worn-list-item {
     width: 60px;
     height: 60px;
-    margin-right: 3px;
 }
 
 @media screen and (max-height: 700px) {
@@ -692,9 +692,17 @@ body {
     .worn-list-item {
         height: 100%;
         aspect-ratio: 1;
-        margin-right: 3px;
         width: auto;
     }
+}
+
+.worn-item-vertical-line {
+    width: 1px;
+    height: 60px;
+    background-color: var(--item-background);
+    display: block;
+    flex-shrink: 0;
+    margin: 0 2px;
 }
 
 .scale-category {
@@ -1769,6 +1777,14 @@ form {
     transform: unset;
 }
 
+.left-top-button-inactive {
+    opacity: 0.5;
+    background-color: transparent !important;
+    border-style: dashed;
+    border-color: var(--item-background) !important;
+    cursor: unset;
+}
+
 .toggle-button {
     width: 5em;
     aspect-ratio: 2 / 1;
@@ -2373,3 +2389,22 @@ textarea {
     color: var(--button-background);
     background-color: var(--font-color);
 }
+
+.buy-items-list {
+    height: calc(150px + 3rem);
+    width: 50vw;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+}
+
+.buy-items-list > .item {
+    height: calc(130px + 3rem);
+    width: 130px;
+    margin-right: 5px;
+}
+
+.buy-items-list > .item > .item-image {
+    width: 130px;
+}
+

@@ -27,6 +27,7 @@ import RecoveryOutfit from './react/recoveryOutfit'
 import AnimationPicker from './react/animationPicker'
 import DiscordButton from './react/discordButton'
 import { ROAVATAR_API } from './react/generic/roavatar-api'
+import BuyItemsButton from './react/buyItems'
 
 declare const browser: typeof chrome;
 
@@ -270,6 +271,12 @@ function App() {
         return API.Looks.CreateLook(newAuth, window.outfit, "Test", "Test")
       }
     }
+
+    API.Users.GetUserInfo().then((userInfo) => {
+      if (!userInfo) {
+        alert("You are not logged in", 3000, false, false)
+      }
+    })
 
     //create outfit
     if (!outfit) {
@@ -545,13 +552,14 @@ function App() {
                 {/*save and undo*/}
                 <div className="save-and-history">
                   <SaveButton forceOn={saveAlwaysOn} historyIndex={historyIndex} historyLength={outfitModelHistory.length}/>
+                  <BuyItemsButton/>
                   <UndoRedo undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}/>
                 </div>
 
                 {/*worn items list*/}
                 <div className='worn-items dark-scrollbar'>
                   {outfitModel.background ? 
-                    <ItemCard key={outfitModel.background._uuid} auth={auth} className='worn-list-item' isWorn={false} forceIsWorn={true} showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", "AvatarBackground", outfitModel.background.id, outfitModel.background.name)} onClick={() => {
+                    <ItemCard key={outfitModel.background._uuid} auth={auth} className='worn-list-item' isWorn={false} showIfUnowned={true} forceIsWorn={true} showViewButton={true} includeName={false} itemInfo={new ItemInfo("Asset", "AvatarBackground", outfitModel.background.id, outfitModel.background.name)} onClick={() => {
                       const newOutfitModel = outfitModel.clone()
                       newOutfitModel.background = undefined
                       setOutfitModel(newOutfitModel)
@@ -560,12 +568,13 @@ function App() {
                   {outfit.assets.map(asset => {
                     const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
                     itemInfo.headShape = asset.meta?.headShape
-                    return <ItemCard key={itemInfo.headShape ? asset._uuid + itemInfo.headShape : asset._uuid} auth={auth} className='worn-list-item' showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
+                    return <ItemCard key={itemInfo.headShape ? asset._uuid + itemInfo.headShape : asset._uuid} auth={auth} className='worn-list-item' showIfUnowned={true} showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
                       const newOutfit = outfit.clone()
                       newOutfit.removeAsset(asset.id)
                       setOutfit(newOutfit)
                     }}/>
                   })}
+                  {outfit.assets.length > 0 ? <div className='worn-item-vertical-line'></div> : null}
                   <ItemCard auth={auth} forceImage='../assets/newnewoutfit.png' imageAffectedByTheme={true} className='worn-list-item' buttonClassName='item-template-button' showViewButton={false} includeName={false} itemInfo={new ItemInfo("None", "", -1, "Add Asset")} onClick={() => {
                     setAddAssetOpen(true)
                   }}></ItemCard>
@@ -651,68 +660,3 @@ window.RBXRenderer = RBXRenderer
 window.ROAVATAR_API = ROAVATAR_API
 
 export default App
-
-/*import * as THREE from 'three'
-import { TextureComposer } from './code/render/textureComposer'
-import { Shader_TextureComposer_FullscreenQuad_Color } from './code/render/shaders/textureComposer-fullscreenquad-color'
-import { Shader_TextureComposer_FullscreenQuad } from './code/render/shaders/textureComposer-fullscreenquad'
-import { getRenderer } from './code/render/renderer'
-
-async function doRenderTest(img: HTMLImageElement) {
-  const layerTexture = new THREE.Texture(img)
-  layerTexture.colorSpace = THREE.LinearSRGBColorSpace
-  layerTexture.needsUpdate = true
-
-  const composeInsts = []
-  composeInsts.push(await TextureComposer.simpleMesh(
-      "CompositQuad",
-      Shader_TextureComposer_FullscreenQuad_Color,
-      {
-          uColor: {value: new THREE.Color(1,1,1).convertSRGBToLinear()}
-      }
-  ))
-
-  composeInsts.push(await TextureComposer.simpleMesh(
-      "CompositQuad",
-      Shader_TextureComposer_FullscreenQuad,
-      {
-          uTexture: {value: layerTexture},
-          uOffset: {value: new THREE.Vector2(0, 0)},
-          uSize: {value: new THREE.Vector2(1, 1)}
-      }
-  ))
-
-  console.log("to the texture!!")
-  TextureComposer.new(256, 256, THREE.SRGBColorSpace)
-  TextureComposer.cameraSize(1, 1)
-  for (const inst of composeInsts) {
-      TextureComposer.add(inst)
-  }
-  const renderTarget = TextureComposer.render()
-  renderTarget.texture.colorSpace = THREE.SRGBColorSpace
-
-  const composeInsts2 = [await TextureComposer.simpleMesh(
-      "CompositQuad",
-      Shader_TextureComposer_FullscreenQuad,
-      {
-          uTexture: {value: renderTarget.texture},
-          uOffset: {value: new THREE.Vector2(0, 0)},
-          uSize: {value: new THREE.Vector2(1, 1)}
-      }
-  )]
-
-  console.log("to the screen!!")
-  TextureComposer.new(256, 256)
-  TextureComposer.cameraSize(1,1)
-  TextureComposer.add(composeInsts2[0])
-  getRenderer().setRenderTarget(null)
-  TextureComposer.render(true)
-}
-
-API.Generic.LoadImage("../assets/transparency-tshirt.png").then(img => {
-  if (img) {
-    //setInterval(() => {
-      doRenderTest(img)
-    //}, 33)
-  }
-})*/

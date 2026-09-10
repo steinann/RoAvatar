@@ -2,16 +2,17 @@ import { useContext, useEffect, useRef, useState } from "react";
 import RadialButton from "./generic/radialButton";
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context";
 import { AlertContext } from "./context/alert-context";
-import { Authentication, ItemInfo, Outfit, API, browserOpenURL, cleanString, snapToNumber, RBXRenderer, OutfitRenderer, RBXRendererScene, OutfitModel } from "roavatar-renderer";
+import { Authentication, ItemInfo, Outfit, API, browserOpenURL, snapToNumber, RBXRenderer, OutfitRenderer, RBXRendererScene, OutfitModel } from "roavatar-renderer";
 import Icon from "./generic/icon";
 import ItemCardBundleDetails from "./itemCardBundleDetails";
 import { CONFIG } from "./generic/config";
 import { setSetting } from "./generic/settings";
+import { getItemURL } from "./categoryShared";
 
 let itemScene: undefined | RBXRendererScene = undefined
 let itemOutfitRenderer: undefined | OutfitRenderer = undefined
 
-export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, deleteCallback, updateCallback, renameCallback}: 
+export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn = false, onClick, className, buttonClassName, includeName = true, forceImage = undefined, imageAffectedByTheme = false, showOrderArrows = false, onArrowClick, canEditOutfit = false, refresh, showViewButton = false, isSpecialOutfit = false, interactive = true, showIfUnowned = false, deleteCallback, updateCallback, renameCallback}: 
     {
         auth?: Authentication,
         itemInfo?: ItemInfo,
@@ -30,6 +31,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
         showViewButton?: boolean,
         isSpecialOutfit?: boolean,
         interactive?: boolean,
+        showIfUnowned?: boolean,
         deleteCallback?: () => void,
         updateCallback?: (a: OutfitModel) => void,
         renameCallback?: (a: string) => void,
@@ -81,6 +83,8 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
 
     const [renameValue, setRenameValue] = useState(itemInfo?.name || "")
 
+    const [isOwned, setIsOwned] = useState(true)
+
     const cardRef = useRef<HTMLAnchorElement>(null)
     const nameRef = useRef(null)
     const editRef = useRef<HTMLButtonElement>(null)
@@ -89,6 +93,26 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
     const deleteDialogRef = useRef<HTMLDialogElement>(null)
     const renameDialogRef = useRef<HTMLDialogElement>(null)
     const outfitNameInputRef: React.RefObject<HTMLInputElement | null> = useRef(null)
+
+    //check if item is owned
+    useEffect(() => {
+        if (!itemInfo || !showIfUnowned) return
+
+        let shouldCancel = false
+
+        API.Users.GetUserInfo().then((userInfo) => {
+            if (shouldCancel || !userInfo) return
+
+            API.Inventory.IsItemOwned(userInfo.id, itemInfo.itemType, Number(itemInfo.id)).then((isOwned) => {
+                if (shouldCancel) return
+                if (!isOwned) setIsOwned(false)
+            })
+        })
+
+        return () => {
+            shouldCancel = true
+        }
+    }, [itemInfo, showIfUnowned])
 
     //update open state of outfit dialogs
     useEffect(() => {
@@ -175,7 +199,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
     const cardImage = imageUrl !== "loading" ? (<img style={imageAffectedByTheme ? {filter:"var(--icon-filter)"} : {}} className={isWorn ? "darken-item" : ""} src={imageUrl}></img>) : (<div className="item-loading"></div>)
 
     const actualClassName = `item${className ? ` ${className}` : ""}`
-    const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}`
+    const actualButtonClassName = `item-image${buttonClassName ? ` ${buttonClassName}` : ""}${showIfUnowned && !isOwned ? " item-template-button" : ""}`
 
     let timeIcon = "nest_clock_farsight_analog"
     let timeText = ""
@@ -220,14 +244,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
     if (auth && itemInfo) { //loaded item
         //get url
         let url = undefined
-        const cleanName = cleanString(itemInfo.name)
-        if (itemInfo.itemType === "Asset") {
-            url = `https://www.roblox.com/catalog/${itemInfo.id}/${cleanName}`
-        } else if (itemInfo.itemType === "Bundle")  {
-            url = `https://www.roblox.com/bundles/${itemInfo.id}/${cleanName}`
-        } else if (itemInfo.itemType === "Look") {
-            url = `https://www.roblox.com/looks/${itemInfo.id}/${cleanName}`
-        }
+        url = getItemURL(itemInfo)
 
         return (<>
         {/*Update outfit dialot*/
