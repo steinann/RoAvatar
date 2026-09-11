@@ -102,7 +102,9 @@ function updatePreview(currentAnim: string, outfitModel: OutfitModel, auth: Auth
         currentlyUpdatingPreview = true
 
         if (!backgroundRenderer) {
-            backgroundRenderer = new BackgroundRenderer(auth)
+            backgroundRenderer = new BackgroundRenderer(auth);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).backgroundRenderer = backgroundRenderer;
             backgroundRenderer.affectSceneLighting = false
             getSetting("s-postprocessing", false).then((enabled) => {
                 if (backgroundRenderer) backgroundRenderer.affectSceneLighting = enabled as boolean
