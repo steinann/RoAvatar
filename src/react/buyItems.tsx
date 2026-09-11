@@ -6,7 +6,6 @@ import { Tooltip } from "react-tooltip"
 import { OutfitFuncContext } from "./context/outfit-context"
 import ItemCard from "./itemCard"
 import { AuthContext } from "./context/auth-context"
-import { getItemURL } from "./categoryShared"
 
 export default function BuyItemsButton(): React.JSX.Element {
     const auth = useContext(AuthContext)
@@ -187,16 +186,7 @@ export default function BuyItemsButton(): React.JSX.Element {
                         }
                     }
 
-                    const url = getItemURL(itemInfo)
-
-                    const onClick = url ? () => {
-                        chrome.runtime.sendMessage({
-                            type: "openURL",
-                            URL: url,
-                        })
-                    } : undefined
-
-                    return <ItemCard key={asset._uuid} auth={auth} itemInfo={itemInfo} isWorn={false} forceIsWorn={true} onClick={onClick} showViewButton={true}/>
+                    return <ItemCard key={asset._uuid} auth={auth} itemInfo={itemInfo} isWorn={false} forceIsWorn={true} interactive={false} showViewButton={true}/>
                 })}
             </div>
             <div className="dialog-line"></div>

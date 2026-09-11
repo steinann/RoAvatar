@@ -28,6 +28,7 @@ import AnimationPicker from './react/animationPicker'
 import DiscordButton from './react/discordButton'
 import { ROAVATAR_API } from './react/generic/roavatar-api'
 import BuyItemsButton from './react/buyItems'
+import { CONFIG } from './react/generic/config'
 
 declare const browser: typeof chrome;
 
@@ -568,7 +569,10 @@ function App() {
                   {outfit.assets.map(asset => {
                     const itemInfo = new ItemInfo("Asset", asset.assetType.name, asset.id, asset.name, asset.supportsHeadShapes)
                     itemInfo.headShape = asset.meta?.headShape
-                    return <ItemCard key={itemInfo.headShape ? asset._uuid + itemInfo.headShape : asset._uuid} auth={auth} className='worn-list-item' showIfUnowned={true} showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
+
+                    const showIfUnowned = CONFIG.UNWORN_STYLE_IN_WORN_ITEM_LIST
+
+                    return <ItemCard key={itemInfo.headShape ? asset._uuid + itemInfo.headShape : asset._uuid} auth={auth} className='worn-list-item' showIfUnowned={showIfUnowned} showViewButton={true} includeName={false} itemInfo={itemInfo} onClick={() => {
                       const newOutfit = outfit.clone()
                       newOutfit.removeAsset(asset.id)
                       setOutfit(newOutfit)
