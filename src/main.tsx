@@ -70,7 +70,7 @@ if (window.location.href.startsWith("chrome-extension")) {
     exposeThumbnailGenerator()
     //FLAGS.SHOW_CAGE = true
     //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
-    //FLAGS.SEARCH_FOR_STRING = "shape"
+    //FLAGS.SEARCH_FOR_STRING = "generationid"
 
 
     RBXRenderer.fullSetup(true, true, true).then(() => {
