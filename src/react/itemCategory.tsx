@@ -233,7 +233,7 @@ type AvatarInventoryItem = {
     acquisitionTime?: string
 }
 
-export default function ItemCategory({children, searchData, categoryType, subCategoryType, animName, setAnimName, onClickItem, wornItems = [], showNames = true}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], showNames?: boolean}): React.JSX.Element {
+export default function ItemCategory({children, searchData, categoryType, subCategoryType, animName, setAnimName, onClickItem, wornItems = [], showNames = true, style = {}}: React.PropsWithChildren & {searchData: Search_Payload, categoryType: string, subCategoryType: string, setOutfit: (a: Outfit) => void, animName: string, setAnimName: (a: string) => void, onClickItem?: (a: Authentication, b: ItemInfo) => void, wornItems?: number[], showNames?: boolean, style?: React.CSSProperties}): React.JSX.Element {
     const auth = useContext(AuthContext)
     const outfit = useContext(OutfitContext)
     const alert = useContext(AlertContext)
@@ -397,7 +397,7 @@ export default function ItemCategory({children, searchData, categoryType, subCat
     }*/
 
     return (
-    <div className="container">
+    <div className="container" style={style}>
         <div ref={scrollDivRef} onScroll={onScroll} className="item-container dark-scrollbar">
             {children}
             {itemComponents}

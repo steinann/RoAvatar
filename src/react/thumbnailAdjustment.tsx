@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { API, AvatarType, mapNum, RBXRenderer, specialClamp, type ThumbnailCustomizations_Result } from "roavatar-renderer"
 import { AnimLock, OutfitContext, OutfitFuncContext } from "./context/outfit-context"
 import SliderInput from "./generic/sliderInput"
-import { getCameraData, setCameraData } from "./generic/cameraData"
+import { getCameraData, setCameraData, type CameraDataType } from "./generic/cameraData"
 import Icon from "./generic/icon"
 import ItemCategory from "./itemCategory"
 import RadialButton from "./generic/radialButton"
@@ -40,7 +40,15 @@ class ThumbnailCustomization {
 
 type ThumbnailCustomizationProperty = "thumbnailType" | "emoteAssetId" | "fieldOfViewDeg" | "yRotDeg" | "distanceScale"
 
-function CustomizationSlider({name, min, max, normal, property, thumbnailCustomization, setThumbnailCustomization, selectedType}: {
+function getCameraTypeName(selectedType: SelectedType, selectedCameraType: SelectedCameraType): CameraDataType {
+    if (selectedType === "Fullbody") {
+        return selectedCameraType === "Custom" ? "Avatar" : "AvatarLegacy"
+    } else {
+        return selectedCameraType === "Custom" ? "AvatarHeadshot" : "AvatarHeadshotLegacy"
+    }
+}
+
+function CustomizationSlider({name, min, max, normal, property, thumbnailCustomization, setThumbnailCustomization, selectedType, selectedCameraType}: {
     name: string,
     min: number,
     max: number,
@@ -48,7 +56,8 @@ function CustomizationSlider({name, min, max, normal, property, thumbnailCustomi
     property: ThumbnailCustomizationProperty,
     thumbnailCustomization: ThumbnailCustomization,
     setThumbnailCustomization: (a: ThumbnailCustomization) => void,
-    selectedType: SelectedType
+    selectedType: SelectedType,
+    selectedCameraType: SelectedCameraType,
 }): React.JSX.Element {
     function setValue(val: number) {
         const newCustom = thumbnailCustomization.clone()
@@ -57,7 +66,9 @@ function CustomizationSlider({name, min, max, normal, property, thumbnailCustomi
         setThumbnailCustomization(newCustom)
     }
 
-    return <div className="thumbnail-customization-slider" style={{opacity: selectedType === "Fullbody" && property === "distanceScale" ? 0.3 : 1}}>
+    const isInactive = (selectedType === "Fullbody" && property === "distanceScale") || selectedCameraType === "Legacy"
+
+    return <div className="thumbnail-customization-slider" style={{opacity: isInactive ? 0.3 : 1}}>
         <div className="thumbnail-customization-top">
             <span className="thumbnail-customization-slider-name roboto-600">{name}</span>
             <button className="clear" onClick={()=>{setValue(normal)}}>
@@ -67,8 +78,8 @@ function CustomizationSlider({name, min, max, normal, property, thumbnailCustomi
         <SliderInput value={
             selectedType === "Fullbody" && property === "distanceScale" ?
             mapNum(1, min, max, 0, 1) :
-            mapNum(thumbnailCustomization[property], min, max, 0, 1)
-        } setValue={(val) => {
+            mapNum((selectedCameraType === "Legacy" && property === "distanceScale" ? -1 : 1) * thumbnailCustomization[property], min, max, 0, 1)
+        } setValue={isInactive ? () => {} : (val) => {
             val = mapNum(val, 0, 1, min, max)
             setValue(val)
         }}/>
@@ -91,7 +102,7 @@ function AdjustmentBottom({thumbnailCustomization, selectedType, setSelectedType
             value={selectedType} setValue={setSelectedType as (a: string) => void} alternatives={["Head", "Fullbody"]} isUp={true}
         />
         <div className="dialog-actions">
-            <RadialButton className="dialog-cancel roboto-600" onClick={() => {
+            {/*<RadialButton className="dialog-cancel roboto-600" onClick={() => {
                 if (!auth && alert) {
                     alert("Not authenticated", 3000, false)
                 }
@@ -139,7 +150,7 @@ function AdjustmentBottom({thumbnailCustomization, selectedType, setSelectedType
                 })
             }}>
                 Remove
-            </RadialButton>
+            </RadialButton>*/}
             <RadialButton className="dialog-confirm roboto-600" onClick={() => {
                 if (!auth && alert) {
                     alert("Not authenticated", 3000, false)
@@ -148,14 +159,16 @@ function AdjustmentBottom({thumbnailCustomization, selectedType, setSelectedType
 
                 const promises: Promise<Response>[] = []
 
+                const selectedCameraType: SelectedCameraType = thumbnailCustomization.distanceScale < 0 ? "Legacy" : "Custom"
+
                 const camera = {
-                    distanceScale: thumbnailCustomization.distanceScale,
+                    distanceScale: selectedCameraType === "Custom" ? thumbnailCustomization.distanceScale : -1,
                     fieldOfViewDeg: thumbnailCustomization.fieldOfViewDeg,
                     yRotDeg: thumbnailCustomization.yRotDeg
                 }
 
                 const cameraFullbody = {
-                    distanceScale: 1,
+                    distanceScale: selectedCameraType === "Custom" ? 1 : -1,
                     fieldOfViewDeg: thumbnailCustomization.fieldOfViewDeg,
                     yRotDeg: thumbnailCustomization.yRotDeg
                 }
@@ -216,6 +229,8 @@ function AdjustmentBottom({thumbnailCustomization, selectedType, setSelectedType
 function EmoteAdjustment({thumbnailCustomization, setThumbnailCustomization, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
     const outfitFunc = useContext(OutfitFuncContext)
 
+    const selectedCameraType: SelectedCameraType = thumbnailCustomization.distanceScale < 0 ? "Legacy" : "Custom"
+
     return <>
         <ItemCategory
             searchData={{taxonomy:"", salesTypeFilter: 0}}
@@ -235,20 +250,22 @@ function EmoteAdjustment({thumbnailCustomization, setThumbnailCustomization, sel
                 setThumbnailCustomization(newThumbnailCustomization)
             }}
             showNames={false}
+            style={{opacity: selectedCameraType === "Legacy" && selectedType === "Head" ? 0.25 : 1}}
         />
         <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
     </>
 }
 
 type SelectedType = "Both" | "Head" | "Fullbody"
+type SelectedCameraType = "Custom" | "Legacy"
 
-function CameraAdjustment({thumbnailCustomization, setThumbnailCustomization, selectedType, setSelectedType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void}): React.JSX.Element {
+function CameraAdjustment({thumbnailCustomization, setThumbnailCustomization, selectedType, setSelectedType, selectedCameraType}: {thumbnailCustomization: ThumbnailCustomization, setThumbnailCustomization: (a: ThumbnailCustomization) => void, selectedType: SelectedType, setSelectedType: (a: SelectedType) => void, selectedCameraType: SelectedCameraType}): React.JSX.Element {
     //const outfitFunc = useContext(OutfitFuncContext)
 
     return <>
-        <CustomizationSlider name="Rotation" min={-60} max={60} normal={0} property="yRotDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
-        <CustomizationSlider name="Distance" min={0.5} max={2.5} normal={1} property="distanceScale" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
-        <CustomizationSlider name="FOV" min={15} max={45} normal={28.751935958862305} property="fieldOfViewDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType}/>
+        <CustomizationSlider name="Rotation" min={-60} max={60} normal={0} property="yRotDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} selectedCameraType={selectedCameraType}/>
+        <CustomizationSlider name="Distance" min={0.5} max={2.5} normal={1} property="distanceScale" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} selectedCameraType={selectedCameraType}/>
+        <CustomizationSlider name="FOV" min={15} max={45} normal={28.751935958862305} property="fieldOfViewDeg" thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} selectedCameraType={selectedCameraType}/>
         <AdjustmentBottom thumbnailCustomization={thumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
     </>
 }
@@ -279,10 +296,12 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
     const thumbnailCustomization = lastSelectedType.current === "Fullbody" ? avatarCustomization : headshotCustomization
     const avatarPreviewBottom = avatarPreview?.getBoundingClientRect().bottom
 
+    const selectedCameraType: SelectedCameraType = thumbnailCustomization.distanceScale < 0 ? "Legacy" : "Custom"
+
     //update animation
-    const updateAnimation = useCallback((newCustomization: ThumbnailCustomization, selectedType: SelectedType) => {
+    const updateAnimation = useCallback((newCustomization: ThumbnailCustomization, selectedType: SelectedType, selectedCameraType: SelectedCameraType) => {
         if (isOpen) {
-            if (newCustomization.emoteAssetId > 0 && playerAvatarType === AvatarType.R15) {
+            if (newCustomization.emoteAssetId > 0 && playerAvatarType === AvatarType.R15 && !(selectedCameraType === "Legacy" && selectedType === "Head")) {
                 outfitFunc.setAnimName(`emote.${newCustomization.emoteAssetId}`, true)
             } else {
                 outfitFunc.setAnimName(selectedType === "Fullbody" ? "pose" : "", true)
@@ -298,17 +317,18 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
 
         const newCustomization = newValue === "Fullbody" ? avatarCustomization : headshotCustomization
 
+        const newSelectedCameraType: SelectedCameraType = newCustomization.distanceScale < 0 ? "Legacy" : "Custom"
         const newCameraData = getCameraData().clone()
-        newCameraData.transition(newValue === "Fullbody" ? "Avatar" : "AvatarHeadshot")
+        newCameraData.transition(getCameraTypeName(newValue, newSelectedCameraType))
         newCameraData.thumbnailFov = newCustomization.fieldOfViewDeg
         newCameraData.yRot = newCustomization.yRotDeg
         newCameraData.distanceScale = newCustomization.distanceScale
         setCameraData(newCameraData)
 
-        updateAnimation(thumbnailCustomization, newValue)
+        updateAnimation(thumbnailCustomization, newValue, selectedCameraType)
 
         _setSelectedType(newValue)
-    }, [avatarCustomization, headshotCustomization, thumbnailCustomization, updateAnimation])
+    }, [avatarCustomization, headshotCustomization, selectedCameraType, thumbnailCustomization, updateAnimation])
 
     //update animation lock
     useEffect(() => {
@@ -338,10 +358,8 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
 
                         const thumbnailKeyframe = animation.FindFirstChild("ThumbnailKeyframe")
                         if (thumbnailKeyframe) {
-                            console.log(thumbnailKeyframe)
                             lockData.lockType = "keyframe"
                             lockData.value = thumbnailKeyframe.PropOrDefault("Value", 0) as number
-                            console.log(lockData.value)
                         }
 
                         const animationId = animation.PropOrDefault("AnimationId", "") as string
@@ -350,7 +368,6 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
                         }
                     }
 
-                    console.log("lock!", lockData)
                     if (isOpen) outfitFunc.setAnimLock(lockData)
                     lockDataMap.set(emoteId, lockData)
                 })
@@ -360,7 +377,6 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
                 lockData.lockType = "time"
                 lockData.value = -1
 
-                console.log("lock!", lockData)
                 if (isOpen) outfitFunc.setAnimLock(lockData)
                 lockDataMap.set(emoteId, lockData)
             }
@@ -381,13 +397,28 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             setAvatarCustomization(newCustomization)
         }
 
+        const newSelectedCameraType: SelectedCameraType = newCustomization.distanceScale < 0 ? "Legacy" : "Custom"
+
         const newCameraData = getCameraData().clone()
         newCameraData.distanceScale = newCustomization.distanceScale
         newCameraData.thumbnailFov = newCustomization.fieldOfViewDeg
         newCameraData.yRot = newCustomization.yRotDeg
+        newCameraData.transition(getCameraTypeName(selectedType, newSelectedCameraType))
         setCameraData(newCameraData)
-        updateAnimation(newCustomization, selectedType)
+        updateAnimation(newCustomization, selectedType, newSelectedCameraType)
     }, [updateAnimation, selectedType])
+
+    //update selected camera type
+    const setSelectedCameraType = useCallback((newValue: SelectedCameraType) => {
+        const newCustomization = thumbnailCustomization.clone()
+        newCustomization.distanceScale = newValue === "Custom" ? Math.abs(newCustomization.distanceScale) : -Math.abs(newCustomization.distanceScale)
+        setThumbnailCustomization(newCustomization)
+
+        const newCameraData = getCameraData().clone()
+        newCameraData.transition(getCameraTypeName(selectedType, newValue))
+        setCameraData(newCameraData)
+        updateAnimation(newCustomization, selectedType, newValue)
+    }, [selectedType, setThumbnailCustomization, thumbnailCustomization, updateAnimation])
 
     //get thumbnail customizations
     useEffect(() => {
@@ -411,14 +442,14 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
                         newCustomization.yRotDeg = customization.camera.yRotDeg
 
                         setThumbnailCustomization(newCustomization)
-                        updateAnimation(newCustomization, selectedType)
+                        updateAnimation(newCustomization, selectedType, selectedCameraType)
                     } else {
                         setThumbnailCustomization(customization.thumbnailType === ThumbnailCustomizationType.AvatarHeadshot ? headshotCustomization : avatarCustomization)
                     }
                 }
             })
         }
-    }, [avatarCustomization, headshotCustomization, initialCustomization, loadedCustomizations, loadingCustomizations, setThumbnailCustomization, updateAnimation, selectedType])
+    }, [avatarCustomization, headshotCustomization, initialCustomization, loadedCustomizations, loadingCustomizations, setThumbnailCustomization, updateAnimation, selectedType, selectedCameraType])
 
     //reset to initial thumbnail customization
     useEffect(() => {
@@ -437,24 +468,24 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
                         newCustomization.yRotDeg = customization.camera.yRotDeg
 
                         setThumbnailCustomization(newCustomization)
-                        updateAnimation(newCustomization, selectedType)
+                        updateAnimation(newCustomization, selectedType, selectedCameraType)
                     } else {
                         setThumbnailCustomization(new ThumbnailCustomization(customization.thumbnailType))
                     }
                 }
             }
         }
-    }, [avatarCustomization, headshotCustomization, initialCustomization, resetCount, setThumbnailCustomization, updateAnimation, selectedType])
+    }, [avatarCustomization, headshotCustomization, initialCustomization, resetCount, setThumbnailCustomization, updateAnimation, selectedType, selectedCameraType])
 
     //update for open/close
     useEffect(() => {
         const cameraData = getCameraData()
 
-        if (isOpen && (cameraData.type !== "AvatarHeadshot" && cameraData.type !== "Avatar")) { // on opening
+        if (isOpen && (cameraData.type !== "AvatarHeadshot" && cameraData.type !== "Avatar" && cameraData.type !== "AvatarHeadshotLegacy" && cameraData.type !== "AvatarLegacy")) { // on opening
             outfitFunc.setCanSetAnimName(false)
 
             const newCameraData = cameraData.clone()
-            newCameraData.transition(selectedType === "Fullbody" ? "Avatar" : "AvatarHeadshot")
+            newCameraData.transition(getCameraTypeName(selectedType, selectedCameraType))
             setCameraData(newCameraData)
 
             const plane = RBXRenderer.plane
@@ -462,8 +493,8 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             if (plane) plane.visible = false
             if (shadowPlane) shadowPlane.visible = false
 
-            updateAnimation(headshotCustomization, selectedType)
-        } else if (!isOpen && (cameraData.type === "AvatarHeadshot" || cameraData.type === "Avatar")) { // on closing
+            updateAnimation(headshotCustomization, selectedType, selectedCameraType)
+        } else if (!isOpen && (cameraData.type !== "Editor")) { // on closing
             outfitFunc.setCanSetAnimName(true)
 
             const newCameraData = cameraData.clone()
@@ -478,12 +509,12 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             outfitFunc.setAnimLock(new AnimLock())
             outfitFunc.setAnimName(`idle`, true)
         }
-    }, [isOpen, outfitFunc, headshotCustomization, updateAnimation, selectedType])
+    }, [isOpen, outfitFunc, headshotCustomization, updateAnimation, selectedType, selectedCameraType])
 
     //update animation
     useEffect(() => {
-        updateAnimation(thumbnailCustomization, selectedType)
-    }, [playerAvatarType, updateAnimation, thumbnailCustomization, selectedType])
+        updateAnimation(thumbnailCustomization, selectedType, selectedCameraType)
+    }, [playerAvatarType, updateAnimation, thumbnailCustomization, selectedType, selectedCameraType])
 
     //update top
     useEffect(() => {
@@ -503,6 +534,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
         if (!avatarPreview || !isOpen) return
 
         function onMouseMove(e: MouseEvent) {
+            if (selectedCameraType === "Legacy") return
             if (!avatarPreview || e.target !== avatarPreview && avatarPreview.querySelector("canvas") !== e.target) return
             if (e.buttons === 1) {
                 e.preventDefault()
@@ -516,6 +548,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
         }
 
         function onWheel(e: WheelEvent) {
+            if (selectedCameraType === "Legacy") return
             if (!avatarPreview || e.target !== avatarPreview && avatarPreview.querySelector("canvas") !== e.target) return
             e.preventDefault()
             const thumbnailCustomization = selectedType === "Head" ? lastHeadshotThumbnailCustomization.current : lastAvatarThumbnailCustomization.current
@@ -533,7 +566,7 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
             avatarPreview.removeEventListener("mousemove", onMouseMove)
             avatarPreview.removeEventListener("wheel", onWheel)
         }
-    }, [avatarPreview, setThumbnailCustomization, isOpen, selectedType])
+    }, [avatarPreview, setThumbnailCustomization, isOpen, selectedType, selectedCameraType])
 
     return <>
         <div className={`thumbnail-adjustment${isOpen ? " open" : ""}`} style={{top: `${top}px`}}>
@@ -543,15 +576,26 @@ export default function ThumbnailAdjustment({isOpen, resetCount}: {isOpen: boole
                         <RadialButton
                             className={`roboto-600 choice-button${selectedScreen === "emote" ? " selected":""}`}
                             onClick={()=>{setSelectedScreen("emote")}}
+                            style={{opacity: selectedCameraType === "Legacy" && selectedType === "Head" ? 0.25 : 1}}
                         >Emote</RadialButton>
                         <RadialButton
                             className={`roboto-600 choice-button${selectedScreen === "camera" ? " selected":""}`}
                             onClick={()=>{setSelectedScreen("camera")}}
+                            style={{opacity: selectedCameraType === "Legacy" ? 0.25 : 1}}
                         >Camera</RadialButton>
+                        <Tooltip id="camera-type"/>
+                        <SelectInput 
+                            data-tooltip-place='top' data-tooltip-id="camera-type" data-tooltip-content="Camera type to use"
+                            value={selectedCameraType} setValue={setSelectedCameraType as (a: string) => void} alternatives={["Custom", "Legacy"]}
+                            style={{ 
+                                margin: 0,
+                                marginLeft: "auto",
+                            }}
+                        />
                     </div>
                     {selectedScreen === "emote" ? 
                         <EmoteAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/> :
-                        <CameraAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType}/>
+                        <CameraAdjustment thumbnailCustomization={thumbnailCustomization} setThumbnailCustomization={setThumbnailCustomization} selectedType={selectedType} setSelectedType={setSelectedType} selectedCameraType={selectedCameraType}/>
                     }
                 </>
             : null}

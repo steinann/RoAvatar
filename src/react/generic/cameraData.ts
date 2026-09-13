@@ -1,7 +1,7 @@
 import { CFrame, deg, RBXRenderer, Event, lerp } from "roavatar-renderer"
 import type { AdjustType } from "../accessoryAdjustment"
 
-export type CameraDataType = "Editor" | "AvatarHeadshot" | "Avatar"
+export type CameraDataType = "Editor" | "AvatarHeadshot" | "Avatar" | "AvatarHeadshotLegacy" | "AvatarLegacy"
 export class CameraData {
     canFocus: boolean = true
     type: CameraDataType = "Editor"
@@ -17,6 +17,7 @@ export class CameraData {
     thumbnailFov: number = 28.81402587890625
     yRot: number = 0
     distanceScale: number = 1
+    legacyFov: number = 70
 
     //accessory adjustment
     adjustmentType: AdjustType = "position"
@@ -38,7 +39,9 @@ export class CameraData {
 
     get fov() {
         const normTransitionTime = this.getNormalizedPassedTransitionTime()
-        const targetFov = this.type === "Editor" ? this.editorFov : this.thumbnailFov
+        let targetFov = this.editorFov
+        if (this.type === "AvatarHeadshot" || this.type === "Avatar") targetFov = this.thumbnailFov
+        if (this.type === "AvatarHeadshotLegacy" || this.type === "AvatarLegacy") targetFov = this.legacyFov
         const fov = this.isTransition() ? lerp(this.previousFov, targetFov, normTransitionTime) : targetFov
         return fov
     }
@@ -61,6 +64,8 @@ export class CameraData {
     }
 
     transition(type: CameraDataType) {
+        if (type === this.type) return
+
         this.previousFov = this.fov //has to be at the start so it calculates correctly
         this.type = type
         this.canFocus = type === "Editor"
@@ -83,6 +88,7 @@ export class CameraData {
         copy.thumbnailFov = this.thumbnailFov
         copy.yRot = this.yRot
         copy.distanceScale = this.distanceScale
+        copy.legacyFov = this.legacyFov
 
         copy.adjustmentType = this.adjustmentType
         copy.adjustmentId = this.adjustmentId

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, getCameraCFrameForAvatarCustomized, BackgroundRenderer, OutfitModel } from 'roavatar-renderer';
-import { CameraData, getCameraData } from './generic/cameraData';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, getCameraCFrameForAvatarCustomized, BackgroundRenderer, OutfitModel, getCameraCFrameForHeadshotNonCustomized, getThumbnailCameraCFrame } from 'roavatar-renderer';
+import { CameraData, getCameraData, setCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
 import { getRotationLines, getPositionLines, getScaleLines } from './generic/adjustmentGeometry';
@@ -459,6 +459,7 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
         animationInterval = window.setInterval(() => {
             //update camera position
             const cameraData = getCameraData()
+            const newCameraData = cameraData.clone()
             if (cameraLocked && currentRig) {
                 const upperTorso = currentRig.FindFirstChild("HumanoidRootPart")
                 if (upperTorso) {
@@ -532,7 +533,16 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     targetCF = getCameraCFrameForHeadshotCustomized(currentRig, cameraData.thumbnailFov, cameraData.yRot, cameraData.distanceScale) || targetCF
                 } else if (cameraData.type === "Avatar") {
                     targetCF = getCameraCFrameForAvatarCustomized(currentRig, cameraData.thumbnailFov, cameraData.yRot) || targetCF
+                } else if (cameraData.type === "AvatarHeadshotLegacy") {
+                    const result = getCameraCFrameForHeadshotNonCustomized(currentRig)
+                    targetCF = result.cframe
+                    newCameraData.legacyFov = result.fov
+                } else if (cameraData.type === "AvatarLegacy") {
+                    targetCF = getThumbnailCameraCFrame(currentRig, 70) || targetCF
+                    newCameraData.legacyFov = 70
                 }
+
+                const targetFOV = newCameraData.fov
 
                 if (isTransition) {
                     const newCF = lerpCFrame(cameraData.previousCF, targetCF, normTransitionTime)
@@ -541,13 +551,15 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                     RBXRenderer.setCameraCFrame(targetCF)
                 }
 
-                RBXRenderer.setCameraFov(cameraData.fov)
+                RBXRenderer.setCameraFov(targetFOV)
+
+                setCameraData(newCameraData)
 
                 if (canFocus !== cameraData.canFocus) {
                     setCanFocus(cameraData.canFocus)
                 }
 
-                const newIsPfp = cameraData.type === "AvatarHeadshot"
+                const newIsPfp = cameraData.type === "AvatarHeadshot" || cameraData.type === "AvatarHeadshotLegacy"
                 if (isPfp !== newIsPfp) {
                     setIsPfp(newIsPfp)
                 }
