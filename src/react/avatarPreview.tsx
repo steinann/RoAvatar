@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useCallback, useContext, useEffect, useState } from "react"
 import { AuthContext } from "./context/auth-context"
 import { OutfitContext, OutfitFuncContext } from "./context/outfit-context"
-import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, getCameraCFrameForAvatarCustomized, BackgroundRenderer, OutfitModel, getCameraCFrameForHeadshotNonCustomized, getThumbnailCameraCFrame } from 'roavatar-renderer';
+import { AvatarType, Instance, Outfit, Authentication, API, RBX, RBXRenderer, FLAGS, mountElement, LayeredClothingAssetOrder, base64ToArrayBuffer, AnimatorWrapper, HumanoidDescriptionWrapper, Vector3, getCameraCFrameForHeadshotCustomized, lerpCFrame, CFrame, FindFirstMatchingAttachment, AttachmentWrapper, getCameraCFrameForAvatarCustomized, BackgroundRenderer, OutfitModel, getCameraCFrameForHeadshotNonCustomized, getThumbnailCameraCFrame, OutfitRenderer } from 'roavatar-renderer';
 import { CameraData, getCameraData, setCameraData } from './generic/cameraData';
 import { Tooltip } from 'react-tooltip';
 import { CONFIG } from './generic/config';
@@ -11,6 +11,7 @@ import { ROAVATAR_API } from './generic/roavatar-api';
 import { getSetting } from './generic/settings';
 
 let hasLoadedAvatar = false
+let outfitRenderer: OutfitRenderer | undefined = undefined
 let currentRigType = AvatarType.R15
 let currentRig: Instance | undefined = undefined
 let backgroundRenderer: BackgroundRenderer | undefined = undefined
@@ -28,27 +29,33 @@ let heightPower = 0
 let jumpTime = 0
 
 function updateAnim(animName: string, currentRig: Instance, auth?: Authentication) {
-    const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
-    if (humanoid) {
-        const animator = humanoid.FindFirstChildOfClass("Animator")
-        if (animator) {
-            const animatorW = new AnimatorWrapper(animator)
+    if (!CONFIG.USE_OUTFIT_RENDERER) {
+        const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
+        if (humanoid) {
+            const animator = humanoid.FindFirstChildOfClass("Animator")
+            if (animator) {
+                const animatorW = new AnimatorWrapper(animator)
 
-            //main animation
-            let successfullyPlayed = animatorW.playAnimation(animName)
-            if (!successfullyPlayed && animName === "pose") successfullyPlayed = animatorW.playAnimation("idle:0")
+                //main animation
+                let successfullyPlayed = animatorW.playAnimation(animName)
+                if (!successfullyPlayed && animName === "pose") successfullyPlayed = animatorW.playAnimation("idle:0")
 
-            if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
-                const emoteId = BigInt(animName.split(".")[1])
-                animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
-                    animatorW.playAnimation(animName)
-                })
-            } else if (!successfullyPlayed && animName.startsWith("id.") && auth) {
-                const animId = BigInt(animName.split(".")[1])
-                animatorW.loadAnimation(animId, true).then(() => {
-                    animatorW.playAnimation(animName)
-                })
+                if (!successfullyPlayed && animName.startsWith("emote.") && auth) {
+                    const emoteId = BigInt(animName.split(".")[1])
+                    animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
+                        animatorW.playAnimation(animName)
+                    })
+                } else if (!successfullyPlayed && animName.startsWith("id.") && auth) {
+                    const animId = BigInt(animName.split(".")[1])
+                    animatorW.loadAnimation(animId, true).then(() => {
+                        animatorW.playAnimation(animName)
+                    })
+                }
             }
+        }
+    } else {
+        if (outfitRenderer) {
+            outfitRenderer.setMainAnimation(animName)
         }
     }
 }
@@ -98,87 +105,120 @@ function setRigTo(animName: string, newRigType: AvatarType, auth: Authentication
 let currentlyUpdatingPreview = false
 let failedLastDescription = false
 function updatePreview(currentAnim: string, outfitModel: OutfitModel, auth: Authentication, setError: (a: string | undefined) => void) {
-    if (!currentlyUpdatingPreview) {
-        currentlyUpdatingPreview = true
+    if (CONFIG.USE_OUTFIT_RENDERER) {
+        if (!outfitRenderer) {
+            outfitRenderer = new OutfitRenderer(auth, outfitModel)
+        }
 
-        if (!backgroundRenderer) {
-            backgroundRenderer = new BackgroundRenderer(auth);
+        outfitRenderer.onSuccess.Connect(() => {
+            currentRig = outfitRenderer?.currentRig;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).backgroundRenderer = backgroundRenderer;
-            backgroundRenderer.affectSceneLighting = false
-            getSetting("s-postprocessing", false).then((enabled) => {
-                if (backgroundRenderer) backgroundRenderer.affectSceneLighting = enabled as boolean
-            })
-        }
-        backgroundRenderer.setBackground(outfitModel.background?.id)
+            (window as any).rig = currentRig
+            setError(undefined)
+        })
 
-        if (FLAGS.LOAD_TEST_PLACE) {
-            API.Asset.GetRBX(FLAGS.LOAD_TEST_PLACE).then((result) => {
-                if (result instanceof RBX) {
-                    console.log("Loaded", FLAGS.LOAD_TEST_PLACE)
-                    console.log(result)
+        outfitRenderer.onError.Connect((errorType) => {
+            switch (errorType) {
+                case "rig":
+                    setError("Failed to change rig")
+                    break
+                case "humanoidDescription":
+                    setError("Failed to apply HumanoidDescription (caused by deleted items, bad internet, not logged in)")
+                    break
+            }
+        });
 
-                    const root = result.generateTree()
-                    console.log(root)
-                    currentRig = root
-                    RBXRenderer.addInstance(root, auth)
-                }
-            })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).backgroundRenderer = outfitRenderer.backgroundRenderer;
+        outfitRenderer.backgroundRenderer.affectSceneLighting = false
+        getSetting("s-postprocessing", false).then((enabled) => {
+            if (outfitRenderer) outfitRenderer.backgroundRenderer.affectSceneLighting = enabled as boolean
+        })
 
-            //return
-        }
+        outfitRenderer.setOutfitModel(outfitModel)
+    } else {
+        if (!currentlyUpdatingPreview) {
+            currentlyUpdatingPreview = true
 
-        //update rig
-        const newRigType: AvatarType = outfitModel.outfit.playerAvatarType
+            if (!backgroundRenderer) {
+                backgroundRenderer = new BackgroundRenderer(auth);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (window as any).backgroundRenderer = backgroundRenderer;
+                backgroundRenderer.affectSceneLighting = false
+                getSetting("s-postprocessing", false).then((enabled) => {
+                    if (backgroundRenderer) backgroundRenderer.affectSceneLighting = enabled as boolean
+                })
+            }
+            backgroundRenderer.setBackground(outfitModel.background?.id)
 
-        const promises: Promise<undefined>[] = []
-        if (newRigType !== currentRigType || !currentRig) {
-            promises.push(setRigTo(currentAnim, newRigType, auth, setError))
-        }
+            if (FLAGS.LOAD_TEST_PLACE) {
+                API.Asset.GetRBX(FLAGS.LOAD_TEST_PLACE).then((result) => {
+                    if (result instanceof RBX) {
+                        console.log("Loaded", FLAGS.LOAD_TEST_PLACE)
+                        console.log(result)
 
-        Promise.all(promises).then(() => {
-            //get humanoid description
-            const hrp = new Instance("HumanoidDescription")
-            const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
-            hrpWrapper.fromOutfit(outfitModel.outfit)
-            
-            if (currentRig) {
-                const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
-                if (humanoid) {
-                    //apply humanoid description to rig
-                    if (failedLastDescription) { //force next humanoiddescription to do an apply all
-                        const ogDesc = humanoid.FindFirstChildOfClass("HumanoidDescription")
-                        if (ogDesc) {
-                            ogDesc.Destroy()
-                        }
+                        const root = result.generateTree()
+                        console.log(root)
+                        currentRig = root
+                        RBXRenderer.addInstance(root, auth)
                     }
+                })
 
-                    hrpWrapper.applyDescription(humanoid).then((result) => {
-                        if (currentRig) {
-                            updateAnim(latestAnimName, currentRig, auth) //hack done so animation can switch between idle/pose based on availability
-                            RBXRenderer.addInstance(currentRig, auth)
-                        }
-                        if (result instanceof Instance) {
-                            failedLastDescription = false
-                            currentlyUpdatingPreview = false
-                            if (outfitModel !== lastOutfitModel && lastOutfitModel) {
-                                updatePreview(currentAnim, lastOutfitModel, auth, setError)
+                //return
+            }
+
+            //update rig
+            const newRigType: AvatarType = outfitModel.outfit.playerAvatarType
+
+            const promises: Promise<undefined>[] = []
+            if (newRigType !== currentRigType || !currentRig) {
+                promises.push(setRigTo(currentAnim, newRigType, auth, setError))
+            }
+
+            Promise.all(promises).then(() => {
+                //get humanoid description
+                const hrp = new Instance("HumanoidDescription")
+                const hrpWrapper = new HumanoidDescriptionWrapper(hrp)
+                hrpWrapper.fromOutfit(outfitModel.outfit)
+                
+                if (currentRig) {
+                    const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
+                    if (humanoid) {
+                        //apply humanoid description to rig
+                        if (failedLastDescription) { //force next humanoiddescription to do an apply all
+                            const ogDesc = humanoid.FindFirstChildOfClass("HumanoidDescription")
+                            if (ogDesc) {
+                                ogDesc.Destroy()
                             }
-                            setError(undefined)
-                        } else {
-                            failedLastDescription = true
-                            //TODO: show error!
-                            setError("Failed to apply HumanoidDescription (caused by deleted items, bad internet, not logged in)")
-                            currentlyUpdatingPreview = false
                         }
-                    })
+
+                        hrpWrapper.applyDescription(humanoid).then((result) => {
+                            if (currentRig) {
+                                updateAnim(latestAnimName, currentRig, auth) //hack done so animation can switch between idle/pose based on availability
+                                RBXRenderer.addInstance(currentRig, auth)
+                            }
+                            if (result instanceof Instance) {
+                                failedLastDescription = false
+                                currentlyUpdatingPreview = false
+                                if (outfitModel !== lastOutfitModel && lastOutfitModel) {
+                                    updatePreview(currentAnim, lastOutfitModel, auth, setError)
+                                }
+                                setError(undefined)
+                            } else {
+                                failedLastDescription = true
+                                //TODO: show error!
+                                setError("Failed to apply HumanoidDescription (caused by deleted items, bad internet, not logged in)")
+                                currentlyUpdatingPreview = false
+                            }
+                        })
+                    } else {
+                        currentlyUpdatingPreview = false
+                    }
                 } else {
                     currentlyUpdatingPreview = false
                 }
-            } else {
-                currentlyUpdatingPreview = false
-            }
-        })
+            })
+        }
     }
 }
 
@@ -322,7 +362,6 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
     const outfitFunc = useContext(OutfitFuncContext)
 
     const animLock = outfitFunc.animLock
-
     const containerRef = useCallback(mountElement, [])
 
     const [cameraLocked, setCameraLocked] = useState(true)
@@ -478,42 +517,67 @@ export default function AvatarPreview({ children, setSaveAlwaysOn, setOutfit, an
                 }
             }
 
+            //update outfitRenderer background
+            if (outfitRenderer) {
+                outfitRenderer.backgroundRenderer.cameraAffectsRotation = cameraData.rotateBackground
+                outfitRenderer.backgroundRenderer.cameraAffectsTransparency = !cameraData.rotateBackground
+            }
+
             //update animation and instance renderables
-            if (currentRig && auth) {
-                const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
-                if (humanoid) {
-                    const animator = humanoid.FindFirstChildOfClass("Animator")
-                    if (animator) {
-                        const deltaTime = Date.now() / 1000 - lastFrameTime
-                        lastFrameTime = Date.now() / 1000
+            if (CONFIG.USE_OUTFIT_RENDERER) {
+                if (outfitRenderer) {
+                    const deltaTime = Date.now() / 1000 - lastFrameTime
+                    lastFrameTime = Date.now() / 1000
+                    tickJump(deltaTime)
 
-                        tickJump(deltaTime)
+                    if (!animLock.locked) {
+                        outfitRenderer.animateOnce(deltaTime)
+                    } else {
+                        outfitRenderer.animateOnce(deltaTime,
+                            animLock.lockType === "time" ? animLock.value : undefined, 
+                            animLock.lockType === "keyframe" ? animLock.value : undefined
+                        )
+                    }
+                }
+            } else {
+                if (currentRig && auth) {
+                    const humanoid = currentRig.FindFirstChildOfClass("Humanoid")
+                    if (humanoid) {
+                        const animator = humanoid.FindFirstChildOfClass("Animator")
+                        if (animator) {
+                            const deltaTime = Date.now() / 1000 - lastFrameTime
+                            lastFrameTime = Date.now() / 1000
 
-                        const animatorW = new AnimatorWrapper(animator)
+                            tickJump(deltaTime)
 
-                        //const currentTrack = animatorW.getCurrentAnimationTrack()
+                            const animatorW = new AnimatorWrapper(animator)
 
-                        if (!animLock.locked) {
-                            animatorW.renderAnimation(deltaTime)
-                        } else {
-                            animatorW.renderAnimation(deltaTime,
-                                animLock.lockType === "time" ? animLock.value : undefined, 
-                                animLock.lockType === "keyframe" ? animLock.value : undefined
-                            )
-                            //const time = animLock.lockType === "time" ? animLock.value : currentTrack.getKeyframeTime(animLock.value)
-                            //currentTrack.setTime(time)
+                            //const currentTrack = animatorW.getCurrentAnimationTrack()
+
+                            if (!animLock.locked) {
+                                animatorW.renderAnimation(deltaTime)
+                            } else {
+                                animatorW.renderAnimation(deltaTime,
+                                    animLock.lockType === "time" ? animLock.value : undefined, 
+                                    animLock.lockType === "keyframe" ? animLock.value : undefined
+                                )
+                                //const time = animLock.lockType === "time" ? animLock.value : currentTrack.getKeyframeTime(animLock.value)
+                                //currentTrack.setTime(time)
+                            }
+
+                            currentRig.preRender()
+                            
+                            RBXRenderer.addInstance(currentRig, auth)
                         }
-
+                    } else if (FLAGS.LOAD_TEST_PLACE) {
                         currentRig.preRender()
-                        
+                            
                         RBXRenderer.addInstance(currentRig, auth)
                     }
-                } else if (FLAGS.LOAD_TEST_PLACE) {
-                    currentRig.preRender()
-                        
-                    RBXRenderer.addInstance(currentRig, auth)
                 }
+            }
 
+            if (currentRig) {
                 //update camera
                 const normTransitionTime = cameraData.getNormalizedPassedTransitionTime()
                 const isTransition = cameraData.isTransition()

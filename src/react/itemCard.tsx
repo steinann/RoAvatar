@@ -58,7 +58,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
 
                 itemOutfitRenderer = new OutfitRenderer(new Authentication(), new Outfit(), itemScene)
                 itemOutfitRenderer.startAnimating()
-                itemOutfitRenderer.setMainAnimation("idle")
+                itemOutfitRenderer.setMainAnimation("run")
             }
 
             const newOutfit = outfit.clone()
