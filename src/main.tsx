@@ -9,7 +9,7 @@ import { initWebsite } from './website/init.ts'
 import { getSetting } from './react/generic/settings.ts'
 
 //declare const browser: typeof chrome;
-if (window.location.href.startsWith("chrome-extension")) {
+if (window.location.protocol.includes("extension")) {
   const initEditor = async () => {
     const darkTheme = document.getElementById("style-dark-theme")
     const lightTheme = document.getElementById("style-light-theme")

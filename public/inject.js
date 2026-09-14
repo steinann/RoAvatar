@@ -1,6 +1,8 @@
 let hasInjected = false
 
 var observer = new MutationObserver(function (mutations) {
+    if (!document.body) return
+    
     let errorElement = document.body.querySelector(".request-error-page-content")
     if (errorElement) {
         errorElement.remove()
