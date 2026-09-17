@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeThumbnailGenerator, FLAGS, OutfitModel, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
+import { API, Authentication, exposeAPI, exposeFLAGS, exposeMesh, exposeTests, exposeThumbnailGenerator, FLAGS, OutfitModel, OutfitRenderer, RBXRenderer } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
 import ReviewReminder from './react/reviewReminder.tsx'
 import { initWebsite } from './website/init.ts'
@@ -68,6 +68,7 @@ if (window.location.protocol.includes("extension")) {
     exposeMesh()
     exposeFLAGS()
     exposeThumbnailGenerator()
+    exposeTests()
     //FLAGS.SHOW_CAGE = true
     //FLAGS.LOAD_TEST_PLACE = "../assets/UniversalApp.rbxm"
     //FLAGS.SEARCH_FOR_STRING = "generationid"
