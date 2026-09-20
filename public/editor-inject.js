@@ -94,8 +94,9 @@ observer.observe(document, {
 
 (chrome || browser).storage.local.get(["s-default"]).then((result => {
     if (result["s-default"] !== false) {
-        const aElement = document.createElement("a")
+        window.location.replace("https://www.roblox.com/roavatar")
+        /*const aElement = document.createElement("a")
         aElement.href = "https://www.roblox.com/roavatar"
-        aElement.click()
+        aElement.click()*/
     }
 }))
