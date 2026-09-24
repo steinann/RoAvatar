@@ -239,7 +239,7 @@ export default function BodyColorCategory({setOutfit, _setOutfit}: {setOutfit: (
 
                         setMouseOverCustom(false)
                     }} onChange={() => {
-                        setMouseOverCustom(true)
+                        if (!mouseOverCustom) setMouseOverCustom(true)
                         const value = customColorRef.current?.value
                         if (value) {
                             const cleanValue = value.replace("#","").toUpperCase()
