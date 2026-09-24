@@ -1,17 +1,24 @@
 import { CONFIG } from "./config"
 import { Outfit, type OutfitJson } from "roavatar-renderer"
 
+export interface AvatarListElementV1 {
+    id: string,
+    timestamp: string,
+}
+
 export interface AvatarListV1 {
-    data: {
-        id: string,
-        timestamp: string,
-    }[]
+    data: AvatarListElementV1[],
+    nextCursor: string | null
 }
 
 export const ROAVATAR_API = {
     users: {
-        getAvatarHistory: async (userId: number) => {
-            const response = await fetch(`${CONFIG.ROAVATAR_API_URL}/v1/users/${userId}/avatar-history`)
+        getAvatarHistory: async (userId: number, count?: number, cursor?: string) => {
+            const url = new URL(`${CONFIG.ROAVATAR_API_URL}/v1/users/${userId}/avatar-history`)
+            if (count) url.searchParams.set("count", count.toString())
+            if (cursor) url.searchParams.set("cursor", cursor)
+
+            const response = await fetch(url)
             if (response.status !== 200) return response
 
             const data = await response.json()

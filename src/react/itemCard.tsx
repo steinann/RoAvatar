@@ -141,7 +141,7 @@ export default function ItemCard({ auth, itemInfo, isWorn = false, forceIsWorn =
         }
 
         if (auth && itemInfo) {
-            if (imageUrl === "loading") {
+            if (imageUrl === "loading" && itemInfo.itemType !== "None") {
                 const thumbnailType = itemInfo.itemType === "Bundle" ? "BundleThumbnail" : itemInfo.itemType
                 API.Thumbnails.GetThumbnail(auth, thumbnailType, itemInfo.id, "150x150", itemInfo.headShape).then((result) => {
                     if (!result) {
