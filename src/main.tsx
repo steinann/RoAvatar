@@ -79,6 +79,7 @@ if (window.location.protocol.includes("extension")) {
       RBXRenderer.wellLitDirectionalLightIntensity *= 2.25
       if (!postprocessingEnabled) {
         if (RBXRenderer.directionalLight2) RBXRenderer.directionalLight2.visible = false
+        RBXRenderer.firstScene.msaa = 0
       }
       if (theme === "light") {
         RBXRenderer.setBackgroundColor(0xdbdbdc)
