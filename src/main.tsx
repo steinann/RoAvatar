@@ -16,10 +16,10 @@ if (window.location.protocol.includes("extension") || window.location.pathname.e
         await Wait(0.5)
       }
 
-      console.log("content is here time to le init!")
+      console.log("content is here time to be init!")
       const content = document.getElementById("content")
       if (content) content.innerHTML = ""
-      if (content) content.style = "margin: 0; font-size: 12px; overflow: hidden;"
+      if (content) content.style = "font-size: 12px; overflow: hidden;"
       initWebsite(false)
 
       const response = await fetch(chrome.runtime.getURL("/react/style.css"))
