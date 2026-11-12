@@ -13,25 +13,16 @@ jobs:
     if: >-
       github.event_name == 'push' && (endsWith(github.event.head_commit.message, '!release') || startsWith(github.event.head_commit.message, 'release:'))
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [24.x]
-
     steps:
       - uses: actions/checkout@v7
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install dependencies and build
-        run: |
-          npm ci
-          git submodule update --init
-          npm run build
-
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: git submodule update --init
+      - run: npm run build
+      
       - name: Zip build artifacts
         run: |
           if [ -d dist ]; then
