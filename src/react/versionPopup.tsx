@@ -4,8 +4,9 @@ import { getSetting, setSetting } from "./generic/settings"
 
 //REMEMBER TO CHANGE THIS PLEASE
 const IS_TESTING = false
-const DEFAULT_VERSION_ID = 0 //should be the same as the current version id IN THE FUTURE
-const CURRENT_VERSION_ID = 1
+const DEFAULT_VERSION_ID = 2 //should be the same as the current version id IN THE FUTURE
+const CURRENT_VERSION_ID = 2
+const VERSION_HAS_POPUP = false
 
 let shownThisSession = false
 
@@ -25,7 +26,7 @@ export default function VersionPopup(): React.JSX.Element {
 
     //show if needed
     useEffect(() => {
-        if (shownThisSession) return
+        if (shownThisSession || !VERSION_HAS_POPUP) return
         shownThisSession = true
 
         getSetting("s-show-changelog", true).then((showChangelog) => {
