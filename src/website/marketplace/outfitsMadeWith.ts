@@ -106,7 +106,7 @@ function createOutfitList(sponsoredCatalogItems: Element, avatarList: AvatarList
                     }
 
                     const renderInterval = setInterval(() => {
-                        if (window.scrollY > 400) {
+                        if (window.scrollY > 100) {
                             renderThumbnail()
                             clearInterval(renderInterval)
                         }
