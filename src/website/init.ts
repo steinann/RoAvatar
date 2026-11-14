@@ -14,6 +14,7 @@ export function initWebsite(fullInit: boolean = true) {
     FLAGS.USE_WORKERS = false
     FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
     FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
+    FLAGS.AUDIO_ENABLED = false
 
     FLAGS.FETCH_FUNC = async (input: URL | RequestInfo, init?: RequestInit) => {
         if (input.toString().includes("assetdelivery.roblox.com")) {
