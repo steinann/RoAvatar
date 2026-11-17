@@ -25,7 +25,7 @@ You can also build the newest version yourself OR get the latest stable version 
 - Run `git clone --recursive https://github.com/steinann/RoAvatar.git`
 - If you are missing submodules, run `git submodule update --init`
 - Run `npm install` in the project directory
-- It is also recommended to build the RoAvatar Renderer and using `npm link roavatar-renderer` in the renderer project and `npm link` in the RoAvatar project
+- It is also recommended to build the RoAvatar Renderer and using `npm link roavatar-renderer` in the renderer project and `npm link` in the RoAvatar project OR use yalc
 - Run `npm run build` to build the project
 - The build will be in the **dist** folder in the project directory
 - You can then load the **dist** folder as an unpacked extension in your browser [(guide)](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
