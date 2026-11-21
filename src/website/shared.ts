@@ -3,7 +3,6 @@ import { CONFIG } from "../react/generic/config";
 declare const browser: typeof chrome;
 
 export const fetchFunc = async (input: URL | RequestInfo, init?: RequestInit) => {
-    console.log(input.toString())
     if (input.toString().includes("roblox.com") || input.toString().includes(CONFIG.ROAVATAR_API_URL)) {
         if (init && init.headers) {
             init.headers = Object.fromEntries(Array.from(new Headers(init.headers).entries()))
