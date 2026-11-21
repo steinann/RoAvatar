@@ -14,19 +14,13 @@ export const fetchFunc = async (input: URL | RequestInfo, init?: RequestInit) =>
         })
 
         const status = result.status as number
-        //const headers = result.headers
+        const headers = result.headers
+        const data = result.data
 
-        const data = JSON.parse(JSON.stringify(result.data))
-
-        const fakeResponse = {
+        return new Response(JSON.stringify(data), {
             status: status,
-            ok: status === 200,
-            json: async () => {
-                return data;
-            },
-        }
-
-        return fakeResponse as Response
+            headers: headers
+        })
     } else {
         return fetch(input, init)
     }
