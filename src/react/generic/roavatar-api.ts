@@ -1,3 +1,4 @@
+import { fetchFunc } from "../../website/shared"
 import { CONFIG } from "./config"
 import { Outfit, type OutfitJson } from "roavatar-renderer"
 
@@ -18,7 +19,7 @@ export const ROAVATAR_API = {
             if (count) url.searchParams.set("count", count.toString())
             if (cursor) url.searchParams.set("cursor", cursor)
 
-            const response = await fetch(url)
+            const response = await fetchFunc(url)
             if (response.status !== 200) return response
 
             const data = await response.json()
@@ -27,7 +28,7 @@ export const ROAVATAR_API = {
     },
     avatars: {
         getAvatar: async (avatarId: string) => {
-            const response = await fetch(`${CONFIG.ROAVATAR_API_URL}/v1/avatars/${avatarId}/avatar`)
+            const response = await fetchFunc(`${CONFIG.ROAVATAR_API_URL}/v1/avatars/${avatarId}/avatar`)
             if (response.status !== 200) return response
 
             const data = await response.json() as OutfitJson
@@ -37,14 +38,14 @@ export const ROAVATAR_API = {
             return outfit
         },
         withAsset: async (assetId: number) => {
-            const response = await fetch(`${CONFIG.ROAVATAR_API_URL}/v1/avatars/with-asset/${assetId}`)
+            const response = await fetchFunc(`${CONFIG.ROAVATAR_API_URL}/v1/avatars/with-asset/${assetId}`)
             if (response.status !== 200) return response
 
             const data = await response.json()
             return data as AvatarListV1
         },
         search: async (query: string) => {
-            const response = await fetch(`${CONFIG.ROAVATAR_API_URL}/v1/avatars/search/${query}`)
+            const response = await fetchFunc(`${CONFIG.ROAVATAR_API_URL}/v1/avatars/search/${query}`)
             if (response.status !== 200) return response
 
             const data = await response.json()

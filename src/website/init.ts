@@ -2,7 +2,10 @@ import { FLAGS, RBXRenderer } from "roavatar-renderer";
 import { initOutfitsMadeWith, onURLChangeOutfitsMadeWith } from "./marketplace/outfitsMadeWith";
 import { initObserver } from "./observe";
 import { initAvatarHistory, onURLChangeAvatarHistory } from "./profile/avatarHistory";
+import { fetchFunc } from "./shared";
 //import workerUrl from "../renderer-worker?worker&url"
+
+declare const browser: typeof chrome;
 
 let rendererSuccess: boolean | undefined = undefined
 let rendererSetupInterval: NodeJS.Timeout | undefined = undefined
@@ -12,39 +15,11 @@ export function initWebsite(fullInit: boolean = true) {
 
     FLAGS.ONLINE_ASSETS = false
     FLAGS.USE_WORKERS = false
-    FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
-    FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
+    FLAGS.ASSETS_PATH = (chrome || browser).runtime.getURL("assets/rbxasset/")
+    FLAGS.RIG_PATH = (chrome || browser).runtime.getURL("assets/")
     FLAGS.AUDIO_ENABLED = false
 
-    FLAGS.FETCH_FUNC = async (input: URL | RequestInfo, init?: RequestInit) => {
-        if (input.toString().includes("assetdelivery.roblox.com")) {
-            if (init && init.headers) {
-                init.headers = Object.fromEntries(new Headers(init.headers).entries())
-            }
-
-            const result = await chrome.runtime.sendMessage({
-                type: "fetch",
-                args: [input, init]
-            })
-
-            const status = result.status as number
-            //const headers = result.headers
-
-            const data = result.data
-
-            const fakeResponse = {
-                status: status,
-                ok: status === 200,
-                json: () => {
-                    return data;
-                },
-            }
-
-            return fakeResponse as Response
-        } else {
-            return fetch(input, init)
-        }
-    }
+    FLAGS.FETCH_FUNC = fetchFunc;
 
     if (fullInit) {
         setInterval(() => {

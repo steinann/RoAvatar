@@ -2,13 +2,19 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { API, Authentication, exposeAPI, exposeFLAGS, exposeManagedTextures, exposeMesh, exposeTests, exposeThumbnailGenerator, FLAGS, Instance, OutfitModel, OutfitRenderer, RBXRenderer, Wait } from 'roavatar-renderer'
+import { API, Authentication, exposeAPI, exposeFLAGS, exposeManagedTextures, exposeMesh, exposeTests, exposeThumbnailGenerator, FLAGS, Instance, Outfit, OutfitModel, OutfitRenderer, RBXRenderer, Wait } from 'roavatar-renderer'
 import { CONFIG } from './react/generic/config.ts'
 import ReviewReminder from './react/reviewReminder.tsx'
 import { initWebsite } from './website/init.ts'
 import { getSetting } from './react/generic/settings.ts'
+import { fetchFunc } from './website/shared.ts'
 
-//declare const browser: typeof chrome;
+//firefox compatibility
+const nativeArrayBuffer = Response.prototype.arrayBuffer
+Response.prototype.arrayBuffer = async function arrayBuffer() {
+    return structuredClone(await nativeArrayBuffer.call(this))
+}
+
 if (window.location.protocol.includes("extension") || window.location.pathname.endsWith("roavatar-embed-beta")) {
   const initEditor = async () => {
     if (window.location.pathname.endsWith("roavatar-embed-beta")) {
@@ -114,7 +120,15 @@ if (window.location.protocol.includes("extension") || window.location.pathname.e
     FLAGS.USE_WORKERS = true
     FLAGS.VERBOSE_LOGGING = false
     FLAGS.USE_ASSEMBLY = true
-    FLAGS.LAYERED_CLOTHING_COOLDOWN = 0.25
+    FLAGS.LAYERED_CLOTHING_COOLDOWN = 0.25;
+
+    FLAGS.FETCH_FUNC = fetchFunc;
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).OutfitRenderer = OutfitRenderer;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Outfit = Outfit;
 
     const postprocessingEnabled = await getSetting("s-postprocessing", false) as boolean
     FLAGS.USE_POST_PROCESSING = postprocessingEnabled

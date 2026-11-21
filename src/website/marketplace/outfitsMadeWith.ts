@@ -5,6 +5,8 @@ import { getIdFromUrl } from "../misc/urlHelper";
 import { observeElement } from "../observe";
 import { getSetting } from "../../react/generic/settings";
 
+declare const browser: typeof chrome;
+
 function createOutfitList(sponsoredCatalogItems: Element, avatarList: AvatarListV1) {
     const alreadyContainer = document.getElementById("outfit-made-with-container")
     if (alreadyContainer) return
@@ -58,7 +60,7 @@ function createOutfitList(sponsoredCatalogItems: Element, avatarList: AvatarList
         itemCards.push(itemCard)
 
         const imgElement = itemCard.querySelector("img")
-        if (imgElement) imgElement.src = chrome.runtime.getURL("assets/broken-avatar-200px.png")
+        if (imgElement) imgElement.src = (chrome || browser).runtime.getURL("assets/broken-avatar-200px.png")
 
         const linkElement = itemCard.querySelector("a.item-card-link") as HTMLAnchorElement | undefined
         if (linkElement) linkElement.href = `https://www.roblox.com/roavatar?api=${avatar.id}`
@@ -89,7 +91,7 @@ function createOutfitList(sponsoredCatalogItems: Element, avatarList: AvatarList
             const imgElement = itemCard.querySelector("img")
             if (imgElement) {
                 if (avatarData instanceof Response) {
-                    imgElement.src = chrome.runtime.getURL("assets/error.svg")
+                    imgElement.src = (chrome || browser).runtime.getURL("assets/error.svg")
                     continue
                 }
 
@@ -100,7 +102,7 @@ function createOutfitList(sponsoredCatalogItems: Element, avatarList: AvatarList
                         if (typeof thumbnail === "string") {
                             imgElement.src = thumbnail
                         } else {
-                            imgElement.src = chrome.runtime.getURL("assets/error.svg")
+                            imgElement.src = (chrome || browser).runtime.getURL("assets/error.svg")
                         }
                         resolve(undefined)
                     }

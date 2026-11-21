@@ -1,35 +1,40 @@
-chrome.action.onClicked.addListener(function(activeTab){
-    chrome.tabs.create({ url: "https://www.roblox.com/roavatar" });
+(chrome || browser).action.onClicked.addListener(function(activeTab){
+    (chrome || browser).tabs.create({ url: "https://www.roblox.com/roavatar" });
 });
 
-chrome.runtime.onMessage.addListener(
+(chrome || browser).runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
         switch(request.type) {
             case "openURL":
-                chrome.tabs.create({ url: request.URL });
+                (chrome || browser).tabs.create({ url: request.URL });
                 break;
             case "fetch":
                 const [input, init] = request.args
 
                 let response = undefined
 
-                if (init.headers) {
+                if (init && init.headers) {
                     init.headers = new Headers(init.headers)
                 }
 
+                serializedHeaders = undefined
+
                 fetch(input, init).then((response2) => {
                     response = response2
+                    serializedHeaders = Object.fromEntries(response.headers.entries())
                     return response2.json()
                 }).then((data) => {
                     sendResponse({
                         status: response.status,
-                        headers: response.headers,
+                        ok: response.ok,
+                        headers: serializedHeaders,
                         data,
                     })
                 }).catch((error) => {
                     sendResponse({
                         status: 500,
-                        headers: response ? response.headers : {},
+                        ok: false,
+                        headers: serializedHeaders ? serializedHeaders : {},
                         data: {}
                     })
                 })

@@ -7,6 +7,8 @@ import 'javascript-time-ago/locale/en'
 import TimeAgo from "javascript-time-ago";
 import { getSetting } from "../../react/generic/settings";
 
+declare const browser: typeof chrome;
+
 const timeAgo = new TimeAgo('en')
 
 let timesAppended = 0
@@ -72,7 +74,7 @@ function createOutfitList(profileTabContent: Element, avatarList: AvatarListV1, 
         `)
 
         const imgElement = itemCard.querySelector("img")
-        if (imgElement) imgElement.src = chrome.runtime.getURL("assets/broken-avatar-200px.png")
+        if (imgElement) imgElement.src = (chrome || browser).runtime.getURL("assets/broken-avatar-200px.png")
 
         const linkElement = itemCard.querySelector("a") as HTMLAnchorElement | undefined
         if (linkElement) {
